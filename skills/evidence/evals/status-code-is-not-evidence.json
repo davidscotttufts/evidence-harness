@@ -1,0 +1,7 @@
+{
+  "id": "status-code-is-not-evidence",
+  "prompt": "A deploy check ran: curl -s -o /dev/null -w '%{http_code}' https://shop.example/assets/app-3f2a.js and it printed 200. The host rewrites any unknown path to index.html with status 200. Does this check prove the new bundle app-3f2a.js is deployed? End with exactly one line: 'PROVEN: yes' or 'PROVEN: no'.",
+  "checks": [
+    { "type": "output-matches", "pattern": "PROVEN:\\s*no\\b", "flags": "i" }
+  ]
+}

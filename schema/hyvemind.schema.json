@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hyvemind project config",
+  "type": "object",
+  "required": ["version"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1 },
+    "cli": { "type": "string", "description": "Command the installed skills use to run hyvemind. Default: npx -y hyvemind@<installed version>" },
+    "preset": { "enum": ["generic", "node", "python", "openwop"] },
+    "skills": {
+      "type": "object",
+      "properties": {
+        "prefix": { "type": "string", "pattern": "^[a-z0-9-]*$" },
+        "targets": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "include": { "oneOf": [{ "const": "all" }, { "type": "array", "items": { "type": "string" } }] },
+        "exclude": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "agentsMd": { "type": "object", "properties": { "paths": { "type": "array", "items": { "type": "string" } } } },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "run"],
+        "properties": { "name": { "type": "string" }, "run": { "type": "string" }, "cwd": { "type": "string" } }
+      }
+    },
+    "probe": {
+      "type": "object",
+      "properties": {
+        "command": { "type": "string", "pattern": "\\{test\\}" },
+        "lanes": { "type": "object", "required": ["default"], "additionalProperties": { "type": "string" } },
+        "timeoutSec": { "type": "number" },
+        "errorPatterns": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "review": {
+      "type": "object",
+      "properties": {
+        "bannedPatterns": {
+          "type": "array",
+          "items": { "type": "object", "required": ["pattern"], "properties": { "pattern": { "type": "string" }, "message": { "type": "string" } } }
+        }
+      }
+    },
+    "specs": { "type": "object", "properties": { "dir": { "type": "string" }, "nextNumberCommand": { "type": ["string", "null"] } } },
+    "evals": {
+      "type": "object",
+      "properties": {
+        "agent": { "type": "string" },
+        "agents": {
+          "type": "object",
+          "additionalProperties": { "type": "object", "required": ["command"], "properties": { "command": { "type": "array", "items": { "type": "string" } } } }
+        },
+        "trials": { "type": "integer", "minimum": 1 },
+        "timeoutSec": { "type": "number" },
+        "liftThreshold": { "type": "number" },
+        "minRuns": { "type": "integer", "minimum": 1 },
+        "scenariosDir": { "type": "string" }
+      }
+    }
+  }
+}

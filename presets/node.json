@@ -1,0 +1,16 @@
+{
+  "gates": [
+    { "name": "test", "run": "npm test" }
+  ],
+  "probe": {
+    "command": "npm test -- {test}",
+    "lanes": { "default": "." }
+  },
+  "review": {
+    "bannedPatterns": [
+      { "pattern": "\\bas any\\b", "message": "type laundering; fix the type" },
+      { "pattern": "@ts-(ignore|nocheck)", "message": "suppression; fix the cause" },
+      { "pattern": "\\b(it|test|describe)\\.only\\(", "message": "focused test left in" }
+    ]
+  }
+}

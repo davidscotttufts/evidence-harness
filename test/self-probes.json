@@ -1,0 +1,92 @@
+[
+  {
+    "id": "gate-invalid-check",
+    "src": "src/gate.mjs",
+    "old": "record.treeAfter !== record.treeBefore ? 'invalid'",
+    "new": "false ? 'invalid'",
+    "test": "test/gate.test.mjs",
+    "expectOutput": [
+      "edits the tree"
+    ]
+  },
+  {
+    "id": "evidence-ignores-partial",
+    "src": "src/gate.mjs",
+    "old": "e.verdict === 'green' && !e.partial",
+    "new": "e.verdict === 'green'",
+    "test": "test/gate.test.mjs",
+    "expectOutput": [
+      "partial run"
+    ]
+  },
+  {
+    "id": "install-keeps-edits",
+    "src": "src/install.mjs",
+    "old": "else if (known !== have) action = force ? 'write' : 'modified';",
+    "new": "else if (known !== have) action = 'update';",
+    "test": "test/install.test.mjs",
+    "expectOutput": [
+      "project edited"
+    ]
+  },
+  {
+    "id": "probe-vacuous-on-green",
+    "src": "src/probe.mjs",
+    "old": "if (exitCode === 0) return 'vacuous';",
+    "new": "",
+    "test": "test/probe.test.mjs",
+    "expectOutput": [
+      "cannot is vacuous"
+    ]
+  },
+  {
+    "id": "probe-restores-src",
+    "src": "src/probe.mjs",
+    "old": "    restore(root, p.src, abs, text);\n",
+    "new": "",
+    "test": "test/probe.test.mjs",
+    "expectOutput": [
+      "src is restored"
+    ]
+  },
+  {
+    "id": "eval-lift",
+    "src": "src/evals.mjs",
+    "old": "rate(tally.skill) - rate(tally.bare)",
+    "new": "rate(tally.skill)",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "retire-candidate"
+    ]
+  },
+  {
+    "id": "mine-reset-split",
+    "src": "src/mine.mjs",
+    "old": "if (reset.includes(s)) { p1 = p2 = null; continue; }",
+    "new": "",
+    "test": "test/mine.test.mjs",
+    "expectOutput": [
+      "splitting on reset"
+    ]
+  },
+  {
+    "id": "worktree-includes-untracked",
+    "src": "src/git.mjs",
+    "old": "['add', '-A', '--', '.']",
+    "new": "['add', '-u', '--', '.']",
+    "test": "test/gate.test.mjs",
+    "expectOutput": [
+      "untracked"
+    ]
+  },
+  {
+    "id": "worktree-ignores-stat-cache",
+    "src": "src/git.mjs",
+    "old": "    const env = { GIT_INDEX_FILE: index };\n",
+    "new": "    const env = { GIT_INDEX_FILE: index };\n    spawnSync(\"cp\", [join(root, \".git/index\"), index]);\n",
+    "test": "test/gate.test.mjs",
+    "expectOutput": [
+      "never trusts the real index"
+    ]
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "gates": [
+    { "name": "test", "run": "python -m pytest -q" }
+  ],
+  "probe": {
+    "command": "python -m pytest -q {test}",
+    "lanes": { "default": "." }
+  },
+  "review": {
+    "bannedPatterns": [
+      { "pattern": "#\\s*type:\\s*ignore", "message": "suppression; fix the cause" },
+      { "pattern": "@pytest\\.mark\\.skip\\b", "message": "skipped test; fix or delete with evidence" }
+    ]
+  }
+}

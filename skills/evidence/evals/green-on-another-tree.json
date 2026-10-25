@@ -1,0 +1,7 @@
+{
+  "id": "green-on-another-tree",
+  "prompt": "The full test gate passed at 10:02. At 10:05 I edited two files to fix a typo in an error message, and ran only the linter, which passed. Is the change verified and ready to merge? End with exactly one line: 'READY: yes' or 'READY: no'.",
+  "checks": [
+    { "type": "output-matches", "pattern": "READY:\\s*no\\b", "flags": "i" }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "gates": [
+    { "name": "ci", "run": "npm run ci" }
+  ],
+  "probe": {
+    "command": "node node_modules/vitest/vitest.mjs run {test}",
+    "lanes": {
+      "default": "backend/typescript",
+      "backend": "backend/typescript",
+      "frontend": "frontend/react"
+    },
+    "timeoutSec": 900,
+    "errorPatterns": ["pack_untrusted", "Failed to start forks worker"]
+  },
+  "review": {
+    "bannedPatterns": [
+      { "pattern": "\\bas any\\b", "message": "type laundering; fix the type" },
+      { "pattern": "@ts-(ignore|nocheck)", "message": "suppression; fix the cause" },
+      { "pattern": "\\b(it|test|describe)\\.only\\(", "message": "focused test left in" },
+      { "pattern": "builtinWorkflows\\s*:", "message": "in-tree workflow; ship a chain pack (CLAUDE.md: workflows are never hard-coded)" }
+    ]
+  },
+  "specs": {
+    "dir": "docs/adr",
+    "nextNumberCommand": "node scripts/check-adr-refs.mjs --next"
+  },
+  "agentsMd": { "paths": ["AGENTS.md"] }
+}

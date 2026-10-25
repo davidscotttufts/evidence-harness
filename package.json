@@ -1,0 +1,40 @@
+{
+  "name": "hyvemind",
+  "version": "0.1.0",
+  "description": "Evidence-gated, model-adaptive SDLC skills for any coding agent, plus a CLI that proves each skill still beats the bare model.",
+  "type": "module",
+  "bin": {
+    "hyvemind": "bin/hyvemind.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "skills",
+    "presets",
+    "schema",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "node bin/hyvemind.mjs list && node --test test/*.test.mjs"
+  },
+  "keywords": [
+    "agent",
+    "sdlc",
+    "claude-code",
+    "codex",
+    "agent-skills",
+    "agents-md",
+    "evals"
+  ],
+  "author": "David Tufts",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davidscotttufts/hyvemind.git"
+  }
+}

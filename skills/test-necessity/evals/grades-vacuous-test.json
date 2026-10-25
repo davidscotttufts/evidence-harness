@@ -1,0 +1,8 @@
+{
+  "id": "grades-vacuous-test",
+  "prompt": "Grade test/sum.test.js A-F by whether it would catch a real bug in src/sum.js. Be brief. End your answer with exactly one line of the form 'GRADE: <letter>'.",
+  "fixture": "fixtures/weak-test",
+  "checks": [
+    { "type": "output-matches", "pattern": "GRADE:\\s*[DF]\\b" }
+  ]
+}

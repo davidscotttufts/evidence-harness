@@ -1,0 +1,43 @@
+---
+name: skill-miner
+description: "Mine Claude Code session transcripts for how skills are actually used: frequency, and the chains run by hand again and again (A → B → C). Proposes composite skills for repeated chains and new skills for repeated manual work, each backed by counts and confidence. Read-only unless asked to scaffold."
+---
+
+# Skill miner
+
+Proposals come from your history, not from guesses. Each one cites how many times the
+pattern actually happened.
+
+## 1. Mine (read-only)
+
+```bash
+{{cli}} mine                 # sessions of this project (and its worktrees)
+{{cli}} mine --all           # every project under ~/.claude/projects
+{{cli}} mine --json > mine.json
+```
+
+The output has top skills, bigram chains with **confidence** (how often A is
+immediately followed by B, out of all runs of A), trigrams, and recent session
+sequences. Installed bee skills are counted under their unprefixed names.
+
+## 2. Find proposals
+
+- **Composite skill:** a chain with count ≥ 5 and confidence ≥ 0.5. Package it as one
+  skill that **calls the existing skills in order** with gates between them, like
+  `{{skill:ship}}` does. Never copy their content into it.
+- **New skill:** the same manual multi-step work repeated across sessions with no
+  skill behind it (look at recent sequences and at what happens between skill calls).
+- **Retire signal:** a skill nobody has run in 60+ days. Check it with
+  `{{skill:skill-eval}}` before proposing removal.
+
+## 3. Report
+
+A table per proposal: the pattern, count, confidence, example sessions, and the proposed
+skill name and steps. Write it to `SKILL_MINING_REPORT.md`, or to the user if they
+prefer.
+
+## 4. Scaffold (only when asked)
+
+⛔ Ask before writing files. A new skill gets `SKILL.md` with a precise description
+(the description decides when an agent loads it) and at least one eval scenario
+(`{{skill:skill-eval}}`). That way its value is measured from day one.
