@@ -13,6 +13,9 @@ false. When a rule and a shortcut conflict, the rule wins.
 - A change is done when `{{cli}} evidence` exits 0. That means a **full** green
   gate run is recorded for the working tree **as it is now**. A green run on an
   earlier tree, a partial run (`--only`), or "the tests I ran passed" is not evidence.
+- If the project names its own commit status (`evidence.status`), `{{cli}} evidence`
+  exits 0 only when that status is `success` on HEAD and the working tree is clean.
+  A green status never covers uncommitted edits.
 - If the gate verdict is `invalid`, the tree changed while it ran. The run proves
   nothing about either tree. Find what changed it, then re-run.
 - Report failures with their output. Report skipped steps as skipped. Do not soften

@@ -50,11 +50,11 @@ a wire format is **Structural**, however small the diff.
    ⛔ Stop on any blocker, go back to step 4, then review again.
 6. **PR** with `{{skill:open-pr}}`. Pushing your branch needs no approval. ⛔ The user
    approves the PR and any comment before they are posted.
-7. **Merge.** If `hyvemind.json` names an external gate, status or release process,
-   that status is the proof and the merge goes through the project's own process.
-   Otherwise, approved PRs can share one gate with `{{cli}} train <pr> <pr>…`: it
+7. **Merge.** Approved PRs can share one gate with `{{cli}} train <pr> <pr>…`: it
    merges on green only if the base did not move, verifies the base's tree is the
-   gated tree, and bisects a red train.
+   gated tree, and bisects a red train. If the project merges some other way
+   (`train.via` is `external`), `{{cli}} train` refuses and prints where merges go;
+   follow that, and never merge by hand around it.
 
 ## Running it
 

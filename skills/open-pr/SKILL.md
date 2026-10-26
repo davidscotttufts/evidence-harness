@@ -7,9 +7,10 @@ description: "Open a pull request only when the current working tree has green g
 
 ## 1. Preconditions (all mechanical)
 
-1. Green evidence for **this** tree. If `hyvemind.json` names an external gate,
-   its `done` rule decides; otherwise `{{cli}} evidence` exits 0 (if not, run
-   `{{cli}} gate`).
+1. `{{cli}} evidence` exits 0; its output names the proof source (local gate record,
+   or the project's own commit status when `evidence.status` is set). If not, run
+   the gate: the project's own (AGENTS.md) or `{{cli}} gate`. With only
+   `externalGate` and no status, its `done` rule decides.
 2. `git status` is clean. Uncommitted work means the evidence doesn't describe what you
    are about to push.
 3. You are on a feature branch, not the default branch. Check with
@@ -19,10 +20,10 @@ description: "Open a pull request only when the current working tree has green g
 
 ## 2. Make the evidence visible
 
-If `hyvemind.json` names an external gate or status, that status is the proof: let the
-project's CI post it and never post a competing one. Otherwise, after committing and
-gating, run `{{cli}} evidence --post`: it sets a `hyvemind/gate` status on HEAD, and
-refuses an uncommitted tree, so commit first.
+After committing, run `{{cli}} evidence --post`: it sets a `hyvemind/gate` status on
+HEAD, and refuses an uncommitted tree. When `evidence.status` is set, `--post` posts
+nothing: the project's own gate posts that status and `--post` only reports it, so
+run the project's gate (see AGENTS.md) to get the status onto HEAD.
 
 ## 3. Commit hygiene
 

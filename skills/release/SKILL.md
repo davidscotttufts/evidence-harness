@@ -50,7 +50,12 @@ wait for an explicit yes before tagging, pushing the tag, or publishing.
   tagged commit. **If they differ, say so and stop.** Don't republish or yank
   without the user.
 
-## 5. Record lessons
+## 5. Upgrading hyvemind itself
+
+When upgrading the CLI version, run `{{cli}} pin`: it records the integrity hash and
+refuses releases younger than `coolingOffDays`.
+
+## 6. Record lessons
 
 When anything went wrong, record it with the **command that would have detected
 it** (for example `npm view <pkg>@<v> dist.integrity`), and add that command to

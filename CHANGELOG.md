@@ -15,8 +15,11 @@
 - **`mine-skills`**: mining is local (reads `~/.claude/projects`, no network). It asks
   before each run and reports aggregates only, never transcript content.
 - **`open-pr`**: pushing your own branch needs no approval; opening the PR or posting a
-  comment does. With an external gate/status configured, that status is the proof and
-  hyvemind posts no competing one.
+  comment does.
+- **Skills name the new config:** `open-pr`, `evidence-rules` and `ship-change` read
+  correctly with or without `evidence.status` (the project's status is the proof;
+  `--post` only reports it) and `train.via: "external"` (follow where `train` points);
+  `release` runs `hyvemind pin` when upgrading the CLI.
 - **New skill `cleanup`**: dead code is removed only when proved dead (zero
   references and no dynamic path); protected categories; reports what it kept.
 - **New skill `release`**: SemVer from commits, lockstep bump, tag the merge sha,
