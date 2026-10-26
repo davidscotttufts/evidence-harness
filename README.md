@@ -96,7 +96,8 @@ T2 done · review GO
 Each task in a plan goes to a new agent process in its own worktree. It's accepted
 only when the task's own exit command passes. A failed attempt is rolled back and
 retried once, with the failing output. Then a separate agent reviews the diff and
-must answer `VERDICT: GO`. One commit per task, and re-running resumes.
+must answer `VERDICT: GO`. One commit per task, and re-running resumes. With `--sandbox podman` the checks run
+in a container with no network, and the agent can only read and edit files.
 
 ### Instructions that no longer help get noticed
 

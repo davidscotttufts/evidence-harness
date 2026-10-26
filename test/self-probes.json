@@ -606,7 +606,7 @@
     "new": "    return runInSandbox(sb, dir, command, runCfg.timeoutSec, { network: true });",
     "test": "test/sandbox.test.mjs",
     "expectOutput": [
-      "the check runs in the container"
+      "the exit check runs in the container"
     ]
   },
   {

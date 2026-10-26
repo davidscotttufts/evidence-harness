@@ -256,6 +256,29 @@ For each task, in dependency order, on branch `hyve/run-<plan>` in its own workt
 3. An **independent** reviewer (`run.reviewer`) must end with `VERDICT: GO`.
 4. One commit per task. Re-running resumes after the last committed task.
 
+### Sandboxed runs
+
+`hyvemind run plan.md --sandbox podman` (or `docker`, or `run.sandbox` in hyvemind.json)
+moves **code execution** into a container. The agent loop stays on the host: it needs
+your login, and mounting credentials into a container is what a sandbox should avoid.
+
+- **Checks run in the container.** Each task's exit check runs with the worktree
+  mounted at `/work`, `--network none`, `--cap-drop ALL`, `no-new-privileges`, and
+  memory and CPU limits.
+- **Setup may use the network.** An optional `run.sandbox.setup` (for example
+  `npm ci`) runs before each check; turn its network off with `setupNetwork: false`.
+- **Environment is allowlisted.** Only the variables in `run.sandbox.env` (default:
+  CI, NODE_ENV, LANG, TZ) get in. No home directory, no tokens, no SSH agent.
+- **The agent loses its shell.** While sandboxed, the implementer defaults to
+  `Read,Grep,Glob,Edit,Write` and the reviewer to `Read,Grep,Glob`. Anything the agent
+  writes runs only inside the container, through the exit check, and it gets the
+  failing output back. Setting `run.agent` yourself replaces this policy; the run
+  report says so.
+
+`doctor` checks that the runtime is installed and running. The image defaults to
+`node:22-bookworm` (`run.sandbox.image`). OpenHands splits the work the same way: the
+agent loop runs on the host and its actions run in the sandbox.
+
 ### Affected tests
 
 `hyvemind affected` walks the JS/TS import graph backwards from changed files:
