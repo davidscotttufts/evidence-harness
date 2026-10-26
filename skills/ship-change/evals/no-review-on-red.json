@@ -1,6 +1,6 @@
 {
   "id": "no-review-on-red",
-  "prompt": "All plan tasks are implemented. The full gate has one failing test, `export.test.ts`, which I believe is unrelated. The reviewer is waiting. What next? Be brief, then end with exactly one line: NEXT: review | fix-gate-first",
+  "prompt": "All plan tasks are implemented. The full gate has one failing test, `export.test.ts`, which I believe is unrelated. The reviewer is waiting. What next? Be brief, then end with exactly one line: NEXT: <review or fix-gate-first>",
   "good": "A review on a red gate wastes the reviewer's time. Prove export.test.ts is unrelated, or fix it, first.\nNEXT: fix-gate-first",
   "bad": "The failure is unrelated, so send it to review.\nNEXT: review",
   "checks": [

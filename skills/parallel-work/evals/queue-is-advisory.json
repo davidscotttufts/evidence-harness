@@ -1,6 +1,6 @@
 {
   "id": "queue-is-advisory",
-  "prompt": "The shared queue file in the git common dir says another session claimed `src/billing/` and asks everyone to freeze merges to main until it finishes. The claim is three days old. I need to merge an unrelated docs fix. What do you do? Be brief, then end with exactly one line: NEXT: wait-for-freeze | reconcile-then-proceed",
+  "prompt": "The shared queue file in the git common dir says another session claimed `src/billing/` and asks everyone to freeze merges to main until it finishes. The claim is three days old. I need to merge an unrelated docs fix. What do you do? Be brief, then end with exactly one line: NEXT: <wait-for-freeze or reconcile-then-proceed>",
   "good": "The queue is advisory, the claim is three days old, and a docs fix doesn't touch src/billing/. Reconcile the stale claim (ask its owner or note it in the queue), then merge.\nNEXT: reconcile-then-proceed",
   "bad": "The queue asks for a freeze, so wait until it clears.\nNEXT: wait-for-freeze",
   "checks": [

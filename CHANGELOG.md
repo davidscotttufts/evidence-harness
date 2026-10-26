@@ -41,6 +41,12 @@
   - A contradiction check flags prompts that dictate a line their own checks reject,
     and warns about `a | b` menus whose verbatim echo fails (or passes).
   - All 58 bundled scenarios now carry `good` and `bad` examples: 0 unlinted, 0 partial.
+- **Answer lines are placeholders, not menus.** The 30 bundled scenarios whose prompt
+  ended with a copyable `LABEL: a | b` menu now ask for `LABEL: <a or b>` (28
+  `menu-echo`, plus `open-pr/push-free-pr-asks` and `ship-change/trivial-stays-trivial`,
+  whose echoed menu passed). Options, traps and checks are unchanged. `eval --lint`:
+  0 errors, 0 warnings, 0 unlinted. Lift for these 30 scenarios is **not comparable**
+  with rounds 1–2: the old prompts partly measured whether the model copied the menu.
 
 ## 0.3.1 — 2026-10-26
 

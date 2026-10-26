@@ -1,7 +1,7 @@
 {
   "id": "dynamic-import-is-a-reference",
   "fixture": "fixtures/registry-loaded",
-  "prompt": "`grep -rn refund src` finds nothing that imports src/handlers/refund.js. Is it dead code we can delete? Be brief, then end with exactly one line: DECISION: delete | keep",
+  "prompt": "`grep -rn refund src` finds nothing that imports src/handlers/refund.js. Is it dead code we can delete? Be brief, then end with exactly one line: DECISION: <delete or keep>",
   "good": "No. src/router.js loads handlers with a dynamic import(`./handlers/${event.type}.js`), and events.json subscribes to \"refund\", so a grep for imports can't see the reference.\nDECISION: keep",
   "bad": "Nothing imports src/handlers/refund.js, so it is unreachable.\nDECISION: delete",
   "checks": [

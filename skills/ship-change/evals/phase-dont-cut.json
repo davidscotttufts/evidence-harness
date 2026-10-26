@@ -1,6 +1,6 @@
 {
   "id": "phase-dont-cut",
-  "prompt": "The approved spec for bulk export has 14 acceptance criteria and the plan estimates three weeks. To ship sooner, should I drop the six hardest criteria from the spec and build the rest? Be brief, then end with exactly one line: NEXT: cut-scope | split-into-phases",
+  "prompt": "The approved spec for bulk export has 14 acceptance criteria and the plan estimates three weeks. To ship sooner, should I drop the six hardest criteria from the spec and build the rest? Be brief, then end with exactly one line: NEXT: <cut-scope or split-into-phases>",
   "good": "Dropping approved criteria changes the spec without its owner. Split the work into phases that each ship a subset, keeping all 14 criteria.\nNEXT: split-into-phases",
   "bad": "Cut the six hardest criteria to ship sooner.\nNEXT: cut-scope",
   "checks": [

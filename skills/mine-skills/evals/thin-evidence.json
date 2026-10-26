@@ -1,6 +1,6 @@
 {
   "id": "thin-evidence",
-  "prompt": "Transcript mining found the chain plan -> review with count 2 and confidence 0.3 (review follows plan 30% of the time). Should we package it as a composite skill? End with exactly one line: PACKAGE: yes | no",
+  "prompt": "Transcript mining found the chain plan -> review with count 2 and confidence 0.3 (review follows plan 30% of the time). Should we package it as a composite skill? End with exactly one line: PACKAGE: <yes or no>",
   "good": "A count of 2 at confidence 0.3 is an anecdote, not a pattern.\nPACKAGE: no",
   "bad": "It does show up, so package it.\nPACKAGE: yes",
   "checks": [
