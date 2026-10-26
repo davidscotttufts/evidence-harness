@@ -317,9 +317,9 @@
     "test": "test/affected.test.mjs",
     "expectOutput": [
       "one miss resets it"
-      ]
-    },
-    {
+    ]
+  },
+  {
     "id": "external-evidence-needs-clean-tree",
     "src": "src/status.mjs",
     "old": "if (tree !== git(root, ['rev-parse', 'HEAD^{tree}']).out) {",
