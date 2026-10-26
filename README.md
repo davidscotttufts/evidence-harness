@@ -88,6 +88,39 @@ edited, and any same-named skill that existed before hyvemind, and reports both.
 `--force` overwrites them. Skill names are chosen so they don't collide with common project skills
 (`review`, `plan`, `pr`). Set `skills.prefix` if you want your own namespace.
 
+### A project that already has its own gate
+
+Some repos already have an established merge gate with its own queue, lock and status
+check. Point hyvemind at it rather than adding a second definition of done:
+
+```json
+{ "version": 1, "preset": "openwop",
+  "externalGate": { "run": "node scripts/local-ci.mjs --pr <n> --post",
+                    "done": "the `ci/local-verify` status is success on the PR head" },
+  "skills": { "include": ["write-spec", "design-review", "plan-tasks", "parallel-work", "skill-eval"] } }
+```
+
+The `AGENTS.md` block then names that gate and that definition of done. hyvemind runs
+neither. `doctor` warns if a skill that uses hyvemind's own gate, evidence or train is
+also installed (`ship-change`, `open-pr`, `review-change`, `evidence-rules`).
+
+### Optional: a machine-wide CI broker (tracegate-ci)
+
+When several agent sessions share one machine, their test suites starve each other.
+[tracegate-ci](https://github.com/davidscotttufts/tracegate-ci)'s broker is one
+capacity-aware queue for all of a machine's CI work. Configure it and hyvemind wraps
+every gate, train gate, sabotage probe and eval agent run in `tracegate lease`:
+
+```json
+"broker": { "command": "tracegate", "tokens": { "eval": 1 } }
+```
+
+hyvemind never depends on it. Without `broker`, commands run directly. `doctor`
+checks that the broker is reachable. For Vitest projects, tracegate can also be the
+gate itself, running only what a change can affect once that has been earned:
+`"gates": [{ "name": "backend", "run": "tracegate run --lane backend -- vitest run" }]`.
+hyvemind still ties the verdict to the exact tree.
+
 ## The skills
 
 | Skill | Phase | What it does |
