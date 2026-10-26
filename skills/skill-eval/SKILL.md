@@ -67,5 +67,6 @@ Good scenarios:
 ## Decide
 
 Never retire a skill on one run. Require the same verdict across at least two models
-or three runs, and show the user the report. ⛔ The user approves any retire or thin
+or three runs, and show the user the report. Measure on more than one agent before
+retiring or keeping a skill on a saturated reading (`{{cli}} eval --matrix`). ⛔ The user approves any retire or thin
 change. Commit the report summary with the change.

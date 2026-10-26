@@ -182,7 +182,7 @@ hyvemind train <pr…> [--no-merge] [--no-bisect] [--local] [--base branch]
 hyvemind run plan.md [--spec spec.md] [--only T1,T2] [--no-review]
 hyvemind probe probes.json             # sabotage probes
 hyvemind eval [skill[:scenario]…] [--scenario id]… [--agent claude|codex|opencode] [--model id] [--trials n] [--concurrency n]
-              [--dry-run] [--yes] [--keep] [--clean-profile] [--report] [--render report.json]
+              [--matrix | --agent a,b,c] [--dry-run] [--yes] [--keep] [--clean-profile] [--report] [--render report.json]
 hyvemind mine [--all] [--json]         # Claude Code transcript mining
 ```
 
@@ -407,6 +407,34 @@ passed by default, so an agent that logs in through its own credential store (Cl
 Code's login, for example) needs nothing here. A broker (`broker`) that needs its own
 variables gets them the same way.
 
+**Matrix (`--matrix`, or `--agent a,b,c`).** Runs the selected scenarios once per
+agent. `--matrix` uses every agent in `evals.agents` whose command binary is
+installed: a bare name is looked up on `PATH`, a path is checked directly, and
+nothing is executed to find out. `--agent a,b,c` names the agents. A configured agent
+that isn't installed is skipped and listed as `not installed`. A name missing from
+`evals.agents` is an error.
+
+- **Nothing is pooled.** Each agent gets its own runs, verdicts and intervals, and its
+  kept outputs go under `.hyve/evals/<run-id>/<agent>/`. Agents run one after another,
+  each at `--concurrency`.
+- **One consent covers the whole matrix.** The preview gives the total agent runs
+  across agents first, then each agent's share and duration, then the skipped agents.
+  `--yes` (or `y` on a TTY) starts all of it, and `--dry-run` prints that breakdown and
+  exits. The duration estimate uses each agent's own past runs.
+- **The report.** The JSON report has `matrix: true`, an `agents` list with one section
+  per agent (that agent's `skills`, shaped like a single-agent report's), `skipped`,
+  and `disagreements`. The markdown has one table with a column group per agent
+  (bare / skill / lift / verdict) and a per-scenario table. It opens with
+  **Disagreements**: skills measured on two or more agents whose verdicts differ, for
+  example `saturated` on one and `earning` on another. That signal is the reason to
+  run a matrix. A saturated reading on one agent says nothing about the others.
+  `--render` reads both single-agent and matrix reports.
+- **Per-agent settings.** `--model` is refused for a matrix, because a model id belongs
+  to one vendor. Put the model in each agent's `command` instead. `--clean-profile`
+  applies each agent's own `cleanArgs`/`cleanEnv`. It is refused, before anything
+  runs, if any selected agent has no `cleanArgs`. Each agent's `env` passes through as
+  usual, and no vendor auth variable is assumed.
+
 **Kept outputs.** Every failing run's full output (up to the 8 MB capture cap) is saved
 to `.hyve/evals/<run-id>/<skill>/<scenario>/<arm>-<trial>.txt`, and the run records the
 path as `output`. `--keep` also keeps passing runs' output, plus the scratch
@@ -448,8 +476,20 @@ Rejected options:
 - Copying credentials into a temporary profile was ruled out.
 
 hyvemind never reads, copies or prints credential files or tokens. Other agents
-(`codex`, `opencode`) have no default `cleanArgs`. Add your own if the agent has an
-equivalent flag.
+(`codex`, `opencode`) have no default `cleanArgs`, so `--clean-profile` refuses them.
+These candidates come from `--help` text only (codex-cli 0.164.0, opencode 1.19.4).
+They are **unverified**: no eval has checked what they exclude.
+
+- codex: `exec --ignore-user-config` ("do not load `$CODEX_HOME/config.toml`; auth still
+  uses `CODEX_HOME`"), `--ephemeral` (no session files), and `--ignore-rules` (no
+  execpolicy `.rules`). The help doesn't say whether user-level `AGENTS.md` or skills
+  are skipped. These are `exec` options: codex rejects them before the subcommand, so
+  they can't be `cleanArgs`, which go right after the executable. To try them, put
+  them in the command itself, after `exec`. They then apply to both arms on every run.
+- opencode: `--pure` ("run without external plugins"). It parses before `run`, so it
+  can be a `cleanArg`. The help doesn't say that it drops user instructions or skills.
+
+Check either one with the canary method above before citing a clean baseline.
 
 ## Configuration
 
@@ -468,7 +508,7 @@ Each core guarantee has a self-probe showing that its test goes red when the gua
 is broken. The guarantees covered: tree-bound evidence, partial runs never counting,
 local edits being kept, probes restoring the file, eval lift, eval verdicts
 (saturated, earning vs low n, per-scenario harmful/no-signal flags, the lift
-interval, old reports re-rendered, the eval safety rails, scenario lint), and chain splitting in the miner.
+interval, old reports re-rendered, the eval safety rails, scenario lint, the eval matrix: no pooling across agents, skipping agents that are not installed, the disagreements list, one consent for the whole matrix), and chain splitting in the miner.
 
 ## Releasing
 

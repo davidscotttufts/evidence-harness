@@ -35,6 +35,15 @@
   whose echoed menu passed). Options, traps and checks are unchanged. `eval --lint`:
   0 errors, 0 warnings, 0 unlinted. Lift for these 30 scenarios is **not comparable**
   with rounds 1–2: the old prompts partly measured whether the model copied the menu.
+- **`eval --matrix`** (or `--agent a,b,c`) runs the selected scenarios once per agent
+  in `evals.agents`. By default that is every agent whose binary is installed, and the
+  rest are listed as `not installed`. Each agent gets its own runs, verdicts and
+  intervals; nothing is pooled. One cost preview and one `--yes` cover the whole
+  matrix, and `--dry-run` shows each agent's share. Reports keep per-agent sections.
+  The markdown has a column group per agent and a **Disagreements** list of skills
+  whose verdict differs between agents. `--render` reads single-agent and matrix
+  reports. `--model` is refused for a matrix. Codex/opencode clean-profile flags are
+  documented as unverified, and no defaults are set.
 
 ## 0.3.1 — 2026-10-26
 
