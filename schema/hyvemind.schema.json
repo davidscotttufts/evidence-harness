@@ -146,6 +146,10 @@
           ],
           "default": "output",
           "description": "How to read case-level results; needed for a probe's expectRed"
+        },
+        "setup": {
+          "type": "string",
+          "description": "Setup for `probe --isolate` (default: train.setup), e.g. \"npm ci\""
         }
       }
     },

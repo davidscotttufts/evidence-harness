@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { resolveConfig } from '../src/config.mjs';
 import { failingCases, runProbe, runProbes } from '../src/probe.mjs';
@@ -69,4 +69,24 @@ test('vitest JSON report: failing cases and a suite that failed to load', () => 
   ] }));
   assert.deepEqual(failingCases('vitest', { reportFile: f, output: '' }), ['refund > rejects anonymous', '(suite) b.test.ts']);
   assert.equal(failingCases('vitest', { reportFile: join(dir, 'missing.json'), output: '' }), null);
+});
+
+test('a probe lock refuses a second probe in the same tree, and a stale lock is reclaimed', async () => {
+  const { acquireProbeLock, probeLockPath } = await import('../src/probe.mjs');
+  const dir = fixture();
+  writeFileSync(probeLockPath(dir), String(process.ppid)); // a live process that isn't us
+  assert.throws(() => runProbes(dir, cfg, [{ id: 'x', ...flip, test: 'test/strong.test.mjs' }]), /another probe \(pid \d+\) is running/);
+  writeFileSync(probeLockPath(dir), '999999'); // a pid that doesn't exist
+  const release = acquireProbeLock(dir);
+  release();
+  assert.ok(!existsSync(probeLockPath(dir)), 'released');
+});
+
+test('--isolate probes a throwaway worktree and never touches the live tree', () => {
+  const dir = fixture();
+  writeFileSync(join(dir, 'src/max.mjs'), SRC + '// live edit in progress\n'); // the live tree is dirty
+  const { results, isolated } = runProbes(dir, cfg, [{ id: 's', ...flip, test: 'test/strong.test.mjs', expectOutput: ['picks larger'] }], { isolate: true });
+  assert.equal(results[0].verdict, 'witnessed', 'HEAD is probed, not the dirty live file');
+  assert.match(readFileSync(join(dir, 'src/max.mjs'), 'utf8'), /live edit in progress/, 'the live file is untouched');
+  assert.ok(!existsSync(isolated), 'the throwaway worktree is removed');
 });

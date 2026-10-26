@@ -61,6 +61,7 @@ Usage: hyvemind <command> [options]
                         on blob sha (--out <ledger.json>, default .hyve/census.json;
                         --md <file> for a summary)
   probe <probes.json>   Sabotage probes: break the code, prove the test goes red
+            --isolate     probe a throwaway worktree of HEAD (setup: probe.setup or train.setup)
   eval [skill[:scenario]…]  Bare model vs with-skill on each skill's scenarios
             --agent <name>  --model <id>  --trials <n>  --concurrency <n>
             --scenario <id>   only this scenario (repeatable)
@@ -84,7 +85,7 @@ const { values: o, positionals } = parseArgs({
     only: { type: 'string' }, 'keep-going': { type: 'boolean' }, quiet: { type: 'boolean' },
     agent: { type: 'string' }, model: { type: 'string' }, trials: { type: 'string' }, keep: { type: 'boolean' },
     filter: { type: 'string' }, all: { type: 'boolean' }, root: { type: 'string' }, json: { type: 'boolean' },
-    post: { type: 'boolean' }, yes: { type: 'boolean' }, verbose: { type: 'boolean' }, sandbox: { type: 'string' }, wait: { type: 'string' }, observe: { type: 'boolean' }, status: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
+    post: { type: 'boolean' }, yes: { type: 'boolean' }, isolate: { type: 'boolean' }, verbose: { type: 'boolean' }, sandbox: { type: 'string' }, wait: { type: 'string' }, observe: { type: 'boolean' }, status: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
     'no-bisect': { type: 'boolean' }, local: { type: 'boolean' }, spec: { type: 'string' }, 'no-review': { type: 'boolean' },
     branch: { type: 'string' }, concurrency: { type: 'string' }, md: { type: 'string' }, report: { type: 'boolean' }, out: { type: 'string' }, render: { type: 'string' }, lint: { type: 'boolean' },
     'allow-fresh': { type: 'boolean' }, scenario: { type: 'string', multiple: true }, 'clean-profile': { type: 'boolean' }, help: { type: 'boolean', short: 'h' }, version: { type: 'boolean', short: 'v' },
@@ -197,7 +198,7 @@ async function main() {
       if (!rest[0]) throw new Error('usage: hyvemind probe <probes.json>');
       const cfg = readConfig(root);
       const probes = JSON.parse(readFileSync(resolve(rest[0]), 'utf8'));
-      const { results, srcStatus } = runProbes(root, cfg, probes);
+      const { results, srcStatus } = runProbes(root, cfg, probes, { isolate: o.isolate });
       for (const r of results) console.log(JSON.stringify(r));
       console.log(`PROBED_SRC_STATUS: ${srcStatus}`);
       if (srcStatus !== 'clean') process.exitCode = 2;

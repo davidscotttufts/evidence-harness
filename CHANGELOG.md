@@ -2,6 +2,10 @@
 
 ## 0.4.0 — unreleased
 
+- **`probe` takes a per-worktree lock** (a second probe refuses; stale locks are
+  reclaimed), and **`probe --isolate`** runs in a throwaway worktree of `HEAD`, so a
+  pull or checkout in the live tree can't capture a sabotaged file.
+
 - **Sandboxed `run`** (`--sandbox podman|docker`, `run.sandbox`). Exit checks and
   setup run in a container: no network for checks, dropped capabilities, memory and
   CPU limits, and only allowlisted environment variables. While sandboxed, the agent

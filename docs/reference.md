@@ -316,7 +316,11 @@ For each probe, hyvemind:
 2. runs `probe.command` with `{test}` filled in, from the `probe.lanes[lane]` directory;
 3. restores the file and **verifies** the restore.
 
-It refuses to touch a file that has uncommitted changes. With `probe.format` set to
+It refuses to touch a file that has uncommitted changes, and takes a per-worktree lock, so a
+second probe in the same tree refuses to start; a lock left by a dead process is
+reclaimed. A probe edits files in place, so don't pull or check out in that tree while it
+runs. Use `--isolate` to probe a throwaway worktree of `HEAD` instead (dependencies are
+installed by `probe.setup`, defaulting to `train.setup`), which never touches the live tree. With `probe.format` set to
 `vitest` or `node`, it reads the runner's structured result, and `expectRed` must name
 cases that actually **failed**. `expectOutput` only checks that text appears in the
 output, which a passing case's name can satisfy. Each probe gets one verdict:
