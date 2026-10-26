@@ -65,8 +65,12 @@ export const DEFAULTS = {
       // go at {clean}. Per `codex exec --help` (codex-cli 0.164.0): --ignore-user-config
       // skips $CODEX_HOME/config.toml (auth still uses CODEX_HOME), --ephemeral persists no
       // session files, --ignore-rules skips user and project execpolicy .rules files.
+      // None of those skip $CODEX_HOME/AGENTS.md (user instructions): a canary there was
+      // followed with all three set (2026-10-26). cleanHome points CODEX_HOME at a
+      // per-run temp dir holding only a link to auth.json; the canary was then ignored.
       codex: {
         command: ['codex', 'exec', '{clean}', '{prompt}'],
+        cleanHome: { env: 'CODEX_HOME', from: '~/.codex', keep: ['auth.json'] },
         authCheck: { command: ['codex', 'login', 'status'] },
         cleanArgs: ['--ignore-user-config', '--ephemeral', '--ignore-rules'],
       },
@@ -145,6 +149,8 @@ export function validate(cfg) {
     need(a?.cleanArgs === undefined || (Array.isArray(a.cleanArgs) && a.cleanArgs.every((x) => typeof x === 'string')), `evals.agents.${k}.cleanArgs must be an argv array`);
     need(a?.authCheck === undefined || (isObject(a.authCheck) && Array.isArray(a.authCheck.command) && a.authCheck.command.length > 0 && a.authCheck.command.every((x) => typeof x === 'string')), `evals.agents.${k}.authCheck.command must be an argv array`);
     if (a?.authCheck?.match !== undefined) { try { new RegExp(a.authCheck.match); } catch { errs.push(`evals.agents.${k}.authCheck.match is not a valid regex`); } }
+    need(a?.cleanHome === undefined || (isObject(a.cleanHome) && /^[A-Za-z_][A-Za-z0-9_]*$/.test(a.cleanHome.env ?? '') && typeof a.cleanHome.from === 'string' && Array.isArray(a.cleanHome.keep) && a.cleanHome.keep.every((x) => typeof x === 'string' && x && !x.includes('/') && x !== '..' && x !== '.')),
+      `evals.agents.${k}.cleanHome must be { env: NAME, from: dir, keep: [file names] }`);
     need(a?.cleanEnv === undefined || (isObject(a.cleanEnv) && Object.values(a.cleanEnv).every((x) => typeof x === 'string')), `evals.agents.${k}.cleanEnv must map names to string values`);
   }
   return errs;

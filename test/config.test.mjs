@@ -50,3 +50,9 @@ test('externalGate replaces a preset\'s gates; only gates the project lists itse
   assert.deepEqual(cfg.gates, [], 'the openwop preset gate (npm run ci) is replaced');
   assert.throws(() => resolveConfig({ version: 1, preset: 'openwop', externalGate: { run: 'x', done: 'y' }, gates: [{ name: 'a', run: 'b' }] }), /mutually exclusive/);
 });
+
+test('codex clean profile: the default links only the login into a temp CODEX_HOME (its flags do not skip AGENTS.md)', () => {
+  const codex = resolveConfig({ version: 1 }).evals.agents.codex;
+  assert.deepEqual(codex.cleanHome, { env: 'CODEX_HOME', from: '~/.codex', keep: ['auth.json'] });
+  assert.throws(() => resolveConfig({ version: 1, evals: { agents: { codex: { cleanHome: { env: 'CODEX_HOME', from: '~/.codex', keep: ['../secrets'] } } } } }), /cleanHome must be/);
+});

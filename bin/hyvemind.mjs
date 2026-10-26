@@ -263,8 +263,8 @@ async function main() {
       }
       // Every run is a model call: show the bill first (for a matrix, the total across agents), and never start unattended without --yes.
       const p = matrix
-        ? matrixPreview(plan, cfg, { ...sel, concurrency, history: (a) => historicalMedian(root, a) })
-        : preview(plan, cfg, { concurrency, agent: chosen.agent, why: chosen.why, history: historicalMedian(root) });
+        ? matrixPreview(plan, cfg, { ...sel, concurrency, cleanProfile: o['clean-profile'], history: (a) => historicalMedian(root, a) })
+        : preview(plan, cfg, { concurrency, agent: chosen.agent, why: chosen.why, cleanProfile: o['clean-profile'], history: historicalMedian(root) });
       process.stderr.write(`${renderPreview(p)}\n`);
       if (o['dry-run']) return;
       const consented = Boolean(o.yes);

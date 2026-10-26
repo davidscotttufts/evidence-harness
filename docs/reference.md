@@ -547,7 +547,7 @@ Rejected options:
 - `--safe-mode` also disables project skills, so the skill arm would be bare too.
 - `--bare` never reads OAuth or the keychain, and needs an API key.
 - `CLAUDE_CONFIG_DIR` pointed at an empty directory loses the login.
-- Copying credentials into a temporary profile was ruled out.
+- Copying credentials into a temporary profile was ruled out. (Codex's `cleanHome` *links* the login and never copies it.)
 
 hyvemind never reads, copies or prints credential files or tokens.
 
@@ -566,9 +566,32 @@ These are `exec` options, which codex rejects before the subcommand, so they sit
 - `--ignore-rules`: "Do not load user or project execpolicy `.rules` files". These
   are command-approval rules, not instructions.
 
-Their effect on bare-arm contamination is **per `--help`, not independently
-verified**. The help doesn't say whether user-level `AGENTS.md` or skills are skipped,
-and no eval has checked what these flags exclude.
+**Measured (2026-10-26, codex-cli 0.164.0): these flags do NOT skip
+`$CODEX_HOME/AGENTS.md`.** With a canary there ("end every reply with CANARY-7731"),
+every run followed it, both with and without the three flags. No `exec` flag skips that
+file. So the codex default also has a `cleanHome`:
+
+```json
+"cleanHome": { "env": "CODEX_HOME", "from": "~/.codex", "keep": ["auth.json"] }
+```
+
+With `--clean-profile`, each run gets a fresh `0700` temp dir (outside the repo) holding
+only **links** to the `keep` files, the login allowlist, with `CODEX_HOME` pointed at it.
+Codex logs in through the link and finds no user instructions, config or memory. With
+the canary in place, the run without the clean profile followed it and the run with it
+did not. The login file was unchanged, and no temp dir was left behind.
+
+- **The login is linked, never copied, read or logged.** If codex refreshes its token
+  by replacing the link with a file, that file is **moved** back (one atomic rename), so
+  no second copy ever exists. The move happens only if the real file is exactly as it
+  was when the run started (mtime and size) and no other writer holds
+  `.auth.json.hyvemind.lock`. Otherwise the fresher real file wins and the refreshed one
+  is dropped. A temp dir on another volume skips the move.
+- **The dir is removed** when the run ends, after a timeout kill, and on SIGINT/SIGTERM.
+- **The preview says so before anything runs:** `clean profile: a temp CODEX_HOME with
+  only auth.json linked from ~/.codex (login only; …)`.
+
+The three flags are still passed. They keep config.toml, session files and `.rules` out.
 
 `opencode` has no default `cleanArgs`, so `--clean-profile` refuses it. Its only
 candidate, `--pure` (opencode 1.19.4: "run without external plugins"), drops plugins

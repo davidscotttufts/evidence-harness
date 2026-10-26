@@ -858,5 +858,75 @@
     "expectOutput": [
       "per-case flags"
     ]
+  },
+  {
+    "id": "clean-home-env-applied",
+    "src": "src/evals.mjs",
+    "old": "...agentEnv(agentCfg, j.arm, process.env, cleanProfile), ...home?.env }",
+    "new": "...agentEnv(agentCfg, j.arm, process.env, cleanProfile) }",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "never see the user instructions"
+    ]
+  },
+  {
+    "id": "clean-home-stamp-guard",
+    "src": "src/evals.mjs",
+    "old": "      if (stamp(target) !== before.get(f)) return",
+    "new": "      if (false) return",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "write-back never clobbers"
+    ]
+  },
+  {
+    "id": "clean-home-lock-exclusive",
+    "src": "src/evals.mjs",
+    "old": "fd = openSync(lock, 'wx', 0o600);",
+    "new": "fd = openSync(lock, 'w', 0o600);",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "write-back never clobbers"
+    ]
+  },
+  {
+    "id": "clean-home-removed",
+    "src": "src/evals.mjs",
+    "old": "try { for (const f of spec.keep) result[f] = writeBack(f); } finally { rmSync(dir, { recursive: true, force: true }); }",
+    "new": "for (const f of spec.keep) result[f] = writeBack(f);",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "write-back never clobbers"
+    ]
+  },
+  {
+    "id": "clean-home-write-back",
+    "src": "src/evals.mjs",
+    "old": "try { renameSync(p, target); }",
+    "new": "try { }",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "write-back never clobbers"
+    ]
+  },
+  {
+    "id": "clean-home-codex-default",
+    "src": "src/config.mjs",
+    "old": "        cleanHome: { env: 'CODEX_HOME', from: '~/.codex', keep: ['auth.json'] },\n",
+    "new": "",
+    "test": "test/config.test.mjs",
+    "expectOutput": [
+      "codex clean profile"
+    ]
+  },
+  {
+    "id": "clean-home-keep-names-only",
+    "src": "src/config.mjs",
+    "old": "x && !x.includes('/') && x !== '..'",
+    "new": "x",
+    "test": "test/config.test.mjs",
+    "expectOutput": [
+      "codex clean profile"
+    ]
   }
 ]

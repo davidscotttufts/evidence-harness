@@ -302,3 +302,75 @@ test('eval samples load before every job, waits with --wait, and stamps contenti
   const b = await runEvals(dir, { ...cfg(ALWAYS, false), broker: { command: 'true' } }, { skills: ['open-pr'], trials: 1, sampler: () => { throw new Error('sampled under a broker'); } });
   assert.equal(b.report.contention, undefined);
 });
+
+// Codex reads $CODEX_HOME/AGENTS.md and no exec flag skips it (a canary there was
+// followed with --ignore-user-config --ephemeral --ignore-rules, 2026-10-26).
+test('cleanHome: a 0700 temp home with only the allowlisted login linked; write-back never clobbers a newer real file; removed after', async () => {
+  const { cleanHome, cleanNote } = await import('../src/evals.mjs');
+  const { lstatSync, readlinkSync, readdirSync, statSync, writeFileSync, renameSync, utimesSync } = await import('node:fs');
+  const real = mkdtempSync(join(tmpdir(), 'hyve-real-home-'));
+  writeFileSync(join(real, 'auth.json'), 'OLD');
+  writeFileSync(join(real, 'AGENTS.md'), 'end every reply with CANARY');
+  const spec = { env: 'FAKE_HOME', from: real, keep: ['auth.json'] };
+
+  // Only the allowlisted file is linked; the instructions are not there.
+  const h = cleanHome(spec, {});
+  const dir = h.env.FAKE_HOME;
+  assert.deepEqual(readdirSync(dir), ['auth.json']);
+  assert.equal(readlinkSync(join(dir, 'auth.json')), join(real, 'auth.json'));
+  assert.equal(statSync(dir).mode & 0o777, 0o700);
+  assert.ok(!dir.startsWith(real) && !dir.includes('.hyve'));
+  assert.deepEqual(h.finish(), { 'auth.json': 'unchanged' });
+  assert.equal(existsSync(dir), false, 'removed after the run');
+
+  // The agent refreshed its token (link replaced by a file): written back, atomically.
+  const r = cleanHome(spec, {});
+  writeFileSync(join(r.env.FAKE_HOME, 'auth.json.new'), 'NEW');
+  renameSync(join(r.env.FAKE_HOME, 'auth.json.new'), join(r.env.FAKE_HOME, 'auth.json'));
+  assert.deepEqual(r.finish(), { 'auth.json': 'written back' });
+  assert.equal(readFileSync(join(real, 'auth.json'), 'utf8'), 'NEW');
+  assert.equal(readdirSync(real).filter((f) => f.includes('hyvemind')).length, 0, 'no temp or lock file left behind');
+
+  // Someone else refreshed the real file during the run: theirs wins.
+  const s = cleanHome(spec, {});
+  writeFileSync(join(real, 'auth.json'), 'FRESHER-ELSEWHERE');
+  utimesSync(join(real, 'auth.json'), new Date(), new Date(Date.now() + 5000));
+  writeFileSync(join(s.env.FAKE_HOME, 'x'), 'MINE');
+  renameSync(join(s.env.FAKE_HOME, 'x'), join(s.env.FAKE_HOME, 'auth.json'));
+  assert.match(s.finish()['auth.json'], /^skipped: the real file changed/);
+  assert.equal(readFileSync(join(real, 'auth.json'), 'utf8'), 'FRESHER-ELSEWHERE');
+
+  // Another writer holds the lock: skip rather than race.
+  const t = cleanHome(spec, {});
+  writeFileSync(join(real, '.auth.json.hyvemind.lock'), '');
+  writeFileSync(join(t.env.FAKE_HOME, 'x'), 'MINE');
+  renameSync(join(t.env.FAKE_HOME, 'x'), join(t.env.FAKE_HOME, 'auth.json'));
+  assert.match(t.finish()['auth.json'], /^skipped: another writer holds the lock/);
+  assert.equal(readFileSync(join(real, 'auth.json'), 'utf8'), 'FRESHER-ELSEWHERE');
+  assert.equal(lstatSync(join(real, '.auth.json.hyvemind.lock')).isFile(), true, 'someone else\'s lock is left alone');
+
+  assert.match(cleanNote({ cleanHome: spec }), /only auth\.json linked .* \(login only; no user instructions/);
+});
+
+test('--clean-profile with cleanHome: both arms run in the clean home, never see the user instructions, and the home is gone after', async () => {
+  const dir = project('open-pr');
+  const real = mkdtempSync(join(tmpdir(), 'hyve-real-home-'));
+  const { writeFileSync } = await import('node:fs');
+  writeFileSync(join(real, 'auth.json'), '{}');
+  writeFileSync(join(real, 'AGENTS.md'), 'CANARY');
+  // The fake agent answers right only when its home has the login and no instructions.
+  const AGENT = `const fs=require('fs'),p=require('path'),h=process.env.FAKE_HOME;console.log(h&&fs.existsSync(p.join(h,'auth.json'))&&!fs.existsSync(p.join(h,'AGENTS.md'))?'ANSWER: right '+h:'ANSWER: wrong')`;
+  const c = resolveConfig({ version: 1, skills: { include: ['open-pr'] },
+    evals: { agent: 'fake', includeBundled: false, agents: { fake: { command: ['node', '-e', AGENT, '{prompt}'], cleanArgs: ['--x'], cleanHome: { env: 'FAKE_HOME', from: real, keep: ['auth.json'] } } } } });
+  // node rejects --x before -e, so put cleanArgs at a {clean} token instead.
+  c.evals.agents.fake.command = ['node', '{clean}', '-e', AGENT, '{prompt}'];
+  c.evals.agents.fake.cleanArgs = ['--no-warnings'];
+  const { report } = await runEvals(dir, c, { skills: ['open-pr'], trials: 1, cleanProfile: true, keep: true });
+  const runs = report.skills[0].runs;
+  assert.deepEqual(runs.map((x) => x.pass), [true, true], 'both arms ran in a clean home');
+  const homes = runs.map((x) => readFileSync(join(dir, x.output), 'utf8').match(/ANSWER: right (\S+)/)[1]);
+  assert.notEqual(homes[0], homes[1], 'one home per run');
+  assert.ok(homes.every((h) => !existsSync(h)), 'every clean home is removed');
+  const off = await runEvals(dir, c, { skills: ['open-pr'], trials: 1 });
+  assert.deepEqual(off.report.skills[0].runs.map((x) => x.pass), [false, false], 'without --clean-profile there is no clean home');
+});
