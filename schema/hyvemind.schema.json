@@ -204,6 +204,28 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "env": {
+                "description": "Names of environment variables passed through to this agent, on top of PATH, HOME, LANG, LC_*, TERM, TMPDIR, SHELL and USER (e.g. the agent's own auth variable). Names only: values come from your environment.",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                }
+              },
+              "cleanArgs": {
+                "description": "Arguments inserted right after the executable, in both arms, with eval --clean-profile.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "cleanEnv": {
+                "description": "Fixed environment values set in both arms with eval --clean-profile (never secrets).",
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
               }
             }
           }

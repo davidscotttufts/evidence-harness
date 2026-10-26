@@ -52,7 +52,14 @@ export const DEFAULTS = {
     agents: {
       // Read-only tools, identical in both arms: an eval observes, it never writes.
       // The prompt goes BEFORE --allowedTools: that flag is variadic and would swallow it.
-      claude: { command: ['claude', '-p', '{prompt}', '--allowedTools', 'Read,Grep,Glob,Bash(git diff:*),Bash(git status:*),Bash(git log:*)'] },
+      // cleanArgs/cleanEnv apply to both arms with --clean-profile: user-level settings,
+      // skills and CLAUDE.md are left out (setting sources), no MCP servers, no auto-memory.
+      // Auth is untouched. Agents get an allowlisted env; add an auth var with "env".
+      claude: {
+        command: ['claude', '-p', '{prompt}', '--allowedTools', 'Read,Grep,Glob,Bash(git diff:*),Bash(git status:*),Bash(git log:*)'],
+        cleanArgs: ['--setting-sources', 'project,local', '--strict-mcp-config'],
+        cleanEnv: { CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' },
+      },
       codex: { command: ['codex', 'exec', '{prompt}'] },
       opencode: { command: ['opencode', 'run', '{prompt}'] },
     },
@@ -121,6 +128,9 @@ export function validate(cfg) {
   need(isObject(cfg.evals?.agents) && cfg.evals.agent in cfg.evals.agents, 'evals.agent must name an entry in evals.agents');
   for (const [k, a] of Object.entries(cfg.evals?.agents ?? {})) {
     need(Array.isArray(a?.command) && a.command.some((t) => t.includes('{prompt}')), `evals.agents.${k}.command must be an argv array containing {prompt}`);
+    need(a?.env === undefined || (Array.isArray(a.env) && a.env.every((x) => typeof x === 'string' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(x))), `evals.agents.${k}.env must be a list of environment variable NAMES`);
+    need(a?.cleanArgs === undefined || (Array.isArray(a.cleanArgs) && a.cleanArgs.every((x) => typeof x === 'string')), `evals.agents.${k}.cleanArgs must be an argv array`);
+    need(a?.cleanEnv === undefined || (isObject(a.cleanEnv) && Object.values(a.cleanEnv).every((x) => typeof x === 'string')), `evals.agents.${k}.cleanEnv must map names to string values`);
   }
   return errs;
 }

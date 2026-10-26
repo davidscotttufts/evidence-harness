@@ -181,7 +181,8 @@ hyvemind affected [--base ref] [--json] [--run]
 hyvemind train <pr…> [--no-merge] [--no-bisect] [--local] [--base branch]
 hyvemind run plan.md [--spec spec.md] [--only T1,T2] [--no-review]
 hyvemind probe probes.json             # sabotage probes
-hyvemind eval [skill…] [--agent claude|codex|opencode] [--model id] [--trials n] [--concurrency n] [--report] [--render report.json]
+hyvemind eval [skill[:scenario]…] [--scenario id]… [--agent claude|codex|opencode] [--model id] [--trials n] [--concurrency n]
+              [--dry-run] [--yes] [--keep] [--clean-profile] [--report] [--render report.json]
 hyvemind mine [--all] [--json]         # Claude Code transcript mining
 ```
 
@@ -346,8 +347,78 @@ measured rewrite, `plan` (+0.50) clearly earn their place. The other ten are sat
 these scenarios*, which is a prompt to write harder scenarios and to check a second
 model, not to retire anything yet.
 
-Caveat: the bare run can still see user-level skills (`~/.claude/skills`) and global
-instructions. For a strict baseline, run evals from a clean profile.
+#### Running evals
+
+**Cost preview and consent.** Before any agent starts, `eval` prints the plan to stderr:
+skills, scenarios, trials, the two arms, total agent runs, concurrency, and a duration.
+The duration is an upper bound (every run hitting `timeoutSec`) and, when an earlier
+report under `.hyve/evals/` recorded run times, an estimate from their median. On a
+TTY it asks `[y/N]`. Otherwise it refuses to start without `--yes`. `--dry-run` prints
+the preview and exits.
+
+**One scenario.** `hyvemind eval write-spec:do-nothing-alternative` runs only that
+scenario. `--scenario <id>` (repeatable) filters every named skill. A filter that
+matches no scenario is an error. The report row then says which scenarios it covers
+(`selected`).
+
+**Environment.** Agent processes get an allowlisted environment, never the whole
+`process.env`: `PATH`, `HOME`, `LANG`, `LC_*`, `TERM`, `TMPDIR`, `SHELL`, `USER` and
+`HYVE_EVAL_ARM`. Scenario `setup` and `command` checks get the same list (plus git
+identity for setup). If your agent authenticates with an environment variable, name it
+in that agent's `env`, for example:
+
+```json
+"evals": { "agents": { "claude": { "env": ["ANTHROPIC_API_KEY"] }, "codex": { "env": ["OPENAI_API_KEY"] } } }
+```
+
+Only names go in config. Values come from your environment. No auth variable is
+passed by default, so an agent that logs in through its own credential store (Claude
+Code's login, for example) needs nothing here. A broker (`broker`) that needs its own
+variables gets them the same way.
+
+**Kept outputs.** Every failing run's full output (up to the 8 MB capture cap) is saved
+to `.hyve/evals/<run-id>/<skill>/<scenario>/<arm>-<trial>.txt`, and the run records the
+path as `output`. `--keep` also keeps passing runs' output, plus the scratch
+workspaces. The report keeps the last 2,000 characters inline as `tail`. The markdown
+report links each failed run's file.
+
+**Version.** Reports are stamped `<version>+<short sha>` when hyvemind runs from a git
+checkout, with `-dirty` added when that checkout has changes, and the plain version
+when it runs from an installed package.
+
+**Clean profile (`--clean-profile`).** By default the bare arm is not fully bare: an
+agent CLI loads the user's own skills, global instructions, settings, MCP servers and
+memory in both arms. `--clean-profile` inserts the agent's `cleanArgs` right after the
+executable and sets its `cleanEnv`, in **both** arms. `eval` refuses `--clean-profile`
+for an agent that has no `cleanArgs`. The default for `claude`:
+
+```json
+"cleanArgs": ["--setting-sources", "project,local", "--strict-mcp-config"],
+"cleanEnv": { "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1" }
+```
+
+What is documented (Claude Code CLI reference, memory and authentication docs):
+- `--setting-sources` selects which settings sources load (`user`, `project`, `local`).
+- Project skills in `.claude/skills` depend on the `project` source, so the skill arm still works.
+- `--strict-mcp-config` with no `--mcp-config` loads no MCP servers.
+- `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` turns off auto-memory.
+- Authentication does not depend on setting sources, so login keeps working.
+
+What is **not** documented, and so not guaranteed: that leaving out the `user` source
+also drops `~/.claude/skills`, `~/.claude/CLAUDE.md` and user plugins (the docs imply
+it but don't state it). Verify on your machine with a canary before citing a clean
+baseline. Put a uniquely named skill in `~/.claude/skills`, run one scenario with
+`--clean-profile --keep`, and check that neither arm's kept output mentions it.
+
+Rejected options:
+- `--safe-mode` also disables project skills, so the skill arm would be bare too.
+- `--bare` never reads OAuth or the keychain, and needs an API key.
+- `CLAUDE_CONFIG_DIR` pointed at an empty directory loses the login.
+- Copying credentials into a temporary profile was ruled out.
+
+hyvemind never reads, copies or prints credential files or tokens. Other agents
+(`codex`, `opencode`) have no default `cleanArgs`. Add your own if the agent has an
+equivalent flag.
 
 ## Configuration
 
