@@ -21,6 +21,9 @@
   references and no dynamic path); protected categories; reports what it kept.
 - **New skill `release`**: SemVer from commits, lockstep bump, tag the merge sha,
   verify the published artifact against a local build; asks before tagging.
+- **`live-ai-check`**: loopback-only target and a key allowlist; pause on 429 with a
+  recorded resume point; switch keys only on quota exhaustion; re-run a known-good
+  case to attribute a refusal; never loosen a validator to pass.
 
 ## 0.2.0 — 2026-10-26
 
