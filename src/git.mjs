@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 export function git(root, args, env = {}) {
-  const r = spawnSync('git', args, { cwd: root, encoding: 'utf8', env: { ...process.env, ...env } });
+  // Large repos list tens of thousands of files: the default 1 MB buffer is ENOBUFS.
+  const r = spawnSync('git', args, { cwd: root, encoding: 'utf8', env: { ...process.env, ...env }, maxBuffer: 512 * 1024 * 1024 });
   return { status: r.status, out: (r.stdout ?? '').trim(), err: (r.stderr ?? '').trim() };
 }
 
