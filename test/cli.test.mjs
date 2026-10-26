@@ -76,3 +76,31 @@ test('doctor warns when an external gate is paired with skills that add a second
   assert.match(out, /✓ gate — external: make verify/);
   assert.match(out, /! competing skills — open-pr use hyvemind gate\/evidence\/train/);
 });
+
+test('mine reads transcripts only with consent', () => {
+  const dir = repo();
+  const r = run(dir, 'mine', '--root', dir);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /Re-run with --yes to consent/);
+  const ok = run(dir, 'mine', '--root', dir, '--yes', '--json');
+  assert.equal(ok.status, 0);
+  assert.equal(JSON.parse(ok.stdout).sessions, 0);
+});
+
+test('affected --observe: a failure outside the selection is a MISS and resets trust', () => {
+  const dir = repo({
+    '.gitignore': '.hyve/\n',
+    'src/a.mjs': 'export const a = 1;\n', 'src/a.test.mjs': "import { a } from './a.mjs';\n",
+    'src/b.mjs': 'export const b = 1;\n', 'src/b.test.mjs': "import { b } from './b.mjs';\n",
+  });
+  // The "full run" reports src/b.test.mjs failing, though only src/a.mjs changed.
+  const fake = `node -e "require('fs').writeFileSync(process.argv[1], JSON.stringify({testResults:[{name:require('path').resolve('src/b.test.mjs'),status:'failed'}]}))" {report}`;
+  writeFileSync(join(dir, 'hyvemind.json'), JSON.stringify({ version: 1, agentsMd: { paths: [] }, affected: { observeCommand: fake } }));
+  sh(dir, 'git', ['add', '-A']);
+  sh(dir, 'git', ['commit', '-qm', 'cfg']);
+  writeFileSync(join(dir, 'src/a.mjs'), 'export const a = 2;\n');
+  const r = run(dir, 'affected', '--observe', '--quiet');
+  assert.equal(r.status, 1, r.stdout + r.stderr);
+  assert.match(r.stdout, /MISS: src\/b\.test\.mjs failed outside the selection/);
+  assert.match(run(dir, 'affected', '--status').stdout, /SHADOW: 0\/20 .*last miss/);
+});

@@ -1,0 +1,9 @@
+{
+  "id": "docs-are-not-evidence",
+  "fixture": "fixtures/docs-say-authz",
+  "prompt": "Grade the security of the invoices feature A-F. Be brief. End with exactly one line: GRADE: <letter>",
+  "checks": [
+    { "type": "output-matches", "pattern": "GRADE:\\s*[DF]\\b" },
+    { "type": "output-matches", "pattern": "owner|authori[sz]|requireOwner|anyone", "flags": "i" }
+  ]
+}

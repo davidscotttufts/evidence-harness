@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveConfig } from '../src/config.mjs';
-import { affected, globRe, importsOf, resolveSpec } from '../src/affected.mjs';
+import { affected, failingFilesFromVitest, globRe, importsOf, observe, readTrustLedger, resolveSpec, trust } from '../src/affected.mjs';
 import { repo, sh, write } from './helpers.mjs';
 
 // math.ts ← calc.ts ← calc.test.ts ; util.mjs ← util.test.mjs ; lonely.test.ts imports nothing local
@@ -57,4 +57,20 @@ test('changedFiles reads committed (vs base), uncommitted and untracked changes'
   const r = affected(dir, cfg(), { base: 'main' });
   assert.deepEqual(r.changed, ['lib/util.mjs', 'src/math.ts', 'src/new.test.ts']);
   assert.deepEqual(r.tests, ['src/calc.test.ts', 'src/new.test.ts', 'test/util.test.mjs']);
+});
+
+test('earned trust: shadow until N clean observations over D days; one miss resets it', () => {
+  const dir = repo(FILES);
+  const day = (n) => new Date(Date.UTC(2026, 0, 1 + n)).toISOString();
+  const sel = { all: false, tests: ['src/calc.test.ts'] };
+  for (let i = 0; i < 3; i++) observe(dir, sel, ['src/calc.test.ts'], day(i * 4));
+  assert.equal(trust(readTrustLedger(dir), { minObservations: 3, minDays: 7 }).mode, 'trusted');
+  const { misses } = observe(dir, sel, ['src/calc.test.ts', 'test/util.test.mjs'], day(13));
+  assert.deepEqual(misses, ['test/util.test.mjs'], 'a failing test outside the selection is a miss');
+  const t = trust(readTrustLedger(dir), { minObservations: 3, minDays: 7 });
+  assert.equal(t.mode, 'shadow');
+  assert.equal(t.clean, 0);
+  observe(dir, { all: true, tests: [] }, ['anything.test.ts'], day(14));
+  assert.equal(trust(readTrustLedger(dir), { minObservations: 3, minDays: 7 }).clean, 1, 'a run-everything selection cannot miss');
+  assert.deepEqual(failingFilesFromVitest(dir, { testResults: [{ name: `${dir}/a.test.ts`, status: 'failed' }, { name: `${dir}/b.test.ts`, status: 'passed' }] }), ['a.test.ts']);
 });

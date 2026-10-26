@@ -121,3 +121,11 @@ test('update removes skills it installed but no longer produces; edited ones are
   assert.equal(actions.find((a) => a.rel === '.claude/skills/bee-open-pr/SKILL.md').action, 'orphan-modified');
   assert.ok(actions.some((a) => a.rel === '.claude/skills/bee-write-spec/SKILL.md' && a.action === 'remove'));
 });
+
+test('a skill ships its supporting files (grade installs its rubrics), but never its evals', () => {
+  const dir = repo();
+  installSkills(dir, cfg({ skills: { include: ['grade'] } }));
+  for (const r of ['code', 'data', 'ux', 'i18n', 'parity']) assert.ok(existsSync(join(dir, `.claude/skills/grade/rubrics/${r}.md`)), r);
+  assert.ok(!existsSync(join(dir, '.claude/skills/grade/evals')));
+  assert.doesNotMatch(readFileSync(join(dir, '.claude/skills/grade/SKILL.md'), 'utf8'), /\{\{/);
+});

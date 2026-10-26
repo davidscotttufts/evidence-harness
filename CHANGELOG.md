@@ -10,13 +10,40 @@
   removed; edited ones are kept and reported. This migrates 0.2.x `bee-*` installs.
 - **`externalGate`**: a repo keeps its own gate and definition of done. `doctor`
   warns when an installed skill would add a competing one.
-- **`broker`**: an optional tracegate-ci lease for gates, train gates, probes and
-  eval agent runs.
 - **`hyvemind pin`** and **`integrity`** / **`coolingOffDays`** (default 14): pin
   records npm's `dist.integrity` for the version in `cli`, and refuses a release
   younger than the cooling-off period unless `--allow-fresh`. `src/integrity.mjs`
   exports `checkIntegrity` for `doctor`: version match, registry integrity (with a
   clear offline message) and publish age.
+- **`broker`**: an optional tracegate-ci lease for gates, train gates, probes and
+  eval agent runs.
+- **`census`**: an AST census of every test case, ported from openwop-app's
+  `test-census.mjs`. On openwop-app's 2,763 backend test files it gives every file the
+  same ceiling as the original, and runs in 7 s. The ledger is keyed on blob sha, and
+  a recorded grade survives only while the file is unchanged.
+- **Probes witness at case level**: with `probe.format: vitest|node`, `expectRed` must
+  match a case that **failed**. `expectOutput` substring matching can be fooled by a
+  passing case's name; a test shows exactly that.
+- `mine` asks for consent (or `--yes`) before reading transcripts.
+- **`mine`**: confidence now divides by the runs of A that were followed by a skill,
+  not all runs of A. Renamed skills merge (built-in aliases for hyvemind's own
+  renames, plus `mine.aliases`).
+- **`gate` records contention**: load, and test suites running from other
+  directories (not stopped ones, not watchers). A red result under contention is
+  reported as "re-run when quiet". `--wait <min>` waits for quiet. Skipped when a
+  broker queues the work.
+- **`affected` earns trust**: it stays in SHADOW until 20 observations over 7 days
+  with no miss (`--observe` runs everything and checks every failure was selected);
+  one miss resets it. `--status` shows where it stands.
+- **New `grade` skill** with rubric files for code, data, UX, i18n and parity. It
+  restores the method of openwop-app's six grade-* skills: a resumed tracker, coverage
+  arithmetic, mechanical checks first, evidence from both sides, caps (an accessibility
+  blocker caps an area at D), an independent grader plus a refute pass, an S/M/L path
+  to A+, and a human verification checklist. The data rubric carries the six-class
+  generator scan.
+- Fixed: `ENOBUFS` from git on repos with tens of thousands of files.
+- README rewritten around the problem and real output; the reference moved to
+  `docs/reference.md`.
 
 ## 0.2.0 — 2026-10-26
 
