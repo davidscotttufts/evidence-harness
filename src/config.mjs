@@ -60,7 +60,15 @@ export const DEFAULTS = {
         cleanArgs: ['--setting-sources', 'project,local', '--strict-mcp-config'],
         cleanEnv: { CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' },
       },
-      codex: { command: ['codex', 'exec', '{prompt}'] },
+      // codex's clean flags are `exec` options (rejected before the subcommand), so they
+      // go at {clean}. Per `codex exec --help` (codex-cli 0.164.0): --ignore-user-config
+      // skips $CODEX_HOME/config.toml (auth still uses CODEX_HOME), --ephemeral persists no
+      // session files, --ignore-rules skips user and project execpolicy .rules files.
+      codex: {
+        command: ['codex', 'exec', '{clean}', '{prompt}'],
+        cleanArgs: ['--ignore-user-config', '--ephemeral', '--ignore-rules'],
+      },
+      // No cleanArgs: opencode's only candidate, --pure, just drops external plugins.
       opencode: { command: ['opencode', 'run', '{prompt}'] },
     },
     trials: 3,
@@ -130,6 +138,7 @@ export function validate(cfg) {
   for (const [k, a] of Object.entries(cfg.evals?.agents ?? {})) {
     need(Array.isArray(a?.command) && a.command.some((t) => t.includes('{prompt}')), `evals.agents.${k}.command must be an argv array containing {prompt}`);
     need(a?.env === undefined || (Array.isArray(a.env) && a.env.every((x) => typeof x === 'string' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(x))), `evals.agents.${k}.env must be a list of environment variable NAMES`);
+    need(!Array.isArray(a?.command) || (a.command[0] !== '{clean}' && a.command.every((t) => t === '{clean}' || !t.includes('{clean}'))), `evals.agents.${k}.command: {clean} must be a whole argument after the executable`);
     need(a?.cleanArgs === undefined || (Array.isArray(a.cleanArgs) && a.cleanArgs.every((x) => typeof x === 'string')), `evals.agents.${k}.cleanArgs must be an argv array`);
     need(a?.cleanEnv === undefined || (isObject(a.cleanEnv) && Object.values(a.cleanEnv).every((x) => typeof x === 'string')), `evals.agents.${k}.cleanEnv must map names to string values`);
   }

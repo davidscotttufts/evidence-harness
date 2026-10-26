@@ -492,8 +492,8 @@
   {
     "id": "eval-clean-both-arms",
     "src": "src/evals.mjs",
-    "old": "return clean ? [exe, ...agentCfg.cleanArgs, ...rest] : [exe, ...rest];",
-    "new": "return [exe, ...rest];",
+    "old": "const cleanArgs = clean ? agentCfg.cleanArgs ?? [] : [];",
+    "new": "const cleanArgs = [];",
     "test": "test/evals.test.mjs",
     "expectOutput": [
       "BOTH arms"
@@ -697,6 +697,26 @@
     "test": "test/probe.test.mjs",
     "expectOutput": [
       "never touches the live tree"
+    ]
+  },
+  {
+    "id": "eval-clean-placeholder",
+    "src": "src/evals.mjs",
+    "old": "if (agentCfg.command.includes(CLEAN_TOKEN)) {",
+    "new": "if (false) {",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "{clean} placeholder puts cleanArgs after a subcommand"
+    ]
+  },
+  {
+    "id": "lint-placeholder-echo",
+    "src": "src/evals.mjs",
+    "old": "for (const w of d.written) if (lineOk(w)) out.errors.push(",
+    "new": "for (const w of d.written) if (false) out.errors.push(",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "placeholder-echo-passes error"
     ]
   }
 ]

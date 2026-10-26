@@ -398,12 +398,16 @@ name its label (plus every `output-excludes` / `output-not-matches` check):
   prompt would fail the scenario.
 - A menu (`a | b`, or `LABEL: a  or  LABEL: b`) where no offered answer passes is an
   **error**.
-- Templates (`<…>`) are not scored.
+- Templates (`<…>`) are not scored as answers.
 - A `LABEL: a | b` menu that fails when echoed verbatim is a **warning** (`menu-echo`).
   Round 2's `docs-are-not-the-code` prompt said `GRADE: A | unverified`, and the model
   printed exactly that in every run of both arms. `LABEL: <a or b>` is unambiguous.
 - The reverse, a verbatim echo that *passes*, is also a **warning**
   (`menu-echo-passes`): the checks can't tell copying the menu from answering.
+- Templates are checked for one thing: a placeholder line (`LABEL: <a or b>`) printed
+  verbatim must fail the checks that name its label. If it passes, that is an
+  **error** (`placeholder-echo-passes`), because the scenario can't tell copying the
+  placeholder from answering. Example: `GRADE:\s*\S+` accepts `GRADE: <letter>`.
 
 #### Running evals
 
@@ -474,9 +478,17 @@ when it runs from an installed package.
 
 **Clean profile (`--clean-profile`).** By default the bare arm is not fully bare: an
 agent CLI loads the user's own skills, global instructions, settings, MCP servers and
-memory in both arms. `--clean-profile` inserts the agent's `cleanArgs` right after the
-executable and sets its `cleanEnv`, in **both** arms. `eval` refuses `--clean-profile`
-for an agent that has no `cleanArgs`. The default for `claude`:
+memory in both arms. `--clean-profile` adds the agent's `cleanArgs` and sets its
+`cleanEnv`, in **both** arms. `eval` refuses `--clean-profile` for an agent that has no
+`cleanArgs`.
+
+Where `cleanArgs` go: if the agent's `command` has a `{clean}` argument, they are
+spread there, and without `--clean-profile` `{clean}` expands to nothing. Use it for a
+CLI whose flags must follow a subcommand (`["codex", "exec", "{clean}", "{prompt}"]`).
+A command with no `{clean}` keeps the original placement, right after the executable.
+`{clean}` must be a whole argument and can't be the executable.
+
+The default for `claude`:
 
 ```json
 "cleanArgs": ["--setting-sources", "project,local", "--strict-mcp-config"],
@@ -502,21 +514,33 @@ Rejected options:
 - `CLAUDE_CONFIG_DIR` pointed at an empty directory loses the login.
 - Copying credentials into a temporary profile was ruled out.
 
-hyvemind never reads, copies or prints credential files or tokens. Other agents
-(`codex`, `opencode`) have no default `cleanArgs`, so `--clean-profile` refuses them.
-These candidates come from `--help` text only (codex-cli 0.164.0, opencode 1.19.4).
-They are **unverified**: no eval has checked what they exclude.
+hyvemind never reads, copies or prints credential files or tokens.
 
-- codex: `exec --ignore-user-config` ("do not load `$CODEX_HOME/config.toml`; auth still
-  uses `CODEX_HOME`"), `--ephemeral` (no session files), and `--ignore-rules` (no
-  execpolicy `.rules`). The help doesn't say whether user-level `AGENTS.md` or skills
-  are skipped. These are `exec` options: codex rejects them before the subcommand, so
-  they can't be `cleanArgs`, which go right after the executable. To try them, put
-  them in the command itself, after `exec`. They then apply to both arms on every run.
-- opencode: `--pure` ("run without external plugins"). It parses before `run`, so it
-  can be a `cleanArg`. The help doesn't say that it drops user instructions or skills.
+The default for `codex` comes from `codex exec --help` text only (codex-cli 0.164.0).
+These are `exec` options, which codex rejects before the subcommand, so they sit at
+`{clean}`:
 
-Check either one with the canary method above before citing a clean baseline.
+```json
+"command": ["codex", "exec", "{clean}", "{prompt}"],
+"cleanArgs": ["--ignore-user-config", "--ephemeral", "--ignore-rules"]
+```
+
+- `--ignore-user-config`: "Do not load `$CODEX_HOME/config.toml`; auth still uses
+  `CODEX_HOME`".
+- `--ephemeral`: "Run without persisting session files to disk".
+- `--ignore-rules`: "Do not load user or project execpolicy `.rules` files". These
+  are command-approval rules, not instructions.
+
+Their effect on bare-arm contamination is **per `--help`, not independently
+verified**. The help doesn't say whether user-level `AGENTS.md` or skills are skipped,
+and no eval has checked what these flags exclude.
+
+`opencode` has no default `cleanArgs`, so `--clean-profile` refuses it. Its only
+candidate, `--pure` (opencode 1.19.4: "run without external plugins"), drops plugins
+only. The help doesn't say that it drops user instructions or skills, so it isn't a
+clean profile.
+
+Check either agent with the canary method above before citing a clean baseline.
 
 ## Configuration
 
@@ -535,7 +559,7 @@ Each core guarantee has a self-probe showing that its test goes red when the gua
 is broken. The guarantees covered: tree-bound evidence, partial runs never counting,
 local edits being kept, probes restoring the file, eval lift, eval verdicts
 (saturated, earning vs low n, per-scenario harmful/no-signal flags, the lift
-interval, old reports re-rendered, the eval safety rails, scenario lint, the eval matrix: no pooling across agents, skipping agents that are not installed, the disagreements list, one consent for the whole matrix), and chain splitting in the miner.
+interval, old reports re-rendered, the eval safety rails, `{clean}` placement, scenario lint including `placeholder-echo-passes`, the eval matrix: no pooling across agents, skipping agents that are not installed, the disagreements list, one consent for the whole matrix), and chain splitting in the miner.
 
 ## Releasing
 

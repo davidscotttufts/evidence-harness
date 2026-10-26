@@ -60,6 +60,18 @@
   whose verdict differs between agents. `--render` reads single-agent and matrix
   reports. `--model` is refused for a matrix. Codex/opencode clean-profile flags are
   documented as unverified, and no defaults are set.
+- **`{clean}` in agent commands.** With `--clean-profile`, a `{clean}` argument in
+  `evals.agents.<name>.command` expands to that agent's `cleanArgs`; without it, to
+  nothing. Commands without `{clean}` keep the old placement (right after the
+  executable). This lets clean flags follow a subcommand. `codex` now defaults to
+  `codex exec {clean} {prompt}` with `--ignore-user-config --ephemeral --ignore-rules`
+  (meanings from `codex exec --help`; their effect on bare-arm contamination is not
+  independently verified). `opencode` still has no `cleanArgs`: `--pure` only drops
+  plugins.
+- **Lint: `placeholder-echo-passes`.** A placeholder line (`LABEL: <a or b>`) printed
+  verbatim must fail the checks that name its label. Otherwise the lint reports an
+  error, because the scenario can't tell copying from answering. All 58 bundled
+  scenarios stay lint-clean.
 
 ## 0.3.1 — 2026-10-26
 

@@ -190,11 +190,18 @@ export function agentEnv(agentCfg = {}, arm, from = process.env, clean = false) 
   return env;
 }
 
-// Clean-profile args go right after the executable and into BOTH arms, so the only
-// difference between the arms stays the installed skill.
+// Clean-profile args go into BOTH arms, so the only difference between the arms stays
+// the installed skill. Where they go: at a "{clean}" token in the command if it has one
+// (spread there with --clean-profile, dropped without it), for CLIs whose flags must
+// follow a subcommand ("codex exec {clean} …"); otherwise right after the executable.
+export const CLEAN_TOKEN = '{clean}';
 export function agentArgv(agentCfg, vars, clean = false) {
+  const cleanArgs = clean ? agentCfg.cleanArgs ?? [] : [];
+  if (agentCfg.command.includes(CLEAN_TOKEN)) {
+    return agentCfg.command.flatMap((t) => (t === CLEAN_TOKEN ? cleanArgs : argv([t], vars)));
+  }
   const [exe, ...rest] = argv(agentCfg.command, vars);
-  return clean ? [exe, ...agentCfg.cleanArgs, ...rest] : [exe, ...rest];
+  return [exe, ...cleanArgs, ...rest];
 }
 
 function runAgent(cmd, args, cwd, timeoutSec, env) {
@@ -494,10 +501,15 @@ export function contradictions(sc) {
   const out = { errors: [], warnings: [] };
   const checks = (sc.checks ?? []).filter((c) => OUTPUT_CHECKS.has(c.type));
   for (const d of dictatedLines(sc.prompt ?? '')) {
-    if (d.template) continue;
     const positive = checks.filter((c) => (c.type === 'output-matches' || c.type === 'output-includes') && mentions(c, d.label));
     const negative = checks.filter((c) => c.type === 'output-excludes' || c.type === 'output-not-matches');
     const lineOk = (line) => positive.every((c) => passes(c, line)) && negative.every((c) => passes(c, line));
+    if (d.template) {
+      // A placeholder ("GRADE: <letter>") is not an answer. If echoing it verbatim passes
+      // the checks that name its label, they can't tell copying the prompt from answering it.
+      if (positive.length) for (const w of d.written) if (lineOk(w)) out.errors.push(`placeholder-echo-passes: "${w}" printed verbatim passes the checks on ${d.label}:, so they can't tell copying the placeholder from answering`);
+      continue;
+    }
     if (d.alternatives.length === 1) {
       // A line the prompt dictates word for word: obeying the prompt must not fail the scenario.
       if (!lineOk(d.written[0])) out.errors.push(`the prompt dictates "${d.written[0]}", which fails its own checks`);

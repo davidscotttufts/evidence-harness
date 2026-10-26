@@ -204,6 +204,7 @@
             ],
             "properties": {
               "command": {
+                "description": "Agent argv. {prompt}, {workdir} and {model} are substituted; a whole {clean} argument marks where cleanArgs go.",
                 "type": "array",
                 "items": {
                   "type": "string"
@@ -218,7 +219,7 @@
                 }
               },
               "cleanArgs": {
-                "description": "Arguments inserted right after the executable, in both arms, with eval --clean-profile.",
+                "description": "Arguments added in both arms with eval --clean-profile: at the {clean} argument of command if it has one (which expands to nothing without --clean-profile), otherwise right after the executable.",
                 "type": "array",
                 "items": {
                   "type": "string"
