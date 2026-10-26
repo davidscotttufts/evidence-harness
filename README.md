@@ -80,6 +80,18 @@ stronger review skill):
 { "version": 1, "preset": "openwop", "skills": { "include": ["evidence", "skill-eval", "skill-miner"] } }
 ```
 
+To keep a bundled skill but let a project skill for the same job win, defer it:
+
+```json
+"skills": { "defer": { "review-change": "review", "open-pr": "pr" } }
+```
+
+The bundled skill is still installed, with a short header after its frontmatter: when
+the project skill (`review`) is installed, follow it instead, and use this one only
+where that skill doesn't apply. Deferring a skill that isn't bundled, or one the
+project excludes, is an error. Turning a defer on or off is an ordinary content change
+for `update`: untouched copies are rewritten, edited ones are kept and reported.
+
 ### Upgrading
 
 Change the version in `cli` (or bump the dev dependency), then run `update`.

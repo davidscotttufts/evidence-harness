@@ -218,5 +218,25 @@
     "expectOutput": [
       "externalGate"
     ]
+  },
+  {
+    "id": "defer-header-rendered",
+    "src": "src/install.mjs",
+    "old": "local && rel === 'SKILL.md' ? withDeferHeader(text, local) : text",
+    "new": "text",
+    "test": "test/install.test.mjs",
+    "expectOutput": [
+      "skills.defer"
+    ]
+  },
+  {
+    "id": "defer-rejects-excluded",
+    "src": "src/install.mjs",
+    "old": "if (notInstalled.length) throw",
+    "new": "if (false) throw",
+    "test": "test/install.test.mjs",
+    "expectOutput": [
+      "skills.defer rejects"
+    ]
   }
 ]

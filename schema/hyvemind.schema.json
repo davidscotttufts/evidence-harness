@@ -56,6 +56,14 @@
           "items": {
             "type": "string"
           }
+        },
+        "defer": {
+          "type": "object",
+          "description": "Bundled skill name -> project skill name. The bundled skill is still installed, with a header saying to follow the project skill instead wherever it applies.",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[\\w.:/-]+$"
+          }
         }
       }
     },

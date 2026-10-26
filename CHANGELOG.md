@@ -12,6 +12,10 @@
   warns when an installed skill would add a competing one.
 - **`broker`**: an optional tracegate-ci lease for gates, train gates, probes and
   eval agent runs.
+- **`skills.defer`**: map a bundled skill to a project skill that takes precedence.
+  The bundled skill is still installed, with a header saying to follow the project
+  skill where it applies. Unknown or excluded names are errors; `update` treats
+  (un)deferring like any other content change and keeps edited copies.
 
 ## 0.2.0 — 2026-10-26
 

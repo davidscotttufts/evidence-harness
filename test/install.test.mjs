@@ -121,3 +121,42 @@ test('update removes skills it installed but no longer produces; edited ones are
   assert.equal(actions.find((a) => a.rel === '.claude/skills/bee-open-pr/SKILL.md').action, 'orphan-modified');
   assert.ok(actions.some((a) => a.rel === '.claude/skills/bee-write-spec/SKILL.md' && a.action === 'remove'));
 });
+
+// ── skills.defer ──────────────────────────────────────────────────────────────
+
+test('skills.defer: the bundled skill is still installed, with a header naming the project skill', () => {
+  const dir = repo();
+  installSkills(dir, cfg({ skills: { defer: { 'review-change': 'review' } } }));
+  const text = readFileSync(join(dir, '.claude/skills/review-change/SKILL.md'), 'utf8');
+  assert.match(text, /^---\nname: review-change\n[\s\S]*?\n---\n\n> \*\*Deferred to the project skill `review`\.\*\* When `review` is installed, follow it\n> instead of this skill\. Use this one only where `review` does not apply\.\n/);
+  assert.match(readFileSync(join(dir, '.agents/skills/review-change/SKILL.md'), 'utf8'), /Deferred to the project skill `review`/);
+  assert.doesNotMatch(readFileSync(join(dir, '.claude/skills/open-pr/SKILL.md'), 'utf8'), /Deferred to/, 'only the deferred skill');
+});
+
+test('skills.defer on/off updates untouched copies and keeps edited ones', () => {
+  const dir = repo();
+  installSkills(dir, cfg());
+  const edited = join(dir, '.claude/skills/open-pr/SKILL.md');
+  writeFileSync(edited, readFileSync(edited, 'utf8') + '\nlocal rule\n');
+  const on = cfg({ skills: { defer: { 'review-change': 'review', 'open-pr': 'pr' } } });
+  const plan = installSkills(dir, on);
+  const action = (rel) => plan.find((a) => a.rel === rel).action;
+  assert.equal(action('.claude/skills/review-change/SKILL.md'), 'update');
+  assert.equal(action('.claude/skills/open-pr/SKILL.md'), 'modified');
+  assert.doesNotMatch(readFileSync(edited, 'utf8'), /Deferred to/, 'the edited copy is kept as the project left it');
+  assert.ok(installSkills(dir, on).every((a) => a.action === 'same' || a.action === 'modified'), 'idempotent');
+
+  const off = installSkills(dir, cfg());
+  assert.equal(off.find((a) => a.rel === '.claude/skills/review-change/SKILL.md').action, 'update');
+  assert.doesNotMatch(readFileSync(join(dir, '.claude/skills/review-change/SKILL.md'), 'utf8'), /Deferred to/);
+  assert.match(readFileSync(edited, 'utf8'), /local rule/);
+});
+
+test('skills.defer rejects unknown bundled names, skills not installed, and bad project names', () => {
+  const dir = repo();
+  assert.throws(() => installSkills(dir, cfg({ skills: { defer: { nope: 'x' } } })), /skills\.defer names unknown skills: nope/);
+  assert.throws(() => installSkills(dir, cfg({ skills: { exclude: ['open-pr'], defer: { 'open-pr': 'pr' } } })), /does not install .*: open-pr/);
+  assert.throws(() => installSkills(dir, cfg({ skills: { include: ['write-spec'], defer: { 'open-pr': 'pr' } } })), /does not install .*: open-pr/);
+  assert.throws(() => cfg({ skills: { defer: { 'open-pr': 'has space' } } }), /skills\.defer must map/);
+  assert.throws(() => cfg({ skills: { defer: ['open-pr'] } }), /skills\.defer must map/);
+});
