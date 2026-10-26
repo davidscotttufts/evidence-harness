@@ -11,6 +11,7 @@ import { renderReport, runEvals } from '../src/evals.mjs';
 import { evidenceFor, runGates } from '../src/gate.mjs';
 import { git } from '../src/git.mjs';
 import { bundledSkills, installAgentsMd, installSkills, selectedSkills } from '../src/install.mjs';
+import { pin } from '../src/integrity.mjs';
 import { mine } from '../src/mine.mjs';
 import { runProbes } from '../src/probe.mjs';
 import { runPlan } from '../src/run.mjs';
@@ -27,6 +28,8 @@ Usage: hyvemind <command> [options]
   update    Re-install skills and the AGENTS.md block (keeps files you edited; --force overwrites)
   doctor    Check config, installed skills, collisions and the AGENTS.md block
   list      List bundled skills and whether this project installs them
+  pin       Record npm's dist.integrity for the version in "cli" (refuses a release
+            younger than coolingOffDays)   --allow-fresh   --dry-run
   gate      Run the configured gates; record a verdict bound to the working tree
             --only <a,b>  run a subset (recorded as partial; never counts as evidence)
             --keep-going  run every gate even after a red one   --quiet
@@ -62,7 +65,7 @@ const { values: o, positionals } = parseArgs({
     post: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
     'no-bisect': { type: 'boolean' }, local: { type: 'boolean' }, spec: { type: 'string' }, 'no-review': { type: 'boolean' },
     branch: { type: 'string' }, concurrency: { type: 'string' }, report: { type: 'boolean' }, out: { type: 'string' }, render: { type: 'string' },
-    help: { type: 'boolean', short: 'h' }, version: { type: 'boolean', short: 'v' },
+    'allow-fresh': { type: 'boolean' }, help: { type: 'boolean', short: 'h' }, version: { type: 'boolean', short: 'v' },
   },
 });
 const [cmd, ...rest] = positionals;
@@ -130,6 +133,12 @@ async function main() {
         const desc = (readFileSync(new URL(`../skills/${s}/SKILL.md`, import.meta.url), 'utf8').match(/^description:\s*"?(.*?)"?$/m)?.[1] ?? '').slice(0, 96);
         console.log(`${chosen ? (chosen.includes(s) ? '●' : '○') + ' ' : ''}${s.padEnd(16)} ${desc}`);
       }
+      return;
+    }
+    case 'pin': {
+      const r = pin(root, readConfig(root), { allowFresh: o['allow-fresh'], dryRun: o['dry-run'] });
+      if (!r.pinned && !r.dryRun) { console.log(`not pinned: ${r.reason}`); process.exitCode = 1; return; }
+      console.log(`${r.dryRun ? 'would pin' : 'pinned'} hyvemind@${r.version} ${r.integrity}${r.age === null ? '' : ` (published ${r.age} day(s) ago${r.fresh ? ', inside the cooling-off period: --allow-fresh' : ''})`}`);
       return;
     }
     case 'gate': {

@@ -10,6 +10,12 @@ export const STATE_DIR = '.hyve';
 export const DEFAULTS = {
   version: 1,
   preset: 'generic',
+  // ── cli integrity ──
+  // integrity: npm dist.integrity of the version in `cli` (written by "hyvemind pin").
+  // coolingOffDays: "pin" refuses a release younger than this.
+  integrity: null,
+  coolingOffDays: 14,
+  // ── end cli integrity ──
   skills: {
     // No prefix: skill names are chosen to be distinct (ship-change, open-pr, …).
     // A project can still set one if it wants its own namespace.
@@ -68,6 +74,10 @@ export function validate(cfg) {
   const need = (cond, msg) => { if (!cond) errs.push(msg); };
   need(cfg.version === 1, 'version must be 1');
   need(typeof cfg.cli === 'string' && /\bhyvemind\b/.test(cfg.cli), 'cli must be a command that runs hyvemind');
+  // ── cli integrity ──
+  need(cfg.integrity === null || (typeof cfg.integrity === 'string' && /^sha(256|384|512)-[A-Za-z0-9+/]+=*$/.test(cfg.integrity)), 'integrity must be an npm dist.integrity string, e.g. "sha512-…"');
+  need(Number.isInteger(cfg.coolingOffDays) && cfg.coolingOffDays >= 0, 'coolingOffDays must be a whole number of days ≥ 0');
+  // ── end cli integrity ──
   need(typeof cfg.skills?.prefix === 'string' && /^[a-z0-9-]*$/.test(cfg.skills.prefix), 'skills.prefix must be lowercase letters, digits or "-"');
   need(Array.isArray(cfg.skills?.targets) && cfg.skills.targets.length > 0, 'skills.targets must be a non-empty array');
   need(cfg.skills?.include === 'all' || Array.isArray(cfg.skills?.include), 'skills.include must be "all" or an array');

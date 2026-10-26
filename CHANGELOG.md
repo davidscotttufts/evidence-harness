@@ -12,6 +12,11 @@
   warns when an installed skill would add a competing one.
 - **`broker`**: an optional tracegate-ci lease for gates, train gates, probes and
   eval agent runs.
+- **`hyvemind pin`** and **`integrity`** / **`coolingOffDays`** (default 14): pin
+  records npm's `dist.integrity` for the version in `cli`, and refuses a release
+  younger than the cooling-off period unless `--allow-fresh`. `src/integrity.mjs`
+  exports `checkIntegrity` for `doctor`: version match, registry integrity (with a
+  clear offline message) and publish age.
 
 ## 0.2.0 — 2026-10-26
 
