@@ -28,17 +28,21 @@ tests; regression tests that cite an incident; contract and conformance tests.
 
 ## Method
 
-1. **Census.** List the test files in scope and state the denominator. Mechanically
-   flag cases with no assertions, `.only`/`.skip`, assertions only on mocks or status
-   codes, sleeps or real clocks, and duplicate bodies. These flags set a ceiling on the
-   grade, not the grade itself.
+1. **Census.** Run `{{cli}} census`. It reads every test case's syntax tree and flags
+   cases with no assertion, assertions only under `if`/`catch`/an unrun callback,
+   status-only, mock-only, weak-only or snapshot-only checks, skips, `.only`, and
+   duplicate bodies. It gives each file a **ceiling**, which caps the grade but never
+   sets it. Probe the D/F-ceiling files first. Its ledger is keyed on blob sha, so
+   later runs re-queue only changed files. State the denominator from its summary.
 2. **Probe.** For each test, write one or more probes. Each probe makes a minimal,
    realistic break in the code the test claims to guard. Typical breaks: flip a
    comparison, drop a guard, return early, off-by-one, swallow an error.
    ```json
    [{ "id": "auth-skip", "src": "src/auth.ts", "old": "if (!user) throw", "new": "if (false) throw",
-      "test": "src/auth.test.ts", "expectOutput": ["rejects anonymous"] }]
+      "test": "src/auth.test.ts", "expectRed": ["rejects anonymous"] }]
    ```
+   With `probe.format` set (`vitest`/`node`), `expectRed` must match a case that
+   actually **failed**. A name merely printed in the output doesn't count.
    Run `{{cli}} probe probes.json` in your own worktree (it edits files and
    restores them; never run two at once in one worktree). Verdicts:
    - `witnessed`: the test went red. The claim is backed.

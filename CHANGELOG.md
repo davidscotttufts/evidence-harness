@@ -12,6 +12,17 @@
   warns when an installed skill would add a competing one.
 - **`broker`**: an optional tracegate-ci lease for gates, train gates, probes and
   eval agent runs.
+- **`census`**: an AST census of every test case, ported from openwop-app's
+  `test-census.mjs`. On openwop-app's 2,763 backend test files it gives every file the
+  same ceiling as the original, and runs in 7 s. The ledger is keyed on blob sha, and
+  a recorded grade survives only while the file is unchanged.
+- **Probes witness at case level**: with `probe.format: vitest|node`, `expectRed` must
+  match a case that **failed**. `expectOutput` substring matching can be fooled by a
+  passing case's name; a test shows exactly that.
+- `mine` asks for consent (or `--yes`) before reading transcripts.
+- Fixed: `ENOBUFS` from git on repos with tens of thousands of files.
+- README rewritten around the problem and real output; the reference moved to
+  `docs/reference.md`.
 
 ## 0.2.0 — 2026-10-26
 

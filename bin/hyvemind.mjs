@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { homedir } from 'node:os';
+import { createInterface } from 'node:readline';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { CONFIG_FILE, pkgVersion, readConfig, resolveConfig, writeConfig } from '../src/config.mjs';
 import { detect } from '../src/detect.mjs';
@@ -15,6 +17,7 @@ import { mine } from '../src/mine.mjs';
 import { runProbes } from '../src/probe.mjs';
 import { runPlan } from '../src/run.mjs';
 import { postStatus } from '../src/status.mjs';
+import { renderCensus, runCensus } from '../src/census.mjs';
 import { githubForge, localForge, runTrain } from '../src/train.mjs';
 
 const HELP = `hyvemind ${pkgVersion()}
@@ -41,13 +44,17 @@ Usage: hyvemind <command> [options]
   run <plan.md>         Each plan task → a fresh agent in its own worktree; done = the
                         task's exit check; an independent reviewer must say GO
             --spec <file>  --only T1,T3  --no-review  --branch <name>
+  census [path…]        Read every test case's AST: flags cases that cannot fail or claim
+                        little, gives each file a grade CEILING, and keeps a ledger keyed
+                        on blob sha (--out <ledger.json>, default .hyve/census.json;
+                        --md <file> for a summary)
   probe <probes.json>   Sabotage probes: break the code, prove the test goes red
   eval [skill…]         Bare model vs with-skill on each skill's scenarios
             --agent <name>  --model <id>  --trials <n>  --concurrency <n>  --keep
             --report          also write the markdown decision table (.hyve/evals/REPORT.md, or --out <file>)
             --render <report.json>  render an existing report without running anything
   mine      Mine Claude Code transcripts for skill usage and chains
-            --filter <substr>  --all  --root <dir>  --json
+            --filter <substr>  --all  --root <dir>  --json  --yes (consent; asked otherwise)
 
 Global: --cwd <dir> (project root; default: the git toplevel of the current directory)
 `;
@@ -59,9 +66,9 @@ const { values: o, positionals } = parseArgs({
     only: { type: 'string' }, 'keep-going': { type: 'boolean' }, quiet: { type: 'boolean' },
     agent: { type: 'string' }, model: { type: 'string' }, trials: { type: 'string' }, keep: { type: 'boolean' },
     filter: { type: 'string' }, all: { type: 'boolean' }, root: { type: 'string' }, json: { type: 'boolean' },
-    post: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
+    post: { type: 'boolean' }, yes: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
     'no-bisect': { type: 'boolean' }, local: { type: 'boolean' }, spec: { type: 'string' }, 'no-review': { type: 'boolean' },
-    branch: { type: 'string' }, concurrency: { type: 'string' }, report: { type: 'boolean' }, out: { type: 'string' }, render: { type: 'string' },
+    branch: { type: 'string' }, concurrency: { type: 'string' }, md: { type: 'string' }, report: { type: 'boolean' }, out: { type: 'string' }, render: { type: 'string' },
     help: { type: 'boolean', short: 'h' }, version: { type: 'boolean', short: 'v' },
   },
 });
@@ -166,6 +173,24 @@ async function main() {
       else if (results.some((r) => r.verdict !== 'witnessed')) process.exitCode = 1;
       return;
     }
+    case 'census': {
+      const cfg = readConfig(root);
+      const ledgerFile = resolve(root, o.out ?? join('.hyve', 'census.json'));
+      const previous = existsSync(ledgerFile) ? JSON.parse(readFileSync(ledgerFile, 'utf8')) : null;
+      const r = runCensus(root, cfg, { prefixes: rest, previous });
+      mkdirSync(dirname(ledgerFile), { recursive: true });
+      writeFileSync(ledgerFile, JSON.stringify(r, null, 1) + '\n');
+      const s = r.summary;
+      console.log(`${s.files} test files · ${s.cases} cases · ${s.changed} new or changed since the last census`);
+      console.log(`ceilings: ${Object.entries(s.ceilings).map(([g, n]) => `${g} ${n}`).join(' · ')}`);
+      console.log(`flags: ${Object.entries(s.flags).filter(([, n]) => n).map(([f, n]) => `${f} ${n}`).join(' · ') || 'none'}`);
+      const queue = r.files.filter((f) => f.ceiling >= 'D').sort((a, b) => b.ceiling.localeCompare(a.ceiling));
+      if (queue.length) console.log(`\nprobe these first (ceiling D/F; reading alone never deletes):`);
+      for (const f of queue.slice(0, 15)) console.log(`  ${f.ceiling}  ${f.file}  (${f.reasons[0]})`);
+      if (o.md) writeFileSync(resolve(o.md), renderCensus(r));
+      console.log(`ledger: ${ledgerFile}`);
+      return;
+    }
     case 'eval': {
       const cfg = readConfig(root);
       const skills = rest.length ? rest : selectedSkills(cfg);
@@ -236,8 +261,19 @@ async function main() {
       return;
     }
     case 'mine': {
+      // Transcripts can hold private conversations: read them only with consent.
+      const scanRoot = o.root ?? join(homedir(), '.claude', 'projects');
+      const filterFor = o.all ? '' : (o.filter ?? root.replace(/[/.]/g, '-'));
+      if (!o.yes) {
+        const what = `Claude Code transcripts under ${scanRoot}${filterFor ? ` (projects matching "${filterFor}")` : ' (ALL projects)'}; read locally, nothing leaves this machine`;
+        if (!process.stdin.isTTY) throw new Error(`mine reads ${what}. Re-run with --yes to consent.`);
+        const rl = createInterface({ input: process.stdin, output: process.stderr });
+        const ans = await new Promise((r) => rl.question(`Read ${what}? [y/N] `, r));
+        rl.close();
+        if (!/^y(es)?$/i.test(ans.trim())) { console.log('not reading transcripts'); return; }
+      }
       const r = mine({
-        root: o.root, filter: o.all ? '' : (o.filter ?? root.replace(/[/.]/g, '-')),
+        root: scanRoot, filter: filterFor,
         prefix: (() => { try { return readConfig(root).skills.prefix; } catch { return ''; } })(),
       });
       if (o.json) return console.log(JSON.stringify(r, null, 2));
