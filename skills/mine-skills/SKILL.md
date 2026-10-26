@@ -16,8 +16,10 @@ customer data, private code. `{{cli}} mine` reads the JSONL files under
 
 - ⛔ Ask the user before **each** run, naming the scope (this project or `--all`).
 - Report aggregates only: skill names, counts, chains, session ids. Never quote,
-  summarise or paste transcript content, in the report or in chat. To understand a
-  manual step, describe its shape ("edits the changelog, then tags"), not its text.
+  summarise or paste transcript content, in the report or in chat, and don't name
+  what a session contained, not even to say it was left out: an example is its session
+  id and the step order. To understand a manual step, describe its shape ("edits the
+  changelog, then tags"), not its text.
 
 ```bash
 {{cli}} mine                 # sessions of this project (and its worktrees)

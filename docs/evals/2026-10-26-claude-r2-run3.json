@@ -1,0 +1,453 @@
+{
+  "tool": "hyvemind",
+  "version": "0.2.0",
+  "startedAt": "2026-10-26T12:30:39.256Z",
+  "agent": "claude",
+  "model": null,
+  "skills": [
+    {
+      "skill": "evidence-rules",
+      "scenarios": 6,
+      "bare": 1,
+      "withSkill": 1,
+      "trials": 18,
+      "lift": 0,
+      "verdict": "retire-candidate",
+      "runs": [
+        {
+          "scenario": "changed-two-variables",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "changed-two-variables",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "changed-two-variables",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "changed-two-variables",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "changed-two-variables",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "changed-two-variables",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "docs-are-not-the-code",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "docs-are-not-the-code",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "docs-are-not-the-code",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "docs-are-not-the-code",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "docs-are-not-the-code",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "docs-are-not-the-code",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "stale-checkout",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "stale-checkout",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "stale-checkout",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "stale-checkout",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "stale-checkout",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "stale-checkout",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "finishedAt": "2026-10-26T12:33:29.987Z"
+}

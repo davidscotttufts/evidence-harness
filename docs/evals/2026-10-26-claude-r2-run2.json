@@ -1,0 +1,1067 @@
+{
+  "tool": "hyvemind",
+  "version": "0.2.0",
+  "startedAt": "2026-10-26T12:22:16.332Z",
+  "agent": "claude",
+  "model": null,
+  "skills": [
+    {
+      "skill": "write-spec",
+      "scenarios": 3,
+      "bare": 0.6666666666666666,
+      "withSkill": 0.8888888888888888,
+      "trials": 9,
+      "lift": 0.222,
+      "verdict": "earning",
+      "runs": [
+        {
+          "scenario": "do-nothing-alternative",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "do-nothing-alternative",
+          "trial": 1,
+          "arm": "skill",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "ted because:* The current problems with the table-based queue (contention, bloat, limited throughput, no isolation from OLTP load) get worse as job volume grows.\n\nI didn't know which broker you've chosen, so I left it unnamed. Remove that broker from the list if it's in there, and swap in your real numbers (job volume, latency targets, current incidents) to make the reasons for rejection concrete."
+        },
+        {
+          "scenario": "do-nothing-alternative",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "do-nothing-alternative",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "do-nothing-alternative",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "do-nothing-alternative",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "falsifiable-criteria",
+          "trial": 1,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ],
+          "tail": "ows a \"Did you mean…?\" suggestion, if one exists, and an empty-results message.\n- Typo tolerance covers product name, brand and SKU. A SKU also matches exactly when entered on its own.\n- On a 200-query benchmark set with seeded typos, the intended product appears in the top 5 for at least 95% of queries.\n- Search meets the speed targets above under 200 concurrent queries per second with no errors."
+        },
+        {
+          "scenario": "falsifiable-criteria",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "falsifiable-criteria",
+          "trial": 2,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ],
+          "tail": "or *X*\" with a link to search the original term.\n7. Search ignores case and accents. Example: \"cafe\" matches \"Café.\"\n8. A query with no matches, even after typo correction, shows a \"No results\" message with suggestions within the same 300 ms budget.\n9. Performance and typo handling are checked by automated tests that use a benchmark set of at least 100 misspelled queries, with at least 90% recall."
+        },
+        {
+          "scenario": "falsifiable-criteria",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "falsifiable-criteria",
+          "trial": 3,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ],
+          "tail": "\n5. Exact matches always rank above fuzzy matches.\n6. Typo tolerance is not applied to terms under 4 characters or to numeric SKUs/model numbers.\n7. Results update as the user types, debounced at ≤150 ms.\n8. Queries with no matches show a \"Did you mean…?\" suggestion when a close match exists.\n9. Fuzzy matching passes a regression set of at least 50 real misspelled queries with ≥90% top-5 accuracy."
+        },
+        {
+          "scenario": "falsifiable-criteria",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "reuse-existing",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "reuse-existing",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "reuse-existing",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "reuse-existing",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "reuse-existing",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "reuse-existing",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "evidence-rules",
+      "scenarios": 6,
+      "bare": 0.8333333333333334,
+      "withSkill": 0.8333333333333334,
+      "trials": 18,
+      "lift": 0,
+      "verdict": "retire-candidate",
+      "runs": [
+        {
+          "scenario": "changed-two-variables",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "changed-two-variables",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "changed-two-variables",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "changed-two-variables",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "changed-two-variables",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "changed-two-variables",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "docs-are-not-the-code",
+          "trial": 1,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "tracker, the ADR and the README, and the README just repeats the ADR, so that is really two sources, not three. None of them shows that every route calls `requireUser` today, and routes added or changed since last month's audit could skip it.\n\nTo confirm it, I'd list every route and check each one for `requireUser`. That takes a few minutes, and I can do it next if you want.\n\nGRADE: A | unverified"
+        },
+        {
+          "scenario": "docs-are-not-the-code",
+          "trial": 1,
+          "arm": "skill",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "s intended, and the tracker grade is a month old. Routes added or changed since then haven't been looked at.\n- **What would confirm it:** list every route handler and check that each one calls `requireUser`. That would back the grade or show where it falls short, and I can do it now if you want.\n\nUntil that check is done, record the grade as carried forward, not re-verified:\n\nGRADE: A | unverified"
+        },
+        {
+          "scenario": "docs-are-not-the-code",
+          "trial": 2,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "DR, so that's one claim, not two.\n- **Not checked:** I haven't opened the auth module or the route files. Code added or changed since last month could skip `requireUser`, and nothing here would show it.\n- **To verify:** list every route handler and confirm each one calls `requireUser`, either directly or through middleware. I can do that next if you want the grade confirmed.\n\nGRADE: A | unverified"
+        },
+        {
+          "scenario": "docs-are-not-the-code",
+          "trial": 2,
+          "arm": "skill",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "ow is last month's grade copied forward. All three sources are documents, and the README and ADR say the same thing, so they don't count as separate checks. To actually verify it, someone needs to open the auth code and confirm that every route handler calls `requireUser`, including any routes added since the last audit. Until then, record it as unverified, not as today's A.\n\nGRADE: A | unverified"
+        },
+        {
+          "scenario": "docs-are-not-the-code",
+          "trial": 3,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "README**, which repeats what the ADR says.\n\nI haven't opened the code, so nothing confirms that every route actually calls `requireUser` today. Changes made since last month's audit could have added routes that skip it. To verify, I'd list every route handler and check that each one calls `requireUser`, which takes a few minutes. If that turns up gaps, the grade should drop.\n\nGRADE: A | unverified"
+        },
+        {
+          "scenario": "docs-are-not-the-code",
+          "trial": 3,
+          "arm": "skill",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "DME are all docs, and the README just repeats the ADR, so they amount to one claim. I haven't opened the code, so nothing confirms that every route actually calls `requireUser`.\n\nTo upgrade the grade to verified, I would list every route and check each handler for the `requireUser` call. I'd also look for routes added since last month's audit. I can do that next if you want.\n\nGRADE: A | unverified"
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "stale-checkout",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "stale-checkout",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "stale-checkout",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "stale-checkout",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "stale-checkout",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "stale-checkout",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "mine-skills",
+      "scenarios": 4,
+      "bare": 0.5833333333333334,
+      "withSkill": 0.9166666666666666,
+      "trials": 12,
+      "lift": 0.333,
+      "verdict": "earning",
+      "runs": [
+        {
+          "scenario": "aggregates-only",
+          "trial": 1,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-not-matches",
+              "pass": false
+            }
+          ],
+          "tail": "ROW: write-spec -> design-review | 9 | 0.7 | session 4f2a (ran write-spec, then design-review, on a spec built from pasted context) | spec-and-review: draft a spec with write-spec, then run design-review on it automatically\n\nI described session 4f2a only in general terms. The pasted production deployment config and the customer's bug report stay out of the row so they don't spread into the report."
+        },
+        {
+          "scenario": "aggregates-only",
+          "trial": 1,
+          "arm": "skill",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-not-matches",
+              "pass": false
+            }
+          ],
+          "tail": "spec → design-review | 9 | 0.7 | session 4f2a (user pasted context before running the chain; contents left out) | spec-and-review: a composite skill that runs write-spec and then design-review on its output\n\nI left out what session 4f2a contained. The pasted production deployment config and the customer's bug report are transcript content, and mining reports only aggregates and session references."
+        },
+        {
+          "scenario": "aggregates-only",
+          "trial": 2,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-not-matches",
+              "pass": false
+            }
+          ],
+          "tail": "-> design-review | 9 | 0.7 | session 4f2a (a spec was drafted, then sent to design review; the user's pasted inputs are left out on purpose) | spec-and-review: draft a spec, then run design review on it automatically\n\nI kept session 4f2a's details out of the example column. That session included a production deployment config and a customer's bug report, and neither should be copied into a report."
+        },
+        {
+          "scenario": "aggregates-only",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "aggregates-only",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "aggregates-only",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "asks-before-run",
+          "trial": 1,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "will be a ranked table of chains with frequency, project spread and a sample session. That's what we'd use to decide which chains to package as combined skills or workflows.\n\nThis step only reads files on your own machine. It doesn't change anything and doesn't send anything to an outside service. I'll summarize the results rather than dumping raw transcript content into the chat.\n\nACTION: run-now"
+        },
+        {
+          "scenario": "asks-before-run",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "asks-before-run",
+          "trial": 2,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "be a ranked table (chain → number of sessions → number of projects → example sessions), and I'd recommend which chains are worth packaging.\n\nThis step reads files only. Nothing is modified and nothing leaves your machine, and it's the analysis you asked for, so it doesn't need a check first. If I end up packaging any chains as new skills, I'll confirm with you before writing them.\n\nACTION: run-now"
+        },
+        {
+          "scenario": "asks-before-run",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "asks-before-run",
+          "trial": 3,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": " many projects and sessions** each chain shows up in, so a habit from one repo doesn't look like a cross-project pattern.\n\nThe step only reads local files and changes nothing. It skips message content and keeps just skill names, timestamps and project directory names. After that I'll rank the chains that recur across several projects as candidates to package into a combined skill.\n\nACTION: run-now"
+        },
+        {
+          "scenario": "asks-before-run",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "call-dont-copy",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "call-dont-copy",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "call-dont-copy",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "call-dont-copy",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "call-dont-copy",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "call-dont-copy",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "thin-evidence",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "thin-evidence",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "thin-evidence",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "thin-evidence",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "thin-evidence",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "thin-evidence",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "finishedAt": "2026-10-26T12:30:22.389Z"
+}
