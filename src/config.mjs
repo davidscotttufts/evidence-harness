@@ -57,6 +57,7 @@ export const DEFAULTS = {
       // Auth is untouched. Agents get an allowlisted env; add an auth var with "env".
       claude: {
         command: ['claude', '-p', '{prompt}', '--allowedTools', 'Read,Grep,Glob,Bash(git diff:*),Bash(git status:*),Bash(git log:*)'],
+        authCheck: { command: ['claude', 'auth', 'status'] },
         cleanArgs: ['--setting-sources', 'project,local', '--strict-mcp-config'],
         cleanEnv: { CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' },
       },
@@ -66,10 +67,12 @@ export const DEFAULTS = {
       // session files, --ignore-rules skips user and project execpolicy .rules files.
       codex: {
         command: ['codex', 'exec', '{clean}', '{prompt}'],
+        authCheck: { command: ['codex', 'login', 'status'] },
         cleanArgs: ['--ignore-user-config', '--ephemeral', '--ignore-rules'],
       },
       // No cleanArgs: opencode's only candidate, --pure, just drops external plugins.
-      opencode: { command: ['opencode', 'run', '{prompt}'] },
+      // `opencode auth list` exits 0 with no credentials, so its check also needs a match.
+      opencode: { command: ['opencode', 'run', '{prompt}'], authCheck: { command: ['opencode', 'auth', 'list'], match: '\\b[1-9]\\d* credentials?\\b' } },
     },
     trials: 3,
     timeoutSec: 600,
@@ -140,6 +143,8 @@ export function validate(cfg) {
     need(a?.env === undefined || (Array.isArray(a.env) && a.env.every((x) => typeof x === 'string' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(x))), `evals.agents.${k}.env must be a list of environment variable NAMES`);
     need(!Array.isArray(a?.command) || (a.command[0] !== '{clean}' && a.command.every((t) => t === '{clean}' || !t.includes('{clean}'))), `evals.agents.${k}.command: {clean} must be a whole argument after the executable`);
     need(a?.cleanArgs === undefined || (Array.isArray(a.cleanArgs) && a.cleanArgs.every((x) => typeof x === 'string')), `evals.agents.${k}.cleanArgs must be an argv array`);
+    need(a?.authCheck === undefined || (isObject(a.authCheck) && Array.isArray(a.authCheck.command) && a.authCheck.command.length > 0 && a.authCheck.command.every((x) => typeof x === 'string')), `evals.agents.${k}.authCheck.command must be an argv array`);
+    if (a?.authCheck?.match !== undefined) { try { new RegExp(a.authCheck.match); } catch { errs.push(`evals.agents.${k}.authCheck.match is not a valid regex`); } }
     need(a?.cleanEnv === undefined || (isObject(a.cleanEnv) && Object.values(a.cleanEnv).every((x) => typeof x === 'string')), `evals.agents.${k}.cleanEnv must map names to string values`);
   }
   return errs;
@@ -155,6 +160,8 @@ export function resolveConfig(raw) {
   cfg.cli ??= `npx -y hyvemind@${pkgVersion()}`;
   const errs = validate(cfg);
   if (errs.length) throw new Error(`invalid ${CONFIG_FILE}:\n  - ${errs.join('\n  - ')}`);
+  // Whether the project chose evals.agent itself; a built-in default yields to the host agent.
+  Object.defineProperty(cfg.evals, 'agentFromProject', { value: raw?.evals?.agent !== undefined || loadPreset(preset)?.evals?.agent !== undefined });
   return cfg;
 }
 

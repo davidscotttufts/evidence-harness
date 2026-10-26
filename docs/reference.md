@@ -447,11 +447,27 @@ and its failures should be re-run rather than read. `--wait <min>` makes each jo
 for the machine to quiet down first, up to `min` minutes for the whole run. With a
 `broker` configured, the broker queues the work and nothing is sampled.
 
+**Logins, not API keys.** Agents run on their own login: the Claude Code or Codex
+subscription you are already signed in with. API keys are not in the allowlisted env,
+so a run never bills a key unless the agent's `env` names one. Each built-in agent has
+an `authCheck`, its CLI's status command (`claude auth status`, `codex login status`,
+`opencode auth list`). It runs with the agent's env and a 15 s timeout. Only its exit
+code counts, plus a `match` regex for a CLI that exits 0 either way (`opencode`). Its
+output is never printed or stored, because status commands print account emails. An
+agent with no `authCheck` is assumed logged in.
+
+**Which agent.** A single-agent eval runs, in order: `--agent`; the project's
+`evals.agent`; the agent hyvemind is running inside (Claude Code sets `CLAUDECODE=1`);
+the built-in default. Codex sets no documented marker, so inside Codex the default
+applies; set `evals.agent` or pass `--agent codex`. The preview names the agent and the
+reason, and an agent that isn't logged in is refused before the preview asks to start.
+
 **Matrix (`--matrix`, or `--agent a,b,c`).** Runs the selected scenarios once per
 agent. `--matrix` uses every agent in `evals.agents` whose command binary is
-installed: a bare name is looked up on `PATH`, a path is checked directly, and
-nothing is executed to find out. `--agent a,b,c` names the agents. A configured agent
-that isn't installed is skipped and listed as `not installed`. A name missing from
+installed (a bare name is looked up on `PATH`, a path is checked directly) and logged
+in. `--agent a,b,c` names the agents. A configured agent that isn't installed is
+skipped and listed as `not installed`; one whose `authCheck` fails is skipped as `not
+logged in`. A name missing from
 `evals.agents` is an error.
 
 - **Nothing is pooled.** Each agent gets its own runs, verdicts and intervals, and its

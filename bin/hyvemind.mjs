@@ -9,7 +9,7 @@ import { CONFIG_FILE, pkgVersion, readConfig, resolveConfig, writeConfig } from 
 import { detect } from '../src/detect.mjs';
 import { doctor } from '../src/doctor.mjs';
 import { affected, failingFilesFromVitest, observe, readTrustLedger, trust } from '../src/affected.mjs';
-import { checkMatrix, historicalMedian, lintScenarios, matrixPreview, parseTargets, planEvals, preview, renderPreview, renderReport, runEvals, runMatrix, selectAgents } from '../src/evals.mjs';
+import { checkMatrix, chooseAgent, historicalMedian, loggedIn, lintScenarios, matrixPreview, parseTargets, planEvals, preview, renderPreview, renderReport, runEvals, runMatrix, selectAgents } from '../src/evals.mjs';
 import { runGates } from '../src/gate.mjs';
 import { git } from '../src/git.mjs';
 import { bundledSkills, installAgentsMd, installSkills, selectedSkills } from '../src/install.mjs';
@@ -255,10 +255,16 @@ async function main() {
         sel = selectAgents(cfg, o.agent ? o.agent.split(',').map((x) => x.trim()).filter(Boolean) : null);
         checkMatrix(cfg, sel.agents, { model: o.model, cleanProfile: o['clean-profile'] });
       }
+      let chosen = null;
+      if (!matrix) {
+        chosen = chooseAgent(cfg, o.agent);
+        if (!cfg.evals.agents[chosen.agent]) throw new Error(`no evals.agents.${chosen.agent} in config`);
+        if (!loggedIn(cfg.evals.agents[chosen.agent])) throw new Error(`eval: ${chosen.agent} is not logged in (its authCheck failed); log in to it, or pick another --agent`);
+      }
       // Every run is a model call: show the bill first (for a matrix, the total across agents), and never start unattended without --yes.
       const p = matrix
         ? matrixPreview(plan, cfg, { ...sel, concurrency, history: (a) => historicalMedian(root, a) })
-        : preview(plan, cfg, { concurrency, agent: o.agent, history: historicalMedian(root) });
+        : preview(plan, cfg, { concurrency, agent: chosen.agent, why: chosen.why, history: historicalMedian(root) });
       process.stderr.write(`${renderPreview(p)}\n`);
       if (o['dry-run']) return;
       const consented = Boolean(o.yes);
@@ -272,7 +278,7 @@ async function main() {
       const log = (m) => process.stderr.write(`${m}\n`);
       const { report, file } = matrix
         ? await runMatrix(root, cfg, { ...sel, plan, keep: o.keep, cleanProfile: o['clean-profile'], concurrency, wait: Number(o.wait ?? 0), log })
-        : await runEvals(root, cfg, { plan, agent: o.agent, model: o.model, keep: o.keep, cleanProfile: o['clean-profile'], concurrency, wait: Number(o.wait ?? 0), log });
+        : await runEvals(root, cfg, { plan, agent: chosen.agent, model: o.model, keep: o.keep, cleanProfile: o['clean-profile'], concurrency, wait: Number(o.wait ?? 0), log });
       const sections = report.agents ?? [{ agent: report.agent, skills: report.skills }];
       const pct = (x) => `${Math.round(x * 100)}%`.padEnd(6);
       for (const sec of sections) {
