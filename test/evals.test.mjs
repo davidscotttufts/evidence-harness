@@ -157,6 +157,30 @@ test('--clean-profile puts cleanArgs and cleanEnv in BOTH arms, and refuses an a
   await assert.rejects(runEvals(dir, cfg(ALWAYS, false), { skills: ['open-pr'], trials: 1, cleanProfile: true }), /has no cleanArgs/);
 });
 
+test('a {clean} placeholder puts cleanArgs after a subcommand with --clean-profile and drops out without it', async () => {
+  const codex = resolveConfig({ version: 1 }).evals.agents.codex;
+  assert.deepEqual(agentArgv(codex, { prompt: 'p' }, true), ['codex', 'exec', '--ignore-user-config', '--ephemeral', '--ignore-rules', 'p']);
+  assert.deepEqual(agentArgv(codex, { prompt: 'p' }, false), ['codex', 'exec', 'p']);
+  assert.deepEqual(resolveConfig({ version: 1 }).evals.agents.opencode.cleanArgs, undefined, 'opencode --pure only drops plugins: no cleanArgs');
+  // Without {clean}, today's placement (right after the executable) is kept.
+  assert.deepEqual(agentArgv({ command: ['x', 'sub', '{prompt}'], cleanArgs: ['--c'] }, { prompt: 'p' }, true), ['x', '--c', 'sub', 'p']);
+  assert.deepEqual(agentArgv({ command: ['x', 'sub', '{clean}', '{prompt}'] }, { prompt: 'p' }, true), ['x', 'sub', 'p']);
+  // A real run: node, like codex, rejects these flags before its "subcommand" (the -e
+  // script), so the fake agent passes only when they land after it, in order, in BOTH arms.
+  const dir = project('open-pr');
+  const SUB = `const a=process.argv.slice(1);console.log(JSON.stringify(a)===JSON.stringify(process.env.HYVE_WANT==='clean'?['exec','--ignore-user-config','--ephemeral','hi']:['exec','hi'])?'ANSWER: right':'ANSWER: wrong')`;
+  const c = (want) => resolveConfig({ version: 1, skills: { include: ['open-pr'] }, evals: { agent: 'fake', includeBundled: false, agents: { fake: { command: ['node', '-e', SUB, 'exec', '{clean}', '{prompt}'], cleanArgs: ['--ignore-user-config', '--ephemeral'], cleanEnv: { HYVE_WANT: want } } } } });
+  write(dir, { '.hyve/scenarios/open-pr/one.json': JSON.stringify({ id: 'one', prompt: 'hi', checks: [{ type: 'output-includes', text: 'ANSWER: right' }] }) });
+  const on = await runEvals(dir, c('clean'), { skills: ['open-pr'], trials: 1, cleanProfile: true });
+  assert.deepEqual(on.report.skills[0].runs.map((r) => `${r.arm}:${r.pass}`), ['bare:true', 'skill:true']);
+  const off = await runEvals(dir, c('clean'), { skills: ['open-pr'], trials: 1 });
+  assert.deepEqual(off.report.skills[0].runs.map((r) => `${r.arm}:${r.pass}`), ['bare:true', 'skill:true'], 'without --clean-profile {clean} expands to nothing');
+  // {clean} is a whole argument after the executable, never the executable or part of one.
+  const bad = (command) => () => resolveConfig({ version: 1, evals: { agents: { claude: { command } } } });
+  assert.throws(bad(['{clean}', '{prompt}']), /\{clean\} must be a whole argument/);
+  assert.throws(bad(['x', '--flag={clean}', '{prompt}']), /\{clean\} must be a whole argument/);
+});
+
 test('failed runs keep their full output under .hyve/evals/<run-id>/; passes only with keep; tail is 2,000 chars', async () => {
   const dir = project('open-pr');
   const LOUD = `const fs=require('fs');console.log('x'.repeat(5000));console.log(fs.existsSync('.claude/skills/open-pr/SKILL.md')?'ANSWER: right':'ANSWER: wrong')`;
@@ -223,6 +247,19 @@ test('lint: a good that fails a check, or a bad that passes every check, is an e
   const partial = lintScenario({ id: 'x', prompt: 'p', checks: [...checks, { type: 'command', run: 'true' }], good: 'ANSWER: no', bad: 'ANSWER: yes' });
   assert.match(partial.partial, /command check\(s\) need the agent's workspace/);
   assert.deepEqual(partial.errors, []);
+});
+
+test('lint: a placeholder line whose verbatim echo passes the checks is a placeholder-echo-passes error', () => {
+  const prompt = "End your answer with exactly one line of the form 'GRADE: <letter>'.";
+  // Any non-space token after "GRADE:" passes, including the placeholder "<letter>" itself.
+  const loose = contradictions({ prompt, checks: [{ type: 'output-matches', pattern: 'GRADE:\\s*\\S+' }] });
+  assert.match(loose.errors.join(), /placeholder-echo-passes: "GRADE: <letter>" printed verbatim passes/);
+  assert.match(lintScenario({ id: 'x', prompt, checks: [{ type: 'output-matches', pattern: 'GRADE:\\s*\\S+' }], good: 'GRADE: F', bad: 'nothing' }).errors.join(), /placeholder-echo-passes/);
+  // A check that wants a real letter rejects the echo: no error.
+  assert.deepEqual(contradictions({ prompt, checks: [{ type: 'output-matches', pattern: 'GRADE:\\s*F\\b' }] }), { errors: [], warnings: [] });
+  // Each line of a two-label template is checked on its own label.
+  const two = contradictions({ prompt: 'Be brief, then end with exactly two lines: PUSH: <ask or go>  and  PR: <ask or go>', checks: [{ type: 'output-matches', pattern: 'PUSH:\\s*ask' }, { type: 'output-includes', text: 'PR:' }] });
+  assert.deepEqual(two.errors, ['placeholder-echo-passes: "PR: <ask or go>" printed verbatim passes the checks on PR:, so they can\'t tell copying the placeholder from answering']);
 });
 
 test('lint flags a prompt that dictates a line its own checks reject (the contradiction check)', () => {
