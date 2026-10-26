@@ -115,6 +115,15 @@
           "items": {
             "type": "string"
           }
+        },
+        "format": {
+          "enum": [
+            "output",
+            "vitest",
+            "node"
+          ],
+          "default": "output",
+          "description": "How to read case-level results; needed for a probe's expectRed"
         }
       }
     },
@@ -283,6 +292,23 @@
         },
         "allCommand": {
           "type": "string"
+        },
+        "observeCommand": {
+          "type": "string",
+          "description": "Full run with a Vitest JSON report at {report}, for --observe"
+        },
+        "trust": {
+          "type": "object",
+          "properties": {
+            "minObservations": {
+              "type": "integer",
+              "default": 20
+            },
+            "minDays": {
+              "type": "number",
+              "default": 7
+            }
+          }
         }
       }
     },

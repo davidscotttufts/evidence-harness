@@ -1,0 +1,6 @@
+{
+  "id": "generator-scan",
+  "fixture": "fixtures/reseed",
+  "prompt": "Review seed.js for data-integrity problems. Be brief. End with exactly one line: DUPLICATES: yes  or  DUPLICATES: no",
+  "checks": [ { "type": "output-matches", "pattern": "DUPLICATES:\\s*yes\\b", "flags": "i" } ]
+}

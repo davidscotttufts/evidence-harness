@@ -218,5 +218,105 @@
     "expectOutput": [
       "externalGate"
     ]
+  },
+  {
+    "id": "census-conditional",
+    "src": "src/census.mjs",
+    "old": "if (ts.isIfStatement(p) || ts.isConditionalExpression(p) || ts.isCatchClause(p)) return true;",
+    "new": "if (false) return true;",
+    "test": "test/census.test.mjs",
+    "expectOutput": [
+      "per-case flags"
+    ]
+  },
+  {
+    "id": "census-ceiling-F",
+    "src": "src/census.mjs",
+    "old": "  else if (live.every((c) => c.flags.includes('NO_ASSERT'))) cap('F', 'no case asserts anything');",
+    "new": "",
+    "test": "test/census.test.mjs",
+    "expectOutput": [
+      "ceilings"
+    ]
+  },
+  {
+    "id": "census-blob-requeue",
+    "src": "src/census.mjs",
+    "old": "    if (p && r.status === 'unchanged' && p.grade) r.grade = p.grade;",
+    "new": "    if (p && p.grade) r.grade = p.grade;",
+    "test": "test/census.test.mjs",
+    "expectOutput": [
+      "grades survive only while unchanged"
+    ]
+  },
+  {
+    "id": "probe-case-level",
+    "src": "src/probe.mjs",
+    "old": "    if (!probe.expectRed.every((s) => failing.some((f) => f.includes(s)))) return 'other-red';",
+    "new": "",
+    "test": "test/probe.test.mjs",
+    "expectOutput": [
+      "NOT a witness"
+    ]
+  },
+  {
+    "id": "mine-consent",
+    "src": "bin/hyvemind.mjs",
+    "old": "      if (!o.yes) {",
+    "new": "      if (false) {",
+    "test": "test/cli.test.mjs",
+    "expectOutput": [
+      "only with consent"
+    ]
+  },
+  {
+    "id": "miner-confidence-denominator",
+    "src": "src/mine.mjs",
+    "old": "confidence: +(n / (outgoing.get(a) ?? n)).toFixed(2)",
+    "new": "confidence: +(n / (freq.get(a) ?? n)).toFixed(2)",
+    "test": "test/mine.test.mjs",
+    "expectOutput": [
+      "followed by a skill"
+    ]
+  },
+  {
+    "id": "miner-aliases",
+    "src": "src/mine.mjs",
+    "old": "  s = aliases[s] ?? BUILTIN_ALIASES[s] ?? s;",
+    "new": "",
+    "test": "test/mine.test.mjs",
+    "expectOutput": [
+      "renamed skills merge"
+    ]
+  },
+  {
+    "id": "contention-other-dirs-only",
+    "src": "src/contention.mjs",
+    "old": "    if (!dir || dir === root || dir.startsWith(`${root}/`)) continue;",
+    "new": "    if (!dir) continue;",
+    "test": "test/contention.test.mjs",
+    "expectOutput": [
+      "competitors"
+    ]
+  },
+  {
+    "id": "contention-skips-stopped",
+    "src": "src/contention.mjs",
+    "old": "    if (r.stat.startsWith('T')) continue; // stopped: holds no CPU",
+    "new": "",
+    "test": "test/contention.test.mjs",
+    "expectOutput": [
+      "competitors"
+    ]
+  },
+  {
+    "id": "trust-miss-resets",
+    "src": "src/affected.mjs",
+    "old": "  const since = lastMiss === undefined ? obs : obs.slice(lastMiss + 1);",
+    "new": "  const since = obs;",
+    "test": "test/affected.test.mjs",
+    "expectOutput": [
+      "one miss resets it"
+    ]
   }
 ]

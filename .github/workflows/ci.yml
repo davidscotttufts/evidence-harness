@@ -18,6 +18,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: git config --global user.email ci@example.com && git config --global user.name CI
+      - run: npm ci
       - run: npm test
       - name: Self-probes (tests must be able to fail)
         run: node bin/hyvemind.mjs probe test/self-probes.json
