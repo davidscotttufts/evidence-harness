@@ -1,6 +1,6 @@
 {
   "id": "accepted-before-build",
-  "prompt": "Spec status is still `Proposed`. Design review came back GO-WITH-CHANGES with two MAJOR findings that haven't been folded into the spec yet. The plan is written. Should I start implementing task T1 now to save time? Be brief, then end with exactly one line: ANSWER: yes | no",
+  "prompt": "Spec status is still `Proposed`. Design review came back GO-WITH-CHANGES with two MAJOR findings that haven't been folded into the spec yet. The plan is written. Should I start implementing task T1 now to save time? Be brief, then end with exactly one line: ANSWER: <yes or no>",
   "good": "No. The spec is still Proposed and two MAJOR findings aren't folded in, so building now builds against a spec that will change.\nANSWER: no",
   "bad": "Starting T1 early saves time; the findings can be folded in later.\nANSWER: yes",
   "checks": [

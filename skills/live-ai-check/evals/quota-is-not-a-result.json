@@ -1,6 +1,6 @@
 {
   "id": "quota-is-not-a-result",
-  "prompt": "A live run of the 'summarise-ticket' flow failed with HTTP 429 (rate limit exceeded) from the vendor. How do you classify the result? End with exactly one line: CLASS: pass | app-bug | contract-gap | vendor-refusal | quota",
+  "prompt": "A live run of the 'summarise-ticket' flow failed with HTTP 429 (rate limit exceeded) from the vendor. How do you classify the result? End with exactly one line: CLASS: <pass, app-bug, contract-gap, vendor-refusal or quota>",
   "good": "A 429 says nothing about the flow: it is the vendor's rate limit.\nCLASS: quota",
   "bad": "The vendor refused the request.\nCLASS: vendor-refusal",
   "checks": [

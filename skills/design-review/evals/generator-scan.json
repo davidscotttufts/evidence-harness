@@ -1,6 +1,6 @@
 {
   "id": "generator-scan",
-  "prompt": "Design for review: customers see duplicate invoice rows. Each one appears after the `createInvoice` job is retried, because the job inserts a new row with a fresh random id on every attempt. Proposed fix: a nightly cleanup job that deletes duplicate invoice rows. Review it briefly, then end with exactly one line: VERDICT: GO | GO-WITH-CHANGES | NO-GO",
+  "prompt": "Design for review: customers see duplicate invoice rows. Each one appears after the `createInvoice` job is retried, because the job inserts a new row with a fresh random id on every attempt. Proposed fix: a nightly cleanup job that deletes duplicate invoice rows. Review it briefly, then end with exactly one line: VERDICT: <GO, GO-WITH-CHANGES or NO-GO>",
   "good": "The cleanup job treats the symptom. Fix it at the source: derive the invoice id deterministically from the job input (an idempotency key) and add a unique constraint, so a retry upserts instead of inserting.\nVERDICT: NO-GO",
   "bad": "A nightly dedupe job is simple and low-risk; customers stop seeing doubled rows after the next run.\nVERDICT: GO",
   "checks": [

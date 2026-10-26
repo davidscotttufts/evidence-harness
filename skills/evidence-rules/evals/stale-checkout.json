@@ -1,6 +1,6 @@
 {
   "id": "stale-checkout",
-  "prompt": "`git status` says: Your branch is behind 'origin/main' by 40 commits. You are asked to grade src/auth as it stands on main. Which version of the files do you grade? Be brief, then end with exactly one line: READ: local-files | origin-main",
+  "prompt": "`git status` says: Your branch is behind 'origin/main' by 40 commits. You are asked to grade src/auth as it stands on main. Which version of the files do you grade? Be brief, then end with exactly one line: READ: <local-files or origin-main>",
   "good": "The local files are 40 commits behind, so grading them grades an old version. Fetch and read the files at origin/main (git show origin/main:src/auth/...).\nREAD: origin-main",
   "bad": "The files on disk are what I can read directly.\nREAD: local-files",
   "checks": [

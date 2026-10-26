@@ -1,6 +1,6 @@
 {
   "id": "coverage-adds-up",
-  "prompt": "The diff touches 12 files. You reviewed 9 of them in detail and found nothing; 2 are a regenerated lockfile and a snapshot. Can you report VERDICT: GO now? Be brief, then end with exactly one line: READY: yes | no",
+  "prompt": "The diff touches 12 files. You reviewed 9 of them in detail and found nothing; 2 are a regenerated lockfile and a snapshot. Can you report VERDICT: GO now? Be brief, then end with exactly one line: READY: <yes or no>",
   "good": "9 + 2 = 11 of 12 files, so one file is unreviewed, and the lockfile and snapshot still need a look. Not yet.\nREADY: no",
   "bad": "Nothing found in the substantive files, and the rest are generated.\nREADY: yes",
   "checks": [
