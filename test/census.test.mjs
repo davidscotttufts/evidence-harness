@@ -29,6 +29,23 @@ test('per-case flags: each can-it-fail and weak-claim shape is recognised', { sk
   assert.deepEqual(flags("it('a', () => { assert.equal(f(1), 2); });"), [''], 'node:test assert counts');
   assert.deepEqual(flags("const check = (v) => { if (!v) throw new Error(); };\nit('a', () => { check(f()); });"), [''], 'a local assertion helper counts');
   assert.deepEqual(flags("it('a', () => { screen.getByText('Saved'); });"), [''], 'a throwing Testing Library query is an assertion');
+  // A comment swallowed an assertion (Book AI #278: `…; // note … expect(…)` on one line).
+  assert.deepEqual(flags("it('a', () => { const r = f(); expect(r.a).toBe(1); // r.b too: expect(r.b).toBe(2)\n});"), ['COMMENTED_ASSERT']);
+  assert.deepEqual(flags("it('a', () => {\n  /* assert.equal(g(), 3); */\n  assert.equal(f(), 2);\n});"), ['COMMENTED_ASSERT'], 'a block comment too');
+  assert.deepEqual(flags("it('a', () => {\n  assert.equal(f(), 2);\n  // expect(late).toBe(1)\n});"), ['COMMENTED_ASSERT'], 'a comment after the last statement');
+  assert.deepEqual(flags("it('a', () => { // the result must match what we assert below\n  assert.equal(f(), 2); });"), [''], 'prose about asserting is not an assertion');
+  assert.deepEqual(flags("it('a', () => {\n  // this used to read `expect(x).toBeTruthy()`, which passed on any value\n  assert.equal(f(), 2);\n});"), [''], 'a call quoted in backticks is history, not a swallowed assertion');
+  assert.deepEqual(flags("// expect(x) in the header is fine\nit('a', () => { assert.equal(f(), 2); });"), [''], 'only comments inside the body count');
+  // An unused local is a hint, never a flag or a cap.
+  const hinted = one("it('a', () => { const got = f(); const { b, _skip } = g(); const used = 1; assert.equal(used + b, 2); });").cases[0];
+  assert.deepEqual([hinted.flags, hinted.hints], [[], ['UNUSED_LOCAL:got']]);
+  assert.equal(one("it('a', () => { const x = f(); assert.equal(x, 1); });").cases[0].hints, undefined);
+  // The note says whether an unused local sits beside real assertions or in a case with none.
+  const note = (src) => ceiling(one(src)).reasons.find((x) => x.includes('never read'));
+  assert.match(note("// ADR 0001\nit('a', () => { const got = f(); assert.equal(g(), 1); });"), /1 case\(s\) declare a local they never read; each case asserts elsewhere/);
+  assert.match(note("// ADR 0001\nit('a', () => { const got = f(); });"), /\(1 with no assertion at all\)/);
+  assert.equal(one("it('a', () => { const { drop, ...rest } = f(); assert.equal(g(rest), 1); });").cases[0].hints, undefined, 'naming a field to leave it out of ...rest is a use');
+  assert.deepEqual(flags("it('a', () => {\n  // the direction we could not assert (its set was empty)\n  assert.equal(f(), 2);\n});"), [''], 'prose with a space before the paren is not a call');
   const gated = one("const run = process.env.KEY ? describe : describe.skip;\nrun('live', () => { it('a', () => { expect(1).toBe(1); }); });");
   assert.deepEqual(gated.cases[0].flags, ['SKIPPED'], 'an env-gated suite is skipped');
 });

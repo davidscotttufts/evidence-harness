@@ -10,6 +10,13 @@
 //   SNAPSHOT_ONLY  only snapshot/screenshot matchers
 //   SKIPPED / TODO / ONLY
 //   DUPLICATE_BODY the same normalised body (and the same bound constants) elsewhere
+//   COMMENTED_ASSERT an expect(/assert( inside a comment in the body: a claim the case
+//                  meant to make and does not run (`…; // note … expect(x)…` swallowed
+//                  one in a real suite; only an unused-local check caught it)
+// and per case a hint, never a cap:
+//   UNUSED_LOCAL   a const/let the body declares and never reads (often the value an
+//                  assertion was meant to check); for JS lanes and projects without
+//                  noUnusedLocals
 // and per file: laundering casts, fixed sleeps without fake timers, wall-clock reads
 // (a note, not a cap), and whether a header says why the test exists.
 //
@@ -42,7 +49,8 @@ const SNAP = new Set(['toMatchSnapshot', 'toMatchInlineSnapshot', 'toMatchFileSn
 const QUERY_RE = /^(get|find)(All)?By[A-Z]\w*$/;
 const ASSERT_NAME_RE = /^(expect|assert|check|verify|must|ensure|witness)/i;
 export const SEVERE = new Set(['NO_ASSERT', 'CONDITIONAL', 'DUPLICATE_BODY']);
-export const WEAKCLAIM = new Set(['WEAK_ONLY', 'STATUS_ONLY', 'MOCK_ONLY', 'SNAPSHOT_ONLY']);
+export const WEAKCLAIM = new Set(['WEAK_ONLY', 'STATUS_ONLY', 'MOCK_ONLY', 'SNAPSHOT_ONLY', 'COMMENTED_ASSERT']);
+const COMMENT_ASSERT_RE = /\bexpect(\.\w+)*\(|\bassert(\.\w+)*\(/; // a call: no space before the paren (prose says "assert (it…")
 
 // The census parses with the PROJECT's own TypeScript, so hyvemind stays dependency-free.
 export function loadTypeScript(root, extra = []) {
@@ -166,6 +174,31 @@ export function censusFile(ts, file, text, opt) {
           ts.forEachChild(m, walk);
         };
         walk(fn.body);
+        // Comments inside the body: the AST walk above never sees them.
+        const comments = new Map();
+        const addRanges = (rs) => { for (const r of rs ?? []) comments.set(r.pos, text.slice(r.pos, r.end)); };
+        const scan = (m) => { addRanges(ts.getLeadingCommentRanges(text, m.pos)); addRanges(ts.getTrailingCommentRanges(text, m.end)); addRanges(ts.getLeadingCommentRanges(text, m.end)); ts.forEachChild(m, scan); };
+        scan(fn.body);
+        // A call quoted in backticks is prose about an assertion (history, a rejected form), not a swallowed one.
+        if ([...comments.values()].some((t) => COMMENT_ASSERT_RE.test(t.replace(/`[^`]*`?/g, '')))) c.flags.push('COMMENTED_ASSERT');
+        // Locals declared and never read.
+        const declared = [];
+        // `const { drop, ...rest } = x` names `drop` only to leave it out of `rest`: not unused.
+        const names = (b) => {
+          if (ts.isIdentifier(b)) { declared.push(b); return; }
+          if (!ts.isObjectBindingPattern(b) && !ts.isArrayBindingPattern(b)) return;
+          const omits = ts.isObjectBindingPattern(b) && b.elements.some((e) => e.dotDotDotToken);
+          for (const e of b.elements) if (!ts.isOmittedExpression(e) && (!omits || e.dotDotDotToken || !ts.isIdentifier(e.name))) names(e.name);
+        };
+        const findDecls = (m) => { if (ts.isVariableDeclaration(m)) names(m.name); ts.forEachChild(m, findDecls); };
+        findDecls(fn.body);
+        if (declared.length) {
+          const reads = new Map();
+          const count = (m) => { if (ts.isIdentifier(m) && !declared.includes(m)) reads.set(m.text, (reads.get(m.text) ?? 0) + 1); ts.forEachChild(m, count); };
+          count(fn.body);
+          const unused = declared.filter((d) => !d.text.startsWith('_') && !reads.get(d.text)).map((d) => d.text);
+          if (unused.length) c.hints = unused.map((u) => `UNUSED_LOCAL:${u}`);
+        }
         if (asserts.length === 0) c.flags.push('NO_ASSERT');
         else {
           if (asserts.every((a) => a.conditional)) c.flags.push('CONDITIONAL');
@@ -219,6 +252,11 @@ export function ceiling(r) {
   if (r.cases.some((c) => c.flags.includes('ONLY'))) cap('C', '.only hides the rest of the file');
   if (r.casts > 0) cap('B', `${r.casts} laundering cast(s)`);
   if (r.sleeps > 0) cap('B', `${r.sleeps} fixed sleep(s) without fake timers`);
+  // How serious an unused local is depends on the rest of the case: a leftover beside
+  // real assertions, or (with NO_ASSERT) maybe the value the missing assertion was for.
+  const unused = r.cases.filter((c) => c.hints?.length);
+  const bare = unused.filter((c) => !c.assertions).length;
+  if (unused.length) reasons.push(`note: ${unused.length} case(s) declare a local they never read${bare ? ` (${bare} with no assertion at all)` : '; each case asserts elsewhere'}`);
   if (r.clockUses > 0) reasons.push(`note: ${r.clockUses} wall-clock/random read(s); check under a shifted clock`);
   if (!r.headerRef) cap('B', r.hasHeader ? 'header names no ADR/RFC/issue id' : 'no header saying why the test exists');
   return { ceiling: g, reasons };
@@ -260,7 +298,8 @@ export function runCensus(root, cfg, { prefixes = [], previous = null, ts: tsIn 
   const count = (pred) => cases.filter(pred).length;
   const summary = {
     files: results.length, cases: cases.length,
-    flags: Object.fromEntries(['NO_ASSERT', 'CONDITIONAL', 'WEAK_ONLY', 'STATUS_ONLY', 'MOCK_ONLY', 'SNAPSHOT_ONLY', 'DUPLICATE_BODY', 'SKIPPED', 'TODO', 'ONLY'].map((f) => [f, count((c) => c.flags.includes(f))])),
+    flags: Object.fromEntries(['NO_ASSERT', 'CONDITIONAL', 'WEAK_ONLY', 'STATUS_ONLY', 'MOCK_ONLY', 'SNAPSHOT_ONLY', 'COMMENTED_ASSERT', 'DUPLICATE_BODY', 'SKIPPED', 'TODO', 'ONLY'].map((f) => [f, count((c) => c.flags.includes(f))])),
+    hints: { UNUSED_LOCAL: count((c) => c.hints?.length > 0) },
     ceilings: Object.fromEntries(['A', 'B', 'C', 'D', 'F'].map((g) => [g, results.filter((r) => r.ceiling === g).length])),
     changed: results.filter((r) => r.status !== 'unchanged').length,
   };
@@ -270,7 +309,7 @@ export function runCensus(root, cfg, { prefixes = [], previous = null, ts: tsIn 
     files: results.map((r) => ({
       file: r.file, blob: r.blob, status: r.status, ceiling: r.ceiling, reasons: r.reasons,
       cases: r.cases.length, ...(r.grade ? { grade: r.grade } : {}),
-      flagged: r.cases.filter((c) => c.flags.length).map((c) => ({ line: c.line, title: c.title, flags: c.flags, ...(c.duplicates ? { duplicates: c.duplicates } : {}) })),
+      flagged: r.cases.filter((c) => c.flags.length || c.hints?.length).map((c) => ({ line: c.line, title: c.title, flags: c.flags, ...(c.hints ? { hints: c.hints, assertions: c.assertions ?? 0 } : {}), ...(c.duplicates ? { duplicates: c.duplicates } : {}) })),
     })),
   };
 }
@@ -279,7 +318,7 @@ export function renderCensus(r) {
   const s = r.summary;
   const lines = ['# Test census', '', `${s.files} files · ${s.cases} cases · ${s.changed} new or changed`, '',
     '| Ceiling | Files |', '|---|---:|', ...Object.entries(s.ceilings).map(([g, n]) => `| ${g} | ${n} |`), '',
-    '| Flag | Cases |', '|---|---:|', ...Object.entries(s.flags).map(([f, n]) => `| ${f} | ${n} |`), '',
+    '| Flag | Cases |', '|---|---:|', ...Object.entries(s.flags).map(([f, n]) => `| ${f} | ${n} |`), ...Object.entries(s.hints ?? {}).map(([f, n]) => `| ${f} (hint) | ${n} |`), '',
     'A ceiling is the best grade the census allows, never a grade. D/F files go to sabotage probes first; reading alone never deletes.', '',
     '| File | Ceiling | Status | Why |', '|---|---|---|---|'];
   for (const f of [...r.files].sort((a, b) => b.ceiling.localeCompare(a.ceiling) || a.file.localeCompare(b.file))) {

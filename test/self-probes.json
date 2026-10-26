@@ -808,5 +808,55 @@
     "expectOutput": [
       "the preview says which"
     ]
+  },
+  {
+    "id": "census-commented-assert",
+    "src": "src/census.mjs",
+    "old": "if ([...comments.values()].some((t) => COMMENT_ASSERT_RE.test(t.replace(/`[^`]*`?/g, '')))) c.flags.push('COMMENTED_ASSERT');",
+    "new": "",
+    "test": "test/census.test.mjs",
+    "expectOutput": [
+      "per-case flags"
+    ]
+  },
+  {
+    "id": "census-comment-backticks",
+    "src": "src/census.mjs",
+    "old": "COMMENT_ASSERT_RE.test(t.replace(/`[^`]*`?/g, ''))",
+    "new": "COMMENT_ASSERT_RE.test(t)",
+    "test": "test/census.test.mjs",
+    "expectOutput": [
+      "per-case flags"
+    ]
+  },
+  {
+    "id": "census-unused-local",
+    "src": "src/census.mjs",
+    "old": "          if (unused.length) c.hints = unused.map((u) => `UNUSED_LOCAL:${u}`);",
+    "new": "",
+    "test": "test/census.test.mjs",
+    "expectOutput": [
+      "per-case flags"
+    ]
+  },
+  {
+    "id": "census-rest-omit",
+    "src": "src/census.mjs",
+    "old": "(!omits || e.dotDotDotToken || !ts.isIdentifier(e.name))",
+    "new": "true",
+    "test": "test/census.test.mjs",
+    "expectOutput": [
+      "per-case flags"
+    ]
+  },
+  {
+    "id": "census-unused-local-severity",
+    "src": "src/census.mjs",
+    "old": "const bare = unused.filter((c) => !c.assertions).length;",
+    "new": "const bare = unused.length;",
+    "test": "test/census.test.mjs",
+    "expectOutput": [
+      "per-case flags"
+    ]
   }
 ]
