@@ -68,15 +68,21 @@ test('v0.2 commands: affected --json, evidence --post refusal, eval --render, tr
   assert.match(run(dir, 'run').stderr, /usage: hyvemind run/);
 });
 
-test('doctor warns when an external gate is paired with skills that add a second done/merge path', () => {
+test('doctor with an external gate: warns only on the real gaps (no machine check, a second merge path)', () => {
   const dir = repo();
-  writeFileSync(join(dir, 'hyvemind.json'), JSON.stringify({ version: 1, externalGate: { run: 'make verify', done: 'make verify passes' }, skills: { include: ['write-spec', 'open-pr'] } }));
+  const write = (extra) => writeFileSync(join(dir, 'hyvemind.json'), JSON.stringify({ version: 1, externalGate: { run: 'make verify', done: 'make verify passes' }, skills: { include: ['write-spec', 'open-pr', 'ship-change'] }, ...extra }));
+  write({});
   assert.equal(run(dir, 'update').status, 0);
-  const out = run(dir, 'doctor').stdout;
-  assert.match(out, /✓ gate — external: make verify/);
-  assert.match(out, /! competing skills — open-pr use hyvemind gate\/evidence\/train/);
+  const loose = run(dir, 'doctor').stdout;
+  assert.match(loose, /✓ gate — external: make verify/);
+  assert.match(loose, /! external evidence — externalGate is set without evidence\.status/);
+  assert.match(loose, /! merge path — ship-change would merge through hyvemind's train/);
+  assert.doesNotMatch(loose, /open-pr/, 'open-pr defers to the external gate now');
+  assert.match(loose, /✓ cli integrity — not pinned/, 'integrity is wired into doctor (offline when unpinned)');
+  write({ evidence: { status: 'ci/local-verify' }, train: { via: 'external' } });
+  const tight = run(dir, 'doctor').stdout;
+  assert.doesNotMatch(tight, /external evidence|merge path/);
 });
-
 test('mine reads transcripts only with consent', () => {
   const dir = repo();
   const r = run(dir, 'mine', '--root', dir);

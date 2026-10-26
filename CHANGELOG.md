@@ -2,6 +2,12 @@
 
 ## 0.3.0 — unreleased
 
+- **`doctor`** runs the integrity checks (`hyvemind pin`). With `externalGate`, it
+  now warns only about real gaps: no `evidence.status` (agents follow prose that
+  `evidence` can't check), and `ship-change` installed while `train.via` isn't
+  `external` (a second merge path). The old blanket "competing skills" warning is
+  gone, because those skills now defer to the external gate.
+
 - **Skills drop the `bee-` prefix** and use distinct names instead: ship-change,
   write-spec, plan-tasks, review-change, open-pr, evidence-rules, mine-skills and
   live-ai-check. design-review, test-necessity, parallel-work, skill-eval and
