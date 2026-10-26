@@ -69,7 +69,7 @@ test('v0.2 commands: affected --json, evidence --post refusal, eval --render, tr
   mkdirSync(join(dir, '.hyve/scenarios/open-pr'), { recursive: true });
   const dry = run(dir, 'eval', 'open-pr', '--dry-run');
   assert.equal(dry.status, 0, `eval --dry-run must only preview: ${dry.stderr}`);
-  assert.match(dry.stderr, /eval plan: 1 skill\(s\) · \d+ scenario\(s\) · 3 trial\(s\) × 2 arms = \d+ agent runs \(boom\)/);
+  assert.match(dry.stderr, /eval plan: 1 skill\(s\) · \d+ scenario\(s\) · 3 trial\(s\) × 2 arms = \d+ agent runs \(boom, evals\.agent in config\)/);
   assert.ok(!existsSync(join(dir, '.hyve/evals')), 'a dry run runs nothing');
   const noYes = run(dir, 'eval', 'open-pr:commands-before-pr');
   assert.equal(noYes.status, 1, 'a non-TTY eval without --yes must refuse to start');

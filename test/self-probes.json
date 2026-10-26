@@ -612,8 +612,8 @@
   {
     "id": "matrix-skips-not-installed",
     "src": "src/evals.mjs",
-    "old": "    if (installed(cfg.evals.agents[n].command[0], PATH)) agents.push(n);",
-    "new": "    if (true) agents.push(n);",
+    "old": "    if (!installed(cfg.evals.agents[n].command[0], PATH)) skipped.push({ agent: n, reason: 'not installed' });",
+    "new": "    if (false) skipped.push({ agent: n, reason: 'not installed' });",
     "test": "test/matrix.test.mjs",
     "expectOutput": [
       "skipped with the reason"
@@ -757,6 +757,56 @@
     "test": "test/evals.test.mjs",
     "expectOutput": [
       "stamps contention on the report"
+    ]
+  },
+  {
+    "id": "matrix-skips-not-logged-in",
+    "src": "src/evals.mjs",
+    "old": "    else if (!isLoggedIn(cfg.evals.agents[n])) skipped.push({ agent: n, reason: 'not logged in' });\n",
+    "new": "",
+    "test": "test/matrix.test.mjs",
+    "expectOutput": [
+      "skips an agent that is not logged in"
+    ]
+  },
+  {
+    "id": "authcheck-match-required",
+    "src": "src/evals.mjs",
+    "old": "  if (!chk.match) return true;",
+    "new": "  return true;",
+    "test": "test/matrix.test.mjs",
+    "expectOutput": [
+      "skips an agent that is not logged in"
+    ]
+  },
+  {
+    "id": "authcheck-allowlisted-env",
+    "src": "src/evals.mjs",
+    "old": "{ run = spawnSync, env = agentEnv(agentCfg), timeoutMs",
+    "new": "{ run = spawnSync, env = process.env, timeoutMs",
+    "test": "test/matrix.test.mjs",
+    "expectOutput": [
+      "skips an agent that is not logged in"
+    ]
+  },
+  {
+    "id": "choose-agent-project-beats-host",
+    "src": "src/evals.mjs",
+    "old": "  if (cfg.evals.agentFromProject) return",
+    "new": "  if (false) return",
+    "test": "test/matrix.test.mjs",
+    "expectOutput": [
+      "the preview says which"
+    ]
+  },
+  {
+    "id": "choose-agent-host",
+    "src": "src/evals.mjs",
+    "old": "env.CLAUDECODE === '1' &&",
+    "new": "false &&",
+    "test": "test/matrix.test.mjs",
+    "expectOutput": [
+      "the preview says which"
     ]
   }
 ]

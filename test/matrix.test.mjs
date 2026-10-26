@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveConfig } from '../src/config.mjs';
-import { disagreements, historicalMedian, installed, matrixPreview, planEvals, renderPreview, renderReport, runMatrix, selectAgents } from '../src/evals.mjs';
+import { chooseAgent, disagreements, historicalMedian, installed, loggedIn, matrixPreview, planEvals, preview, renderPreview, renderReport, runMatrix, selectAgents } from '../src/evals.mjs';
 import { repo, write } from './helpers.mjs';
 
 // Two fake agent binaries that behave differently on the same scenario:
@@ -68,7 +68,7 @@ test('matrix: agents whose binary is not installed are skipped with the reason, 
   assert.ok(!all.agents.includes('ghost'));
   assert.deepEqual(all.skipped.find((x) => x.agent === 'ghost'), { agent: 'ghost', reason: 'not installed' });
   assert.deepEqual(selectAgents(c, ['strong', 'ghost'], BIN_DIR), { agents: ['strong'], skipped: [{ agent: 'ghost', reason: 'not installed' }] });
-  assert.throws(() => selectAgents(c, ['ghost'], BIN_DIR), /none of ghost is installed/);
+  assert.throws(() => selectAgents(c, ['ghost'], BIN_DIR), /none of ghost can run \(ghost: not installed\)/);
   assert.throws(() => selectAgents(c, ['nope'], BIN_DIR), /no evals\.agents\.nope in config/);
   const plan = planEvals(project(), cfg(), { skills: ['open-pr'], trials: 1 });
   assert.match(renderPreview(matrixPreview(plan, cfg(), { agents: ['strong'], skipped: [{ agent: 'ghost', reason: 'not installed' }] })), /skipped ghost: not installed/);
@@ -126,4 +126,45 @@ test('matrix consent covers the whole matrix: the preview totals every agent and
   assert.match(readFileSync(join(dir, '.hyve/evals/REPORT.md'), 'utf8'), /## Disagreements/);
   const json = yes.stdout.match(/report: (.+)/)[1];
   assert.match(cli(dir, 'eval', '--render', json).stdout, /\| open-pr \| 1 \| 100% \| 100% \|/);
+});
+
+test('agents run on their own login: a matrix skips an agent that is not logged in; the check reads exit code (and match), never keeps output', () => {
+  const out = fakeAgent('hyve-fake-auth', `const s=process.argv[2];process.stdout.write(s==='zero'?'\\x1b[90m0 credentials\\x1b[0m':s==='two'?'2 credentials user@example.com':'');process.exit(s==='fail'?1:0)`);
+  const c = resolveConfig({ version: 1, evals: { agent: 'strong', agents: {
+    strong: { command: [STRONG, '{prompt}'], authCheck: { command: [out, 'ok'] } },
+    weak: { command: [WEAK, '{prompt}'], authCheck: { command: [out, 'fail'] } },
+    listed: { command: [STRONG, '{prompt}'], authCheck: { command: [out, 'zero'], match: '\\b[1-9]\\d* credentials?\\b' } },
+    nocheck: { command: [STRONG, '{prompt}'] },
+  } } });
+  const sel = selectAgents(c, ['strong', 'weak', 'listed', 'nocheck'], BIN_DIR);
+  assert.deepEqual(sel.agents, ['strong', 'nocheck']);
+  assert.deepEqual(sel.skipped, [{ agent: 'weak', reason: 'not logged in' }, { agent: 'listed', reason: 'not logged in' }], 'exit 1, and exit 0 without a match, are both "not logged in"');
+  assert.equal(JSON.stringify(sel).includes('@'), false, 'nothing the status command printed is kept');
+  assert.equal(loggedIn({ command: [], authCheck: { command: [out, 'two'], match: '\\b[1-9]\\d* credentials?\\b' } }), true);
+  assert.equal(loggedIn({ command: [], authCheck: { command: ['hyve-no-such-binary'] } }), false, 'a check that cannot start is not logged in');
+  // The check runs with the agent's allowlisted env (no API keys) and a timeout.
+  let seen;
+  const had = process.env.ANTHROPIC_API_KEY;
+  process.env.ANTHROPIC_API_KEY = 'sk-test-not-passed';
+  try {
+    loggedIn({ command: [], authCheck: { command: ['x'] } }, { run: (cmd, args, o) => { seen = { ...o, env: { ...o.env } }; return { status: 0 }; } });
+  } finally {
+    if (had === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = had;
+  }
+  assert.equal(seen.env.ANTHROPIC_API_KEY, undefined, 'a key in our env never reaches the check');
+  assert.ok(seen.env.PATH, 'the allowlisted env still carries PATH');
+  assert.ok(seen.timeout > 0 && seen.timeout <= 30_000);
+  assert.throws(() => selectAgents(c, ['weak'], BIN_DIR), /none of weak can run \(weak: not logged in\)/);
+  assert.throws(() => resolveConfig({ version: 1, evals: { agent: 'a', agents: { a: { command: ['a', '{prompt}'], authCheck: { command: 'a status' } } } } }), /authCheck\.command must be an argv array/);
+});
+
+test('single-agent eval: --agent, then the project evals.agent, then the host agent (Claude Code), then the default; the preview says which', () => {
+  const builtin = resolveConfig({ version: 1 });
+  assert.deepEqual(chooseAgent(builtin, 'codex', { CLAUDECODE: '1' }), { agent: 'codex', why: '--agent' });
+  assert.deepEqual(chooseAgent(builtin, null, { CLAUDECODE: '1' }), { agent: 'claude', why: 'host agent: running inside Claude Code' });
+  assert.deepEqual(chooseAgent(builtin, null, {}), { agent: 'claude', why: 'configured default' });
+  const own = resolveConfig({ version: 1, evals: { agent: 'codex' } });
+  assert.deepEqual(chooseAgent(own, null, { CLAUDECODE: '1' }), { agent: 'codex', why: 'evals.agent in config' }, 'a project choice beats the host');
+  const plan = planEvals(project(), cfg(), { skills: ['open-pr'], trials: 1 });
+  assert.match(renderPreview(preview(plan, cfg(), { agent: 'claude', why: 'host agent: running inside Claude Code' })), /agent runs \(claude, host agent: running inside Claude Code\)/);
 });

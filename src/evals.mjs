@@ -271,13 +271,13 @@ export function historicalMedian(root, agent = null) {
 }
 
 // What a run will cost, so nobody spends a few hundred model calls by accident.
-export function preview(plan, cfg, { concurrency = 1, agent, history = null } = {}) {
+export function preview(plan, cfg, { concurrency = 1, agent, why = null, history = null } = {}) {
   const c = Math.max(1, concurrency);
   const waves = Math.ceil(plan.jobs.length / c);
   const scenarios = [...plan.bySkill.values()].reduce((n, s) => n + s.scenarios.length, 0);
   const trials = [...new Set(plan.jobs.map((j) => j.n))].sort((a, b) => a - b);
   return {
-    agent: agent ?? cfg.evals.agent, skills: plan.bySkill.size, scenarios, trials, arms: 2, runs: plan.jobs.length, concurrency: c,
+    agent: agent ?? cfg.evals.agent, ...(why ? { why } : {}), skills: plan.bySkill.size, scenarios, trials, arms: 2, runs: plan.jobs.length, concurrency: c,
     upperBoundSec: waves * cfg.evals.timeoutSec,
     estimateSec: history ? Math.round(waves * history.sec) : null, history,
   };
@@ -296,7 +296,7 @@ export function renderPreview(p) {
     ].join('\n');
   }
   return [
-    `eval plan: ${p.skills} skill(s) · ${p.scenarios} scenario(s) · ${p.trials.join('/') || 0} trial(s) × ${p.arms} arms = ${p.runs} agent runs (${p.agent}) · concurrency ${p.concurrency}`,
+    `eval plan: ${p.skills} skill(s) · ${p.scenarios} scenario(s) · ${p.trials.join('/') || 0} trial(s) × ${p.arms} arms = ${p.runs} agent runs (${p.agent}${p.why ? `, ${p.why}` : ''}) · concurrency ${p.concurrency}`,
     `duration: ${p.estimateSec != null ? `about ${dur(p.estimateSec)} (median ${p.history.sec.toFixed(0)} s/run over ${p.history.runs} runs in ${p.history.from}); ` : ''}at most ${dur(p.upperBoundSec)} (every run hitting timeoutSec)`,
   ].join('\n');
 }
@@ -425,19 +425,47 @@ export function installed(exe, PATH = process.env.PATH ?? '') {
   return PATH.split(delimiter).filter(Boolean).some((d) => ok(join(d, exe)));
 }
 
+// Is the agent logged in? Agents run on their own login (a subscription, not an API key:
+// keys are not in the allowlisted env), so an agent without one fails every run. Runs
+// the agent's authCheck with the agent's env and a short timeout; only the exit code
+// (and, for a CLI that exits 0 regardless, a `match` on its output) is used. The output
+// itself is never printed or stored: status commands print account emails and org ids.
+// No authCheck configured: assumed logged in.
+export function loggedIn(agentCfg, { run = spawnSync, env = agentEnv(agentCfg), timeoutMs = 15_000 } = {}) {
+  const chk = agentCfg.authCheck;
+  if (!chk) return true;
+  const [cmd, ...args] = chk.command;
+  const r = run(cmd, args, { env, encoding: 'utf8', timeout: timeoutMs, stdio: ['ignore', 'pipe', 'pipe'] });
+  if (r.error || r.status !== 0) return false;
+  if (!chk.match) return true;
+  // eslint-disable-next-line no-control-regex
+  return new RegExp(chk.match).test(`${r.stdout ?? ''}`.replace(/\x1b\[[0-9;]*m/g, ''));
+}
+
+// Which agent a single-agent eval runs, and why: --agent; else the project's evals.agent;
+// else the agent hyvemind is running inside (Claude Code sets CLAUDECODE=1); else the
+// built-in default. Codex sets no documented marker, so inside Codex it is the default.
+export function chooseAgent(cfg, flag = null, env = process.env) {
+  if (flag) return { agent: flag, why: '--agent' };
+  if (cfg.evals.agentFromProject) return { agent: cfg.evals.agent, why: 'evals.agent in config' };
+  if (env.CLAUDECODE === '1' && cfg.evals.agents.claude) return { agent: 'claude', why: 'host agent: running inside Claude Code' };
+  return { agent: cfg.evals.agent, why: 'configured default' };
+}
+
 // Which agents a matrix runs: the names asked for (default: every configured agent),
-// minus the ones whose binary isn't installed, which are listed with the reason.
-export function selectAgents(cfg, names = null, PATH = process.env.PATH ?? '') {
+// minus the ones whose binary isn't installed or that aren't logged in, listed with the reason.
+export function selectAgents(cfg, names = null, PATH = process.env.PATH ?? '', isLoggedIn = loggedIn) {
   const configured = Object.keys(cfg.evals.agents);
   const want = [...new Set(names ?? configured)];
   const unknown = want.filter((n) => !cfg.evals.agents[n]);
   if (unknown.length) throw new Error(`no evals.agents.${unknown.join(', evals.agents.')} in config (have: ${configured.join(', ')})`);
   const agents = [], skipped = [];
   for (const n of want) {
-    if (installed(cfg.evals.agents[n].command[0], PATH)) agents.push(n);
-    else skipped.push({ agent: n, reason: 'not installed' });
+    if (!installed(cfg.evals.agents[n].command[0], PATH)) skipped.push({ agent: n, reason: 'not installed' });
+    else if (!isLoggedIn(cfg.evals.agents[n])) skipped.push({ agent: n, reason: 'not logged in' });
+    else agents.push(n);
   }
-  if (!agents.length) throw new Error(`eval matrix: none of ${want.join(', ')} is installed (no ${want.map((n) => cfg.evals.agents[n].command[0]).join(', ')} on PATH)`);
+  if (!agents.length) throw new Error(`eval matrix: none of ${want.join(', ')} can run (${skipped.map((x) => `${x.agent}: ${x.reason}`).join(', ')})`);
   return { agents, skipped };
 }
 
