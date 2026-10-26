@@ -40,8 +40,9 @@ In: …   Out (explicitly): …
 What changes where: modules, data, interfaces. Name the existing pieces you reuse.
 
 ## Alternatives considered
-"Do nothing" plus at least one other. Score each on debt, foreclosure (what it rules
-out later) and reversibility. Say why each lost, and what would change your mind.
+"Do nothing" plus at least one other. For each, one line each for **Debt**, **Foreclosure**
+(what it rules out later) and **Reversibility** (one-way or two-way door), then why it
+lost and what would change your mind.
 
 ## Gaps and risks
 Gaps: what this doesn't yet cover, each with its path to closing (phase, issue).

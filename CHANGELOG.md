@@ -2,6 +2,7 @@
 
 ## 0.3.0 — unreleased
 
+- Evals round 2 (`docs/evals/2026-10-26-claude-r2.md`): the 12 changed skills re-measured. `write-spec` and `mine-skills` rules sharpened from the failing runs (now earning); `evidence-rules` scenario `docs-are-not-the-code` fixed (it dictated the wrong answer).
 - **`doctor`** runs the integrity checks (`hyvemind pin`). With `externalGate`, it
   now warns only about real gaps: no `evidence.status` (agents follow prose that
   `evidence` can't check), and `ship-change` installed while `train.via` isn't
