@@ -292,6 +292,53 @@
         "timeoutSec": {
           "type": "number",
           "default": 1800
+        },
+        "sandbox": {
+          "description": "Run exit checks in a container. true for defaults, or an object.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "runtime": {
+                  "enum": [
+                    "podman",
+                    "docker"
+                  ]
+                },
+                "image": {
+                  "type": "string",
+                  "default": "node:22-bookworm"
+                },
+                "setup": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Runs in the container before each check, e.g. \"npm ci\""
+                },
+                "setupNetwork": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "env": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Environment variables passed into the container (allowlist)"
+                },
+                "memory": {
+                  "type": "string"
+                },
+                "cpus": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
         }
       }
     },

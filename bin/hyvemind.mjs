@@ -53,6 +53,8 @@ Usage: hyvemind <command> [options]
   run <plan.md>         Each plan task → a fresh agent in its own worktree; done = the
                         task's exit check; an independent reviewer must say GO
             --spec <file>  --only T1,T3  --no-review  --branch <name>
+            --sandbox podman|docker  run exit checks in a container (no network, allowlisted env);
+                                     the agent gets read/edit tools only
   census [path…]        Read every test case's AST: flags cases that cannot fail or claim
                         little, gives each file a grade CEILING, and keeps a ledger keyed
                         on blob sha (--out <ledger.json>, default .hyve/census.json;
@@ -75,7 +77,7 @@ const { values: o, positionals } = parseArgs({
     only: { type: 'string' }, 'keep-going': { type: 'boolean' }, quiet: { type: 'boolean' },
     agent: { type: 'string' }, model: { type: 'string' }, trials: { type: 'string' }, keep: { type: 'boolean' },
     filter: { type: 'string' }, all: { type: 'boolean' }, root: { type: 'string' }, json: { type: 'boolean' },
-    post: { type: 'boolean' }, yes: { type: 'boolean' }, wait: { type: 'string' }, observe: { type: 'boolean' }, status: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
+    post: { type: 'boolean' }, yes: { type: 'boolean' }, sandbox: { type: 'string' }, wait: { type: 'string' }, observe: { type: 'boolean' }, status: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
     'no-bisect': { type: 'boolean' }, local: { type: 'boolean' }, spec: { type: 'string' }, 'no-review': { type: 'boolean' },
     branch: { type: 'string' }, concurrency: { type: 'string' }, md: { type: 'string' }, report: { type: 'boolean' }, out: { type: 'string' }, render: { type: 'string' },
     'allow-fresh': { type: 'boolean' }, help: { type: 'boolean', short: 'h' }, version: { type: 'boolean', short: 'v' },
@@ -295,7 +297,7 @@ async function main() {
       if (!rest[0]) throw new Error('usage: hyvemind run <plan.md>');
       const cfg = readConfig(root);
       const { report, file } = runPlan(root, cfg, rest[0], {
-        spec: o.spec, only: o.only?.split(','), review: !o['no-review'], branch: o.branch, base: o.base,
+        spec: o.spec, only: o.only?.split(','), review: !o['no-review'], branch: o.branch, base: o.base, sandbox: o.sandbox,
         log: (m) => console.log(m),
       });
       for (const t of report.tasks) console.log(`${t.id.padEnd(4)} ${(t.status ?? '').padEnd(15)} ${t.title ?? ''}`);

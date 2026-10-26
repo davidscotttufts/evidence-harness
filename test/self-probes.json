@@ -162,8 +162,8 @@
   {
     "id": "run-repair-told-failure",
     "src": "src/run.mjs",
-    "old": "      failure = `\\`${task.check}\\` exited ${check.code}${check.out ? `:\\n${check.out}` : ' with no output'}`;",
-    "new": "      failure = check.out;",
+    "old": "      failure = `\\`${task.check}\\` exited ${result.code}${result.out ? `:\\n${result.out}` : ' with no output'}`;",
+    "new": "      failure = result.out;",
     "test": "test/run.test.mjs",
     "expectOutput": [
       "repair attempt"
@@ -437,6 +437,36 @@
     "test": "test/integrity.test.mjs",
     "expectOutput": [
       "records a waiver"
+    ]
+  },
+  {
+    "id": "sandbox-check-no-network",
+    "src": "src/run.mjs",
+    "old": "    return runInSandbox(sb, dir, command, runCfg.timeoutSec, { network: false });",
+    "new": "    return runInSandbox(sb, dir, command, runCfg.timeoutSec, { network: true });",
+    "test": "test/sandbox.test.mjs",
+    "expectOutput": [
+      "the check runs in the container"
+    ]
+  },
+  {
+    "id": "sandbox-env-allowlist",
+    "src": "src/sandbox.mjs",
+    "old": "  for (const name of sb.env) if (process.env[name] !== undefined) argv.push('-e', `${name}=${process.env[name]}`);",
+    "new": "  for (const name of Object.keys(process.env)) argv.push('-e', `${name}=${process.env[name]}`);",
+    "test": "test/sandbox.test.mjs",
+    "expectOutput": [
+      "only allowlisted env"
+    ]
+  },
+  {
+    "id": "sandbox-roles-no-shell",
+    "src": "src/sandbox.mjs",
+    "old": "'--allowedTools', 'Read,Grep,Glob,Edit,Write'],",
+    "new": "'--allowedTools', 'Read,Grep,Glob,Edit,Write,Bash'],",
+    "test": "test/sandbox.test.mjs",
+    "expectOutput": [
+      "no shell for the agent"
     ]
   }
 ]
