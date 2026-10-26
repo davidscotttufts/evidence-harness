@@ -46,6 +46,7 @@ jobs:
           fi
           echo "VER=$VER" >> "$GITHUB_ENV"
 
+      - run: npm ci
       - run: npm test
       - name: Self-probes (tests must be able to fail)
         run: node bin/hyvemind.mjs probe test/self-probes.json
