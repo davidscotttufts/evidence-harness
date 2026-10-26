@@ -21,7 +21,30 @@ export function selectedSkills(cfg) {
   const inc = cfg.skills.include === 'all' ? all : cfg.skills.include;
   const unknown = inc.filter((s) => !all.includes(s));
   if (unknown.length) throw new Error(`skills.include names unknown skills: ${unknown.join(', ')} (available: ${all.join(', ')})`);
-  return inc.filter((s) => !cfg.skills.exclude.includes(s));
+  const chosen = inc.filter((s) => !cfg.skills.exclude.includes(s));
+  // A defer for a skill that is not installed would silently do nothing: refuse it.
+  const defer = Object.keys(cfg.skills.defer ?? {});
+  const unknownDefer = defer.filter((s) => !all.includes(s));
+  if (unknownDefer.length) throw new Error(`skills.defer names unknown skills: ${unknownDefer.join(', ')} (available: ${all.join(', ')})`);
+  const notInstalled = defer.filter((s) => !chosen.includes(s));
+  if (notInstalled.length) throw new Error(`skills.defer names skills this project does not install (excluded or not included): ${notInstalled.join(', ')}`);
+  return chosen;
+}
+
+// The header a deferred skill carries. Agents pick skills by description, so two
+// skills for one job need an explicit tie-break: the project's own wins where it applies.
+export function deferHeader(local) {
+  return [
+    `> **Deferred to the project skill \`${local}\`.** When \`${local}\` is installed, follow it`,
+    `> instead of this skill. Use this one only where \`${local}\` does not apply.`,
+    '',
+  ].join('\n');
+}
+
+// Inserts the header right after the frontmatter, so name/description stay parseable.
+export function withDeferHeader(text, local) {
+  const fm = text.match(/^---\n[\s\S]*?\n---\n/);
+  return fm ? `${fm[0]}\n${deferHeader(local)}${text.slice(fm[0].length)}` : `${deferHeader(local)}\n${text}`;
 }
 
 // Rewrites a bundled skill for this project: its frontmatter name gets the prefix, and
@@ -49,7 +72,12 @@ export function renderSkill(base, cfg) {
     const rel = relative(src, abs);
     const raw = readFileSync(abs);
     const isText = /\.(md|txt|json|mjs|js|sh|ya?ml)$/.test(rel);
-    return { rel, content: isText ? render(raw.toString('utf8'), base, cfg.skills.prefix, cfg.cli) : raw };
+    if (!isText) return { rel, content: raw };
+    const text = render(raw.toString('utf8'), base, cfg.skills.prefix, cfg.cli);
+    // A deferred render is different content, so its hash differs: the manifest then
+    // updates untouched copies on (un)deferring and keeps edited ones, as for any change.
+    const local = cfg.skills.defer?.[base];
+    return { rel, content: local && rel === 'SKILL.md' ? withDeferHeader(text, local) : text };
   });
 }
 

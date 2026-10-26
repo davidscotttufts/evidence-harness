@@ -18,6 +18,11 @@ export const DEFAULTS = {
     targets: ['.claude/skills', '.agents/skills'],
     include: 'all',
     exclude: [],
+    // ── skills.defer ──
+    // bundled skill → project skill that takes precedence where it applies. The bundled
+    // one is still installed, with a header that says so.
+    defer: {},
+    // ── end skills.defer ──
   },
   agentsMd: { paths: ['AGENTS.md'] },
   gates: [],
@@ -78,6 +83,10 @@ export function validate(cfg) {
   need(typeof cfg.skills?.prefix === 'string' && /^[a-z0-9-]*$/.test(cfg.skills.prefix), 'skills.prefix must be lowercase letters, digits or "-"');
   need(Array.isArray(cfg.skills?.targets) && cfg.skills.targets.length > 0, 'skills.targets must be a non-empty array');
   need(cfg.skills?.include === 'all' || Array.isArray(cfg.skills?.include), 'skills.include must be "all" or an array');
+  // ── skills.defer (bundled names are checked against the selection in install.mjs) ──
+  need(isObject(cfg.skills?.defer) && Object.values(cfg.skills.defer).every((v) => typeof v === 'string' && /^[\w.:/-]+$/.test(v)),
+    'skills.defer must map bundled skill names to project skill names (letters, digits, - _ . : /)');
+  // ── end skills.defer ──
   need(Array.isArray(cfg.gates), 'gates must be an array');
   if (cfg.externalGate !== undefined) {
     need(isObject(cfg.externalGate) && typeof cfg.externalGate.run === 'string' && cfg.externalGate.run && typeof cfg.externalGate.done === 'string' && cfg.externalGate.done,
