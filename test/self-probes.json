@@ -268,5 +268,55 @@
     "expectOutput": [
       "only with consent"
     ]
+  },
+  {
+    "id": "miner-confidence-denominator",
+    "src": "src/mine.mjs",
+    "old": "confidence: +(n / (outgoing.get(a) ?? n)).toFixed(2)",
+    "new": "confidence: +(n / (freq.get(a) ?? n)).toFixed(2)",
+    "test": "test/mine.test.mjs",
+    "expectOutput": [
+      "followed by a skill"
+    ]
+  },
+  {
+    "id": "miner-aliases",
+    "src": "src/mine.mjs",
+    "old": "  s = aliases[s] ?? BUILTIN_ALIASES[s] ?? s;",
+    "new": "",
+    "test": "test/mine.test.mjs",
+    "expectOutput": [
+      "renamed skills merge"
+    ]
+  },
+  {
+    "id": "contention-other-dirs-only",
+    "src": "src/contention.mjs",
+    "old": "    if (!dir || dir === root || dir.startsWith(`${root}/`)) continue;",
+    "new": "    if (!dir) continue;",
+    "test": "test/contention.test.mjs",
+    "expectOutput": [
+      "competitors"
+    ]
+  },
+  {
+    "id": "contention-skips-stopped",
+    "src": "src/contention.mjs",
+    "old": "    if (r.stat.startsWith('T')) continue; // stopped: holds no CPU",
+    "new": "",
+    "test": "test/contention.test.mjs",
+    "expectOutput": [
+      "competitors"
+    ]
+  },
+  {
+    "id": "trust-miss-resets",
+    "src": "src/affected.mjs",
+    "old": "  const since = lastMiss === undefined ? obs : obs.slice(lastMiss + 1);",
+    "new": "  const since = obs;",
+    "test": "test/affected.test.mjs",
+    "expectOutput": [
+      "one miss resets it"
+    ]
   }
 ]

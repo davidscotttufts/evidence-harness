@@ -7,6 +7,7 @@ import { head, workingTree } from './git.mjs';
 import { ensureStateIgnored } from './install.mjs';
 import { cleanEnv } from './probe.mjs';
 import { leaseShell } from './broker.mjs';
+import { sample } from './contention.mjs';
 
 export const evidenceDir = (root) => join(root, STATE_DIR, 'evidence');
 
@@ -22,7 +23,7 @@ function runShell(cmd, cwd, { quiet }) {
   });
 }
 
-export async function runGates(root, cfg, { only = null, keepGoing = false, quiet = false, kind = 'gate' } = {}) {
+export async function runGates(root, cfg, { only = null, keepGoing = false, quiet = false, kind = 'gate', contention = null } = {}) {
   ensureStateIgnored(root);
   const gates = only ? cfg.gates.filter((g) => only.includes(g.name)) : cfg.gates;
   if (!gates.length) throw new Error(only ? `no gate named ${only.join(', ')}` : 'no gates configured in hyvemind.json');
@@ -35,6 +36,10 @@ export async function runGates(root, cfg, { only = null, keepGoing = false, quie
     partial: Boolean(only),
     gates: [],
   };
+  // What else was running when the gate started. A red under contention is not
+  // evidence of a regression (a broker, when configured, queues instead).
+  const before = contention ?? (cfg.broker ? null : sample(root));
+  if (before) record.contention = before;
   let red = false;
   for (const g of gates) {
     if (red && !keepGoing) { record.gates.push({ name: g.name, run: g.run, skipped: true }); continue; }

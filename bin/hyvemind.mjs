@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { createInterface } from 'node:readline';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { CONFIG_FILE, pkgVersion, readConfig, resolveConfig, writeConfig } from '../src/config.mjs';
 import { detect } from '../src/detect.mjs';
 import { doctor } from '../src/doctor.mjs';
-import { affected } from '../src/affected.mjs';
+import { affected, failingFilesFromVitest, observe, readTrustLedger, trust } from '../src/affected.mjs';
 import { renderReport, runEvals } from '../src/evals.mjs';
 import { evidenceFor, runGates } from '../src/gate.mjs';
 import { git } from '../src/git.mjs';
@@ -17,6 +17,7 @@ import { mine } from '../src/mine.mjs';
 import { runProbes } from '../src/probe.mjs';
 import { runPlan } from '../src/run.mjs';
 import { postStatus } from '../src/status.mjs';
+import { waitQuiet } from '../src/contention.mjs';
 import { renderCensus, runCensus } from '../src/census.mjs';
 import { githubForge, localForge, runTrain } from '../src/train.mjs';
 
@@ -33,11 +34,14 @@ Usage: hyvemind <command> [options]
   gate      Run the configured gates; record a verdict bound to the working tree
             --only <a,b>  run a subset (recorded as partial; never counts as evidence)
             --keep-going  run every gate even after a red one   --quiet
+            --wait <min>  wait (up to min) for other test suites and load to clear
   evidence  Exit 0 if the CURRENT working tree has a full green gate record
             --post        publish it as a GitHub commit status (hyvemind/gate) on HEAD
                           (refused unless the tree is clean and gated); --dry-run prints it
   affected  List the tests a change can reach (static import graph; ALL when untraceable)
             --base <ref>  include commits since <ref>   --json   --run (affected.command)
+            --observe     run everything, check the selection caught every failure
+            --status      trust state: SHADOW until enough clean observations
   train <pr…>           Merge queue: gate several PRs as ONE train, merge on green, prove
                         main's tree == the gated tree, bisect a red train
             --base <branch>  --no-merge  --no-bisect  --local (ids are origin branches)
@@ -66,7 +70,7 @@ const { values: o, positionals } = parseArgs({
     only: { type: 'string' }, 'keep-going': { type: 'boolean' }, quiet: { type: 'boolean' },
     agent: { type: 'string' }, model: { type: 'string' }, trials: { type: 'string' }, keep: { type: 'boolean' },
     filter: { type: 'string' }, all: { type: 'boolean' }, root: { type: 'string' }, json: { type: 'boolean' },
-    post: { type: 'boolean' }, yes: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
+    post: { type: 'boolean' }, yes: { type: 'boolean' }, wait: { type: 'string' }, observe: { type: 'boolean' }, status: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
     'no-bisect': { type: 'boolean' }, local: { type: 'boolean' }, spec: { type: 'string' }, 'no-review': { type: 'boolean' },
     branch: { type: 'string' }, concurrency: { type: 'string' }, md: { type: 'string' }, report: { type: 'boolean' }, out: { type: 'string' }, render: { type: 'string' },
     help: { type: 'boolean', short: 'h' }, version: { type: 'boolean', short: 'v' },
@@ -141,10 +145,15 @@ async function main() {
     }
     case 'gate': {
       const cfg = readConfig(root);
-      const { record, file } = await runGates(root, cfg, { only: o.only?.split(','), keepGoing: o['keep-going'], quiet: o.quiet });
+      const contention = o.wait ? await waitQuiet(root, Number(o.wait), (m) => process.stderr.write(`${m}\n`)) : null;
+      const { record, file } = await runGates(root, cfg, { only: o.only?.split(','), keepGoing: o['keep-going'], quiet: o.quiet, contention });
       for (const g of record.gates) console.log(`${g.skipped ? '–' : g.pass ? '✓' : '✗'} ${g.name}${g.skipped ? ' (skipped)' : ` ${(g.durationMs / 1000).toFixed(1)}s`}`);
       console.log(`verdict: ${record.verdict.toUpperCase()}${record.partial ? ' (partial)' : ''} · tree ${record.treeAfter.slice(0, 12)} · ${file}`);
       if (record.verdict === 'invalid') console.log('the working tree changed while the gates ran; this run proves nothing about either tree');
+      if (record.contention?.contended) {
+        const c = record.contention;
+        console.log(`contended: load ${c.load1} on ${c.cores} cores${c.competitors.length ? `; other suites in ${c.competitors.map((x) => x.dir).join(', ')}` : ''}.${record.verdict === 'red' ? ' A red here is not evidence of a regression: re-run when quiet (--wait <min>).' : ''}`);
+      }
       if (record.verdict !== 'green') process.exitCode = 1;
       return;
     }
@@ -221,9 +230,30 @@ async function main() {
     case 'affected': {
       const cfg = readConfig(root);
       const r = affected(root, cfg, { base: o.base ?? null });
-      if (o.json) { console.log(JSON.stringify(r, null, 2)); return; }
+      const tr = trust(readTrustLedger(root), cfg.affected?.trust);
+      if (o.status) {
+        console.log(`selection is ${tr.mode.toUpperCase()}: ${tr.clean}/${tr.needed} clean observations over ${tr.days}/${tr.minDays} days${tr.lastMiss ? `; last miss ${tr.lastMiss.at}: ${tr.lastMiss.misses.join(', ')}` : ''}`);
+        return;
+      }
+      if (o.observe) {
+        // Run EVERYTHING with a JSON report, then check the selection would have caught every failure.
+        const cmd = cfg.affected?.observeCommand;
+        if (!cmd || !cmd.includes('{report}')) throw new Error('affected --observe needs affected.observeCommand with {report}, e.g. "npx vitest run --reporter=json --outputFile={report}"');
+        const report = join(mkdtempSync(join(tmpdir(), 'hyve-obs-')), 'report.json');
+        spawnSync(cmd.replaceAll('{report}', report), { cwd: root, shell: true, stdio: o.quiet ? 'ignore' : 'inherit' });
+        if (!existsSync(report)) throw new Error('the full run wrote no JSON report; nothing observed');
+        const failing = failingFilesFromVitest(root, JSON.parse(readFileSync(report, 'utf8')));
+        const { misses } = observe(root, r, failing);
+        const after = trust(readTrustLedger(root), cfg.affected?.trust);
+        console.log(misses.length ? `MISS: ${misses.join(', ')} failed outside the selection. Selection is back to SHADOW.` : `observed: ${failing.length} failing file(s), all inside the selection${r.all ? ' (selection was ALL)' : ''}.`);
+        console.log(`selection is ${after.mode.toUpperCase()} (${after.clean}/${after.needed} clean, ${after.days}/${after.minDays} days)`);
+        if (misses.length) process.exitCode = 1;
+        return;
+      }
+      if (o.json) { console.log(JSON.stringify({ ...r, trust: tr }, null, 2)); return; }
       console.log(r.all ? `ALL tests (${r.reason})` : r.reason);
       for (const t of r.tests) console.log(`  ${t}`);
+      if (!r.all && tr.mode !== 'trusted') console.log(`note: selection is SHADOW (${tr.clean}/${tr.needed} clean observations): use it for speed, never as "done". Earn trust with --observe.`);
       if (o.run) {
         const a = cfg.affected ?? {};
         const quote = (f) => `'${f.replace(/'/g, `'\\''`)}'`;
@@ -274,6 +304,7 @@ async function main() {
       }
       const r = mine({
         root: scanRoot, filter: filterFor,
+        aliases: (() => { try { return readConfig(root).mine?.aliases ?? {}; } catch { return {}; } })(),
         prefix: (() => { try { return readConfig(root).skills.prefix; } catch { return ''; } })(),
       });
       if (o.json) return console.log(JSON.stringify(r, null, 2));

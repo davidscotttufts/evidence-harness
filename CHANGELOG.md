@@ -20,6 +20,16 @@
   match a case that **failed**. `expectOutput` substring matching can be fooled by a
   passing case's name; a test shows exactly that.
 - `mine` asks for consent (or `--yes`) before reading transcripts.
+- **`mine`**: confidence now divides by the runs of A that were followed by a skill,
+  not all runs of A. Renamed skills merge (built-in aliases for hyvemind's own
+  renames, plus `mine.aliases`).
+- **`gate` records contention**: load, and test suites running from other
+  directories (not stopped ones, not watchers). A red result under contention is
+  reported as "re-run when quiet". `--wait <min>` waits for quiet. Skipped when a
+  broker queues the work.
+- **`affected` earns trust**: it stays in SHADOW until 20 observations over 7 days
+  with no miss (`--observe` runs everything and checks every failure was selected);
+  one miss resets it. `--status` shows where it stands.
 - **New `grade` skill** with rubric files for code, data, UX, i18n and parity. It
   restores the method of openwop-app's six grade-* skills: a resumed tracker, coverage
   arithmetic, mechanical checks first, evidence from both sides, caps (an accessibility
