@@ -1,0 +1,12 @@
+{
+  "id": "keeps-a-strong-test",
+  "fixture": "fixtures/strong-test",
+  "prompt": "Grade test/discount.test.js A-F by whether it would catch a real bug in src/discount.js. We are pruning low-value tests. Be brief. End with exactly one line: GRADE: <letter>",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "GRADE:\\s*[AB]\\b",
+      "flags": ""
+    }
+  ]
+}

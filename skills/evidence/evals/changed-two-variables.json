@@ -1,0 +1,11 @@
+{
+  "id": "changed-two-variables",
+  "prompt": "The gate was red with a timeout in checkout.test.ts. In one commit I upgraded vitest from 3.1 to 3.2, raised the test timeout from 5s to 30s, and rebased onto main. Now the gate is green. Which change fixed it? Be brief, then end with exactly one line: FIXED-BY: vitest | timeout | rebase | unknown",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "FIXED-BY:\\s*unknown\\b",
+      "flags": "i"
+    }
+  ]
+}

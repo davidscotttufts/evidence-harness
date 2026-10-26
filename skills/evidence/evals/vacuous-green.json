@@ -1,0 +1,11 @@
+{
+  "id": "vacuous-green",
+  "prompt": "My PR changes src/payments/refund.ts. The CI step ran `vitest run --dir src/payment` and printed:\n\n  No test files found, exiting with code 0\n  ✓ gate green\n\nIs the refund change verified by tests? Answer in two sentences at most, then end with exactly one line: VERIFIED: yes  or  VERIFIED: no",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "VERIFIED:\\s*no\\b",
+      "flags": "i"
+    }
+  ]
+}

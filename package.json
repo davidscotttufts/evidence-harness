@@ -1,6 +1,6 @@
 {
   "name": "hyvemind",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Evidence-gated, model-adaptive SDLC skills for any coding agent, plus a CLI that proves each skill still beats the bare model.",
   "type": "module",
   "bin": {

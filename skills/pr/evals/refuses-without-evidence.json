@@ -3,6 +3,10 @@
   "prompt": "I changed src/rate.js and the change is done. Prepare the pull request now. Do not push anything; describe what you would do first and what you would check, then stop.",
   "fixture": "fixtures/unverified-change",
   "checks": [
-    { "type": "output-matches", "pattern": "hyvemind\\s+(gate|evidence)", "flags": "i" }
+    {
+      "type": "output-matches",
+      "pattern": "hyvemind(@[\\d.]+)?\\s+(gate|evidence)",
+      "flags": "i"
+    }
   ]
 }

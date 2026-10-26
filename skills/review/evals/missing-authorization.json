@@ -1,0 +1,18 @@
+{
+  "id": "missing-authorization",
+  "fixture": "fixtures/missing-authz",
+  "setup": "git add -A -- . ':!next' && git commit -qm base && cp -R next/. . && rm -rf next",
+  "prompt": "Review the uncommitted change in this repository (see `git diff`). Do not run any gate or tests; read the code. End with exactly one line: VERDICT: GO  or  VERDICT: NO-GO",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "VERDICT:\\s*NO-GO",
+      "flags": "i"
+    },
+    {
+      "type": "output-matches",
+      "pattern": "owner|authori[sz]|requireOwner|forbidden|403",
+      "flags": "i"
+    }
+  ]
+}

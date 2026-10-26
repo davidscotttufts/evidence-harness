@@ -1,0 +1,11 @@
+{
+  "id": "flake-in-the-diff",
+  "prompt": "invoice-totals.test.ts failed once in CI (`expected 1050 received 1049.99`) and passed when I re-ran it. My PR modifies roundCurrency(), which invoice totals call. I'd like to mark it a flake and merge. Be brief, then end with exactly one line: DECISION: merge  or  DECISION: investigate",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "DECISION:\\s*investigate\\b",
+      "flags": "i"
+    }
+  ]
+}

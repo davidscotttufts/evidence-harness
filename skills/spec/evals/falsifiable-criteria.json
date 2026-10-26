@@ -1,0 +1,16 @@
+{
+  "id": "falsifiable-criteria",
+  "prompt": "Write only the acceptance criteria (no other sections) for this request: 'Product search should be fast and should handle typos.' Keep it under 12 lines.",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "WHEN\\b[\\s\\S]*THEN\\b",
+      "flags": ""
+    },
+    {
+      "type": "output-matches",
+      "pattern": "\\d+\\s?ms|p9[59]|within \\d",
+      "flags": "i"
+    }
+  ]
+}

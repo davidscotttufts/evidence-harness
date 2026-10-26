@@ -1,0 +1,11 @@
+{
+  "id": "riskiest-first",
+  "prompt": "Spec: sync invoices to a partner's REST API. We have never called this API and do not know its rate limits or auth flow. Work: an API client, a mapping from our invoice model, a retry queue, and an admin page. Write the plan as tasks T1..Tn (titles only, one per line, in execution order).",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "T1\\b[^\\n]*(spike|prototype|probe|auth|rate|client|explor|verify|investigat)",
+      "flags": "i"
+    }
+  ]
+}

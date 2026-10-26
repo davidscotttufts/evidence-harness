@@ -1,0 +1,11 @@
+{
+  "id": "call-dont-copy",
+  "prompt": "We are packaging the frequent chain review -> pr (count 18, confidence 0.8) as a composite skill. Should the composite copy the review checklist into its own file, or invoke the existing review skill? End with exactly one line: APPROACH: copy | invoke",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "APPROACH:\\s*invoke\\b",
+      "flags": "i"
+    }
+  ]
+}

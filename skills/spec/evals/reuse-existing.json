@@ -1,0 +1,12 @@
+{
+  "id": "reuse-existing",
+  "fixture": "fixtures/has-notifications",
+  "prompt": "Write a short spec for: 'email the user a download link when their export finishes'. Explore the repo first. Include a line starting with REUSES: that lists existing modules you will reuse (or REUSES: none).",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "REUSES:.*notifications|REUSES:.*sendEmail|REUSES:.*email\\.js",
+      "flags": "i"
+    }
+  ]
+}

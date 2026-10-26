@@ -29,6 +29,7 @@ row per skill (bare %, with-skill %, lift, verdict) and a JSON report under
 | marginal | 0 < lift < threshold | thin it: cut the steps the bare model already does |
 | retire-candidate | lift ≤ 0 | propose retiring it, or rewriting it for what the model still gets wrong |
 | insufficient-data | fewer than `evals.minRuns` (default 3) runs per arm | run more trials; never act on it |
+| no-signal | neither arm ever passes | the scenario (or the skill) is broken; fix it before reading anything into it |
 
 **If the bare arm already scores 100%, the scenario may be too easy rather than the skill
 useless.** Before proposing a retirement, add a scenario for the specific failure the

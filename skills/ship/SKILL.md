@@ -36,17 +36,24 @@ a wire format is **Structural**, however small the diff.
    auth path.
 3. **Plan** with `{{skill:plan}}`. Phased tasks, each sized for one fresh-context
    session and each with its own check.
-4. **Implement**, one plan task at a time:
+4. **Implement**, one plan task at a time. `{{cli}} run plan.md --spec <spec>` automates
+   this step: a fresh agent per task, the task's own exit check, and an independent
+   reviewer. Or do it by hand:
    - Work in your own branch or worktree (`{{skill:parallel-work}}`).
    - Write the test first and watch it fail for the right reason.
    - When a task is large, give it to a **fresh subagent** with only the spec, the
      task and the files it needs, then review its result against the spec yourself.
-   - **Exit check per task:** its test passes, and `{{cli}} gate --only <fast gates>`
-     is green. Never move on with a red task.
+   - **Inner loop:** `{{cli}} affected --run` runs only the tests your change can
+     reach, and everything when it can't tell.
+   - **Exit check per task:** the task's own check passes. Never move on with a red task.
 5. **Review** with `{{skill:review}}`. It starts with `{{cli}} gate` (full).
    ⛔ Stop on any blocker, go back to step 4, then review again.
 6. **PR** with `{{skill:pr}}`. ⛔ The user approves before anything outward-facing
    (push, PR, comment).
+7. **Merge.** Several approved PRs can go through one gate with
+   `{{cli}} train <pr> <pr>…`. It merges on green only if the base did not move,
+   verifies that the base's tree is the tree it gated, and bisects a red train to
+   find the culprit.
 
 ## Running it
 

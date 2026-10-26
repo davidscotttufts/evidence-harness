@@ -1,0 +1,16 @@
+{
+  "id": "second-system",
+  "prompt": "Design for review: our existing `notifications` module (email, SMS, retries, templates) is messy, so for the new 'export finished' alerts we will build a separate `alerts-v2` service with its own email sender and templates. Review it briefly, then end with exactly one line: VERDICT: GO | GO-WITH-CHANGES | NO-GO",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "VERDICT:\\s*(NO-GO|GO-WITH-CHANGES)",
+      "flags": "i"
+    },
+    {
+      "type": "output-matches",
+      "pattern": "duplicat|second (system|sender)|two (systems|senders)|drift|reuse|existing",
+      "flags": "i"
+    }
+  ]
+}

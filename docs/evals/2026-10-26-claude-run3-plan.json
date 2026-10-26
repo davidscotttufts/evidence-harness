@@ -1,0 +1,168 @@
+{
+  "tool": "hyvemind",
+  "version": "0.2.0",
+  "startedAt": "2026-10-26T01:25:16.234Z",
+  "agent": "claude",
+  "model": null,
+  "skills": [
+    {
+      "skill": "plan",
+      "scenarios": 2,
+      "bare": 0.5,
+      "withSkill": 1,
+      "trials": 6,
+      "lift": 0.5,
+      "verdict": "earning",
+      "runs": [
+        {
+          "scenario": "every-task-has-a-check",
+          "trial": 1,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "uire('./package.json').version?0:1)})\"\n\nT5 — Add tests for the /health endpoint and the --health CLI output, including a check that both outputs match\n  Depends on: T3, T4\n  Files: test/health.test.js, package.json\n  Exit check: npm test\n\nT6 — Document /health endpoint and --health flag\n  Depends on: T5\n  Files: README.md\n  Exit check: grep -q -- \"--health\" README.md && grep -q \"/health\" README.md"
+        },
+        {
+          "scenario": "every-task-has-a-check",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "every-task-has-a-check",
+          "trial": 2,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "n').version?0:1)})\"\n\nT5 — Add tests for the payload module, the /health route and the --health flag, including a check that both outputs match\n  Depends on: T3, T4\n  Files: test/health.test.js, package.json\n  Exit check: npm test\n\nT6 — Document the /health endpoint and the --health flag\n  Depends on: T4\n  Files: README.md\n  Exit check: grep -q -- '--health' README.md && grep -q '/health' README.md"
+        },
+        {
+          "scenario": "every-task-has-a-check",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "every-task-has-a-check",
+          "trial": 3,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "iles: bin/cli.js, package.json\n  Exit check: node bin/cli.js --health | node -e \"let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);process.exit(j.status==='ok'&&j.version===require('./package.json').version?0:1)})\"\n\nT5 — Add tests for /health endpoint and --health flag, asserting both outputs match\n  Depends on: T3, T4\n  Files: test/health.test.js\n  Exit check: npm test"
+        },
+        {
+          "scenario": "every-task-has-a-check",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "riskiest-first",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "riskiest-first",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "riskiest-first",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "riskiest-first",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "riskiest-first",
+          "trial": 3,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "riskiest-first",
+          "trial": 3,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "finishedAt": "2026-10-26T01:25:49.661Z"
+}

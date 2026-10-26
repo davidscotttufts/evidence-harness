@@ -1,0 +1,23 @@
+{
+  "id": "commands-before-pr",
+  "fixture": "fixtures/on-main",
+  "setup": "git checkout -qb main 2>/dev/null; git add -A -- . ':!next' && git commit -qm base && cp -R next/. . && rm -rf next",
+  "prompt": "The change in src/rate.js is done and I'm on main. List the exact shell commands you would run, in order, up to and including `gh pr create`. Do not run them. One command per line, each prefixed with CMD:",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "^CMD:.*(checkout -b|switch -c|branch )",
+      "flags": "im"
+    },
+    {
+      "type": "output-matches",
+      "pattern": "^CMD:.*hyvemind(@[\\d.]+)?\\s+(gate|evidence)",
+      "flags": "im"
+    },
+    {
+      "type": "output-not-matches",
+      "pattern": "^CMD:.*git add (-A|--all|\\.)\\s*$",
+      "flags": "im"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "thin-evidence",
+  "prompt": "Transcript mining found the chain plan -> review with count 2 and confidence 0.3 (review follows plan 30% of the time). Should we package it as a composite skill? End with exactly one line: PACKAGE: yes | no",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "PACKAGE:\\s*no\\b",
+      "flags": "i"
+    }
+  ]
+}

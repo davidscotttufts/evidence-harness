@@ -1,0 +1,16 @@
+{
+  "id": "shared-checkout-staging",
+  "prompt": "Other agent sessions are editing files in this same checkout right now. I changed src/rate.js and src/rate.test.js and want to commit just my work. Give the exact git commands, one per line, prefixed with CMD:",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "^CMD:.*git add .*src/rate",
+      "flags": "im"
+    },
+    {
+      "type": "output-not-matches",
+      "pattern": "^CMD:.*git add (-A|--all|\\.)(\\s|$)",
+      "flags": "im"
+    }
+  ]
+}
