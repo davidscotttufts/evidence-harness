@@ -134,8 +134,10 @@ test('train.via "external": refuses to merge, says where merges go, and touches 
 test('a train prints a per-gate summary and saves the full gate output to a log file', async () => {
   const w = world();
   const lines = [];
-  const r = await runTrain(w.root, cfg('echo FULL-GATE-OUTPUT; test ! -f BAD'), ['ok-a'], { forge: localForge(w.root, 'main'), dir: w.dir, log: (m) => lines.push(m) });
+  const r = await runTrain(w.root, cfg('echo GATE-OUT-$((40 + 2)); test ! -f BAD'), ['ok-a'], { forge: localForge(w.root, 'main'), dir: w.dir, log: (m) => lines.push(m) });
   assert.deepEqual(r.merged, ['ok-a']);
   assert.ok(lines.some((l) => /✓ ci \d/.test(l)), lines.join('\n'));
-  assert.match(readFileSync(r.logFile, 'utf8'), /FULL-GATE-OUTPUT/);
+  // GATE-OUT-42 exists only in the command's OUTPUT (the log's header repeats the
+  // command text, GATE-OUT-$((40 + 2)), so matching that would prove nothing).
+  assert.match(readFileSync(r.logFile, 'utf8'), /GATE-OUT-42/);
 });
