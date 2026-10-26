@@ -18,9 +18,9 @@
 //                 { "type": "command", "run": "…" } ],   // exit 0 = pass, run in the workspace
 //     "good": "<an output that should pass>", "bad": "<a plausible wrong output>" }  // optional; string or list; see lintScenario
 import { spawn, spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { accessSync, constants as fsConstants, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { delimiter, dirname, join, resolve } from 'node:path';
 import { PKG_ROOT, STATE_DIR, pkgVersion } from './config.mjs';
 import { renderSkill } from './install.mjs';
 import { leaseArgv } from './broker.mjs';
@@ -247,13 +247,16 @@ export function planEvals(root, cfg, { skills, trials }) {
 }
 
 // Median seconds per agent run from the newest prior report that recorded durations.
-export function historicalMedian(root) {
+// With `agent`, only that agent's runs count (single-agent reports and matrix sections alike).
+export function historicalMedian(root, agent = null) {
   const dir = join(root, STATE_DIR, 'evals');
   if (!existsSync(dir)) return null;
   for (const f of readdirSync(dir).filter((x) => /^report-.*\.json$/.test(x)).sort().reverse()) {
     let r;
     try { r = JSON.parse(readFileSync(join(dir, f), 'utf8')); } catch { continue; }
-    const ms = (r.skills ?? []).flatMap((s) => (s.runs ?? []).map((x) => x.ms)).filter((x) => typeof x === 'number').sort((a, b) => a - b);
+    const sections = r.agents ?? [{ agent: r.agent, skills: r.skills ?? [] }];
+    const ms = sections.filter((a) => !agent || a.agent === agent).flatMap((a) => a.skills ?? [])
+      .flatMap((s) => (s.runs ?? []).map((x) => x.ms)).filter((x) => typeof x === 'number').sort((a, b) => a - b);
     if (ms.length) return { sec: ms[Math.floor(ms.length / 2)] / 1000, from: f, runs: ms.length };
   }
   return null;
@@ -272,8 +275,18 @@ export function preview(plan, cfg, { concurrency = 1, agent, history = null } = 
   };
 }
 
+const dur = (sec) => (sec >= 3600 ? `${(sec / 3600).toFixed(1)} h` : sec >= 60 ? `${Math.round(sec / 60)} min` : `${Math.round(sec)} s`);
+
 export function renderPreview(p) {
-  const dur = (sec) => (sec >= 3600 ? `${(sec / 3600).toFixed(1)} h` : sec >= 60 ? `${Math.round(sec / 60)} min` : `${Math.round(sec)} s`);
+  if (p.matrix) {
+    // One consent covers the whole matrix, so the total comes first and every agent's share is listed.
+    return [
+      `eval matrix: ${p.agents.length} agent(s) = ${p.runs} agent runs in total · concurrency ${p.concurrency} per agent, agents one after another`,
+      ...p.agents.map((a) => `  ${a.agent}: ${a.skills} skill(s) · ${a.scenarios} scenario(s) · ${a.trials.join('/') || 0} trial(s) × ${a.arms} arms = ${a.runs} runs · ${a.estimateSec != null ? `about ${dur(a.estimateSec)}, ` : ''}at most ${dur(a.upperBoundSec)}`),
+      ...p.skipped.map((x) => `  skipped ${x.agent}: ${x.reason}`),
+      `duration: ${p.estimateSec != null ? `about ${dur(p.estimateSec)}; ` : ''}at most ${dur(p.upperBoundSec)} (every run hitting timeoutSec)`,
+    ].join('\n');
+  }
   return [
     `eval plan: ${p.skills} skill(s) · ${p.scenarios} scenario(s) · ${p.trials.join('/') || 0} trial(s) × ${p.arms} arms = ${p.runs} agent runs (${p.agent}) · concurrency ${p.concurrency}`,
     `duration: ${p.estimateSec != null ? `about ${dur(p.estimateSec)} (median ${p.history.sec.toFixed(0)} s/run over ${p.history.runs} runs in ${p.history.from}); ` : ''}at most ${dur(p.upperBoundSec)} (every run hitting timeoutSec)`,
@@ -307,7 +320,24 @@ export async function runEvals(root, cfg, { skills, agent, model, trials, keep =
   const report = { tool: 'hyvemind', version: versionStamp(), startedAt, runId, agent: agentName, model: model ?? null,
     cleanProfile: Boolean(cleanProfile), concurrency: Math.max(1, concurrency),
     thresholds: { liftThreshold: cfg.evals.liftThreshold, minRuns: cfg.evals.minRuns }, skills: [] };
-  const { jobs, bySkill } = plan ?? planEvals(root, cfg, { skills, trials });
+  report.skills = await runAgentJobs(root, cfg, { agentName, plan: plan ?? planEvals(root, cfg, { skills, trials }), model, keep, cleanProfile, concurrency, outDir: [runId], thresholds: report.thresholds, log });
+  return { report, file: writeReport(root, report) };
+}
+
+function writeReport(root, report) {
+  report.finishedAt = new Date().toISOString();
+  const dir = join(root, STATE_DIR, 'evals');
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, `report-${report.runId}.json`);
+  writeFileSync(file, JSON.stringify(report, null, 2) + '\n');
+  return file;
+}
+
+// One agent's share of a run: its own jobs, its own runs, its own skill rows. A matrix
+// calls this once per agent with a fresh copy of the plan, so nothing is pooled.
+async function runAgentJobs(root, cfg, { agentName, plan, model, keep, cleanProfile, concurrency, outDir, thresholds, label = '', log }) {
+  const agentCfg = cfg.evals.agents[agentName];
+  const { jobs, bySkill } = plan;
   let next = 0, finished = 0;
   const worker = async () => {
     while (next < jobs.length) {
@@ -320,12 +350,12 @@ export async function runEvals(root, cfg, { skills, agent, model, trials, keep =
         const pass = checks.every((c) => c.pass);
         let output;
         if (!pass || keep) {
-          output = join(STATE_DIR, 'evals', runId, safe(j.skill), safe(j.sc.id), `${j.arm}-${j.trial}.txt`);
+          output = join(STATE_DIR, 'evals', ...outDir, safe(j.skill), safe(j.sc.id), `${j.arm}-${j.trial}.txt`);
           mkdirSync(dirname(join(root, output)), { recursive: true });
           writeFileSync(join(root, output), r.output);
         }
         bySkill.get(j.skill).runs.push({ scenario: j.sc.id, trial: j.trial, arm: j.arm, pass, ms: r.ms, checks, ...(output ? { output } : {}), ...(pass ? {} : { tail: r.output.trim().slice(-2000) }) });
-        log(`  [${++finished}/${jobs.length}] ${j.skill} · ${j.sc.id} · trial ${j.trial}/${j.n} · ${j.arm}: ${pass ? 'pass' : 'FAIL'}`);
+        log(`  [${label}${++finished}/${jobs.length}] ${j.skill} · ${j.sc.id} · trial ${j.trial}/${j.n} · ${j.arm}: ${pass ? 'pass' : 'FAIL'}`);
       } finally {
         if (!keep) rmSync(dir, { recursive: true, force: true });
       }
@@ -333,17 +363,95 @@ export async function runEvals(root, cfg, { skills, agent, model, trials, keep =
   };
   await Promise.all(Array.from({ length: Math.max(1, concurrency) }, worker));
 
+  const skills = [];
   for (const [skill, { scenarios, runs, selected }] of bySkill) {
-    if (!scenarios.length) { report.skills.push({ skill, scenarios: 0, note: 'no scenarios' }); continue; }
+    if (!scenarios.length) { skills.push({ skill, scenarios: 0, note: 'no scenarios' }); continue; }
     runs.sort((a, b) => a.scenario.localeCompare(b.scenario) || a.trial - b.trial || a.arm.localeCompare(b.arm));
-    report.skills.push(summarize({ skill, scenarios: scenarios.length, ...(selected ? { selected } : {}), size: skillSize(skill, cfg), runs }, report.thresholds));
+    skills.push(summarize({ skill, scenarios: scenarios.length, ...(selected ? { selected } : {}), size: skillSize(skill, cfg), runs }, thresholds));
   }
-  report.finishedAt = new Date().toISOString();
-  const dir = join(root, STATE_DIR, 'evals');
-  mkdirSync(dir, { recursive: true });
-  const file = join(dir, `report-${runId}.json`);
-  writeFileSync(file, JSON.stringify(report, null, 2) + '\n');
-  return { report, file };
+  return skills;
+}
+
+// ── Matrix: the same scenarios on several agents ──────────────────────────────
+// A verdict read on one agent is a claim about that agent. Running the selection once
+// per agent shows whether "saturated" or "earning" holds across agents or depends on one.
+
+// Is an agent's executable present? A bare name is looked up on PATH (as spawn does);
+// a path is checked directly. Nothing is run.
+export function installed(exe, PATH = process.env.PATH ?? '') {
+  const ok = (p) => { try { accessSync(p, fsConstants.X_OK); return statSync(p).isFile(); } catch { return false; } };
+  if (exe.includes('/')) return ok(resolve(exe));
+  return PATH.split(delimiter).filter(Boolean).some((d) => ok(join(d, exe)));
+}
+
+// Which agents a matrix runs: the names asked for (default: every configured agent),
+// minus the ones whose binary isn't installed, which are listed with the reason.
+export function selectAgents(cfg, names = null, PATH = process.env.PATH ?? '') {
+  const configured = Object.keys(cfg.evals.agents);
+  const want = [...new Set(names ?? configured)];
+  const unknown = want.filter((n) => !cfg.evals.agents[n]);
+  if (unknown.length) throw new Error(`no evals.agents.${unknown.join(', evals.agents.')} in config (have: ${configured.join(', ')})`);
+  const agents = [], skipped = [];
+  for (const n of want) {
+    if (installed(cfg.evals.agents[n].command[0], PATH)) agents.push(n);
+    else skipped.push({ agent: n, reason: 'not installed' });
+  }
+  if (!agents.length) throw new Error(`eval matrix: none of ${want.join(', ')} is installed (no ${want.map((n) => cfg.evals.agents[n].command[0]).join(', ')} on PATH)`);
+  return { agents, skipped };
+}
+
+// Refuse what can't work on every agent BEFORE the preview asks for consent.
+export function checkMatrix(cfg, agents, { model = null, cleanProfile = false } = {}) {
+  // A model id names one vendor's model; the same --model on three agents would be wrong on two.
+  if (model) throw new Error('--model applies to one agent; for a matrix, set each model in evals.agents.<name>.command');
+  const needModel = agents.filter((a) => cfg.evals.agents[a].command.some((t) => t.includes('{model}')));
+  if (needModel.length) throw new Error(`eval matrix: ${needModel.join(', ')} use {model} in their command; put the model in the command instead`);
+  const noClean = cleanProfile ? agents.filter((a) => !cfg.evals.agents[a].cleanArgs?.length) : [];
+  if (noClean.length) throw new Error(`--clean-profile: ${noClean.map((a) => `evals.agents.${a}`).join(', ')} ha${noClean.length > 1 ? 've' : 's'} no cleanArgs (see docs/reference.md, Evals)`);
+}
+
+// A fresh copy of a plan's per-skill run lists, so each agent fills its own.
+const freshPlan = (plan) => ({ jobs: plan.jobs, bySkill: new Map([...plan.bySkill].map(([k, v]) => [k, { ...v, runs: [] }])) });
+
+export function matrixPreview(plan, cfg, { agents, skipped = [], concurrency = 1, history = () => null } = {}) {
+  const per = agents.map((a) => preview(plan, cfg, { concurrency, agent: a, history: history(a) }));
+  return {
+    matrix: true, agents: per, skipped, runs: per.reduce((n, p) => n + p.runs, 0), concurrency: Math.max(1, concurrency),
+    // Agents run one after another, so durations add up.
+    upperBoundSec: per.reduce((n, p) => n + p.upperBoundSec, 0),
+    estimateSec: per.every((p) => p.estimateSec != null) ? per.reduce((n, p) => n + p.estimateSec, 0) : null,
+  };
+}
+
+export async function runMatrix(root, cfg, { agents, skipped = [], skills, model = null, trials, keep = false, cleanProfile = false, concurrency = 1, plan = null, log = () => {} }) {
+  checkMatrix(cfg, agents, { model, cleanProfile });
+  const startedAt = new Date().toISOString();
+  const runId = startedAt.replace(/[:.]/g, '-');
+  const thresholds = { liftThreshold: cfg.evals.liftThreshold, minRuns: cfg.evals.minRuns };
+  const report = { tool: 'hyvemind', version: versionStamp(), startedAt, runId, matrix: true, model: null,
+    cleanProfile: Boolean(cleanProfile), concurrency: Math.max(1, concurrency), thresholds, agents: [], skipped };
+  const base = plan ?? planEvals(root, cfg, { skills, trials });
+  for (const agentName of agents) {
+    const skillRows = await runAgentJobs(root, cfg, { agentName, plan: freshPlan(base), model: null, keep, cleanProfile, concurrency, outDir: [runId, safe(agentName)], thresholds, label: `${agentName} `, log });
+    report.agents.push({ agent: agentName, skills: skillRows });
+  }
+  report.disagreements = disagreements(report.agents, thresholds);
+  return { report, file: writeReport(root, report) };
+}
+
+// Skills measured on two or more agents whose verdicts differ: saturated on one and
+// earning on another means the reading depends on the agent, not only on the skill.
+export function disagreements(agentSections, th = {}) {
+  const rows = new Map();
+  for (const a of agentSections) {
+    for (const s of a.skills) {
+      if (!s.trials) continue;
+      const x = summarize(s, th);
+      if (!rows.has(s.skill)) rows.set(s.skill, []);
+      rows.get(s.skill).push({ agent: a.agent, verdict: x.verdict, lift: x.lift });
+    }
+  }
+  return [...rows].filter(([, v]) => v.length > 1 && new Set(v.map((x) => x.verdict)).size > 1).map(([skill, verdicts]) => ({ skill, verdicts }));
 }
 
 // ── Scenario lint ─────────────────────────────────────────────────────────────
@@ -453,6 +561,7 @@ const ACTION = {
 // Markdown summary of an eval report: the decision table people act on. Verdicts and
 // intervals are recomputed from the runs, so an old report renders with today's rules.
 export function renderReport(report, fallback = {}, { linkBase = '' } = {}) {
+  if (Array.isArray(report.agents)) return renderMatrix(report, fallback, { linkBase });
   const th = report.thresholds ?? fallback;
   const skills = report.skills.map((s) => (s.trials ? summarize(s, th) : s));
   const pct = (x) => `${Math.round(x * 100)}%`;
@@ -500,5 +609,70 @@ export function renderReport(report, fallback = {}, { linkBase = '' } = {}) {
   lines.push('', report.cleanProfile
     ? 'Ran with --clean-profile: both arms got the agent\'s cleanArgs/cleanEnv. See docs/reference.md for what that does and does not exclude.'
     : 'Caveat: the bare arm can still see user-level skills and global instructions unless the eval ran with --clean-profile.');
+  return lines.join('\n') + '\n';
+}
+
+// A matrix report: one table with a column group per agent, and the skills whose verdict
+// depends on the agent listed first, since that is what the matrix is for.
+function renderMatrix(report, fallback = {}, { linkBase = '' } = {}) {
+  const th = report.thresholds ?? fallback;
+  const agents = report.agents.map((a) => ({ agent: a.agent, skills: a.skills.map((s) => (s.trials ? summarize(s, th) : s)) }));
+  const names = agents.map((a) => a.agent);
+  const pct = (x) => `${Math.round(x * 100)}%`;
+  const sgn = (x) => `${x > 0 ? '+' : ''}${+x.toFixed(2)}`;
+  const skillNames = [...new Set(agents.flatMap((a) => a.skills.map((s) => s.skill)))];
+  const row = (a, skill) => a.skills.find((s) => s.skill === skill);
+  const lines = [
+    '# hyvemind skill evals (matrix)',
+    '',
+    `Agents ${names.map((n) => `**${n}**`).join(', ')} · hyvemind ${report.version} · ${report.startedAt}`,
+    '',
+  ];
+  if (report.skipped?.length) lines.push(`Skipped: ${report.skipped.map((x) => `${x.agent} (${x.reason})`).join(', ')}.`, '');
+  const dis = disagreements(report.agents, th);
+  lines.push('## Disagreements', '');
+  if (dis.length) {
+    for (const d of dis) lines.push(`- **${d.skill}**: ${d.verdicts.map((v) => `${v.agent} ${v.verdict} (${sgn(v.lift)})`).join(', ')}. The verdict depends on the agent: don't retire or keep on one agent's reading.`);
+  } else lines.push('None: every skill measured on two or more agents got the same verdict on each.');
+  lines.push('');
+  const flagged = agents.flatMap((a) => a.skills.filter((s) => s.trials).flatMap((s) => s.byScenario.filter((r) => r.flags.length).map((r) => ({ ...r, name: s.skill, agent: a.agent }))));
+  if (flagged.length) {
+    lines.push('## Look at these first', '');
+    for (const r of flagged) lines.push(`- ${r.agent} · ${r.name} · \`${r.id}\`: bare ${r.bare.pass}/${r.bare.runs}, with skill ${r.skill.pass}/${r.skill.runs}. ${r.flags.map((f) => `**${f}**`).join(', ')}.`);
+    lines.push('');
+  }
+  lines.push(
+    'Each agent ran its own runs: verdicts and intervals are per agent, and nothing is pooled across agents.',
+    'Bare / with skill are pass rates; lift = with − bare with its 95% interval (Newcombe hybrid score).',
+    '',
+    `| Skill | Scenarios | ${names.map((n) => `${n} bare | ${n} skill | ${n} lift | ${n} verdict`).join(' | ')} |`,
+    `|---|---:|${names.map(() => '---:|---:|---:|---|').join('')}`,
+  );
+  for (const skill of skillNames) {
+    const any = agents.map((a) => row(a, skill)).find((s) => s?.trials);
+    const cells = agents.map((a) => {
+      const s = row(a, skill);
+      if (!s?.trials) return '— | — | — | ' + (s?.note ?? '—');
+      return `${pct(s.bare)} | ${pct(s.withSkill)} | ${sgn(s.lift)} [${sgn(s.ci.lift[0])}, ${sgn(s.ci.lift[1])}] | **${s.verdict}**`;
+    });
+    lines.push(`| ${skill} | ${any?.scenarios ?? 0} | ${cells.join(' | ')} |`);
+  }
+  lines.push('', '## Per scenario', '', `| Skill | Scenario | ${names.map((n) => `${n} bare | ${n} skill`).join(' | ')} | Flags |`, `|---|---|${names.map(() => '---:|---:|').join('')}---|`);
+  for (const skill of skillNames) {
+    const ids = [...new Set(agents.flatMap((a) => (row(a, skill)?.byScenario ?? []).map((r) => r.id)))];
+    for (const id of ids) {
+      const per = agents.map((a) => row(a, skill)?.byScenario?.find((r) => r.id === id));
+      const flags = per.flatMap((r, i) => (r?.flags ?? []).map((f) => `${names[i]}: ${f}`));
+      lines.push(`| ${skill} | ${id} | ${per.map((r) => (r ? `${r.bare.pass}/${r.bare.runs} | ${r.skill.pass}/${r.skill.runs}` : '— | —')).join(' | ')} | ${flags.join(', ') || '—'} |`);
+    }
+  }
+  const failed = agents.flatMap((a) => a.skills.filter((x) => x.trials).flatMap((s) => (s.runs ?? []).filter((r) => !r.pass && r.output).map((r) => ({ ...r, name: s.skill, agent: a.agent }))));
+  if (failed.length) {
+    lines.push('', '## Failed runs', '');
+    for (const r of failed) lines.push(`- ${r.agent} · ${r.name} · ${r.scenario} · ${r.arm} trial ${r.trial}: [output](${(linkBase ? `${linkBase}/` : '') + r.output})`);
+  }
+  lines.push('', report.cleanProfile
+    ? 'Ran with --clean-profile: every agent got its own cleanArgs/cleanEnv in both arms.'
+    : 'Caveat: each bare arm can still see that agent\'s user-level skills and global instructions unless the eval ran with --clean-profile.');
   return lines.join('\n') + '\n';
 }

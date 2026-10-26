@@ -600,6 +600,46 @@
     ]
   },
   {
+    "id": "matrix-no-pooling",
+    "src": "src/evals.mjs",
+    "old": "const freshPlan = (plan) => ({ jobs: plan.jobs, bySkill: new Map([...plan.bySkill].map(([k, v]) => [k, { ...v, runs: [] }])) });",
+    "new": "const freshPlan = (plan) => plan;",
+    "test": "test/matrix.test.mjs",
+    "expectOutput": [
+      "nothing is pooled"
+    ]
+  },
+  {
+    "id": "matrix-skips-not-installed",
+    "src": "src/evals.mjs",
+    "old": "    if (installed(cfg.evals.agents[n].command[0], PATH)) agents.push(n);",
+    "new": "    if (true) agents.push(n);",
+    "test": "test/matrix.test.mjs",
+    "expectOutput": [
+      "skipped with the reason"
+    ]
+  },
+  {
+    "id": "matrix-disagreements",
+    "src": "src/evals.mjs",
+    "old": ".filter(([, v]) => v.length > 1 && new Set(v.map((x) => x.verdict)).size > 1)",
+    "new": ".filter(() => false)",
+    "test": "test/matrix.test.mjs",
+    "expectOutput": [
+      "disagreements list"
+    ]
+  },
+  {
+    "id": "matrix-consent-total",
+    "src": "src/evals.mjs",
+    "old": "runs: per.reduce((n, p) => n + p.runs, 0)",
+    "new": "runs: per[0].runs",
+    "test": "test/matrix.test.mjs",
+    "expectOutput": [
+      "consent covers the whole matrix"
+    ]
+  },
+  {
     "id": "sandbox-check-no-network",
     "src": "src/run.mjs",
     "old": "    return runInSandbox(sb, dir, command, runCfg.timeoutSec, { network: false });",

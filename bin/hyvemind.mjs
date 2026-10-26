@@ -9,7 +9,7 @@ import { CONFIG_FILE, pkgVersion, readConfig, resolveConfig, writeConfig } from 
 import { detect } from '../src/detect.mjs';
 import { doctor } from '../src/doctor.mjs';
 import { affected, failingFilesFromVitest, observe, readTrustLedger, trust } from '../src/affected.mjs';
-import { historicalMedian, lintScenarios, parseTargets, planEvals, preview, renderPreview, renderReport, runEvals } from '../src/evals.mjs';
+import { checkMatrix, historicalMedian, lintScenarios, matrixPreview, parseTargets, planEvals, preview, renderPreview, renderReport, runEvals, runMatrix, selectAgents } from '../src/evals.mjs';
 import { runGates } from '../src/gate.mjs';
 import { git } from '../src/git.mjs';
 import { bundledSkills, installAgentsMd, installSkills, selectedSkills } from '../src/install.mjs';
@@ -63,6 +63,8 @@ Usage: hyvemind <command> [options]
   probe <probes.json>   Sabotage probes: break the code, prove the test goes red
   eval [skill[:scenario]…]  Bare model vs with-skill on each skill's scenarios
             --agent <name>  --model <id>  --trials <n>  --concurrency <n>
+            --matrix          run once per agent in evals.agents whose binary is installed
+                              (or --agent a,b,c); per-agent verdicts plus a disagreements list
             --scenario <id>   only this scenario (repeatable)
             --dry-run         print the cost preview and exit; --yes starts without asking
                               (required when stdin is not a TTY)
@@ -87,7 +89,7 @@ const { values: o, positionals } = parseArgs({
     post: { type: 'boolean' }, yes: { type: 'boolean' }, verbose: { type: 'boolean' }, sandbox: { type: 'string' }, wait: { type: 'string' }, observe: { type: 'boolean' }, status: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
     'no-bisect': { type: 'boolean' }, local: { type: 'boolean' }, spec: { type: 'string' }, 'no-review': { type: 'boolean' },
     branch: { type: 'string' }, concurrency: { type: 'string' }, md: { type: 'string' }, report: { type: 'boolean' }, out: { type: 'string' }, render: { type: 'string' }, lint: { type: 'boolean' },
-    'allow-fresh': { type: 'boolean' }, scenario: { type: 'string', multiple: true }, 'clean-profile': { type: 'boolean' }, help: { type: 'boolean', short: 'h' }, version: { type: 'boolean', short: 'v' },
+    'allow-fresh': { type: 'boolean' }, scenario: { type: 'string', multiple: true }, 'clean-profile': { type: 'boolean' }, matrix: { type: 'boolean' }, help: { type: 'boolean', short: 'h' }, version: { type: 'boolean', short: 'v' },
   },
 });
 const [cmd, ...rest] = positionals;
@@ -244,8 +246,17 @@ async function main() {
       const trials = o.trials ? Number(o.trials) : undefined;
       const concurrency = o.concurrency ? Number(o.concurrency) : 1;
       const plan = planEvals(root, cfg, { skills: targets, trials });
-      // Every run is a model call: show the bill first, and never start unattended without --yes.
-      process.stderr.write(`${renderPreview(preview(plan, cfg, { concurrency, agent: o.agent, history: historicalMedian(root) }))}\n`);
+      const matrix = o.matrix || Boolean(o.agent?.includes(','));
+      let sel = null;
+      if (matrix) {
+        sel = selectAgents(cfg, o.agent ? o.agent.split(',').map((x) => x.trim()).filter(Boolean) : null);
+        checkMatrix(cfg, sel.agents, { model: o.model, cleanProfile: o['clean-profile'] });
+      }
+      // Every run is a model call: show the bill first (for a matrix, the total across agents), and never start unattended without --yes.
+      const p = matrix
+        ? matrixPreview(plan, cfg, { ...sel, concurrency, history: (a) => historicalMedian(root, a) })
+        : preview(plan, cfg, { concurrency, agent: o.agent, history: historicalMedian(root) });
+      process.stderr.write(`${renderPreview(p)}\n`);
       if (o['dry-run']) return;
       const consented = Boolean(o.yes);
       if (!consented) {
@@ -255,21 +266,26 @@ async function main() {
         rl.close();
         if (!/^y(es)?$/i.test(ans.trim())) { console.log('not running'); return; }
       }
-      const { report, file } = await runEvals(root, cfg, {
-        plan, agent: o.agent, model: o.model, keep: o.keep, cleanProfile: o['clean-profile'], concurrency,
-        log: (m) => process.stderr.write(`${m}\n`),
-      });
-      console.log(`agent ${report.agent}${report.model ? ` · model ${report.model}` : ''} · hyvemind ${report.version}${report.cleanProfile ? ' · clean profile' : ''}`);
-      console.log('skill            bare   skill  lift   verdict');
-      for (const s of report.skills) {
-        if (!s.trials) { console.log(`${s.skill.padEnd(16)} —      —      —      ${s.note}`); continue; }
-        const pct = (x) => `${Math.round(x * 100)}%`.padEnd(6);
-        console.log(`${s.skill.padEnd(16)} ${pct(s.bare)} ${pct(s.withSkill)} ${String(s.lift).padEnd(6)} ${s.verdict}${s.selected ? ` (only ${s.selected.join(', ')})` : ''}`);
+      const log = (m) => process.stderr.write(`${m}\n`);
+      const { report, file } = matrix
+        ? await runMatrix(root, cfg, { ...sel, plan, keep: o.keep, cleanProfile: o['clean-profile'], concurrency, log })
+        : await runEvals(root, cfg, { plan, agent: o.agent, model: o.model, keep: o.keep, cleanProfile: o['clean-profile'], concurrency, log });
+      const sections = report.agents ?? [{ agent: report.agent, skills: report.skills }];
+      const pct = (x) => `${Math.round(x * 100)}%`.padEnd(6);
+      for (const sec of sections) {
+        console.log(`agent ${sec.agent}${report.model ? ` · model ${report.model}` : ''} · hyvemind ${report.version}${report.cleanProfile ? ' · clean profile' : ''}`);
+        console.log('skill            bare   skill  lift   verdict');
+        for (const s of sec.skills) {
+          if (!s.trials) { console.log(`${s.skill.padEnd(16)} —      —      —      ${s.note}`); continue; }
+          console.log(`${s.skill.padEnd(16)} ${pct(s.bare)} ${pct(s.withSkill)} ${String(s.lift).padEnd(6)} ${s.verdict}${s.selected ? ` (only ${s.selected.join(', ')})` : ''}`);
+        }
+        for (const s of sec.skills.filter((x) => x.trials)) {
+          for (const r of s.byScenario.filter((x) => x.flags.length)) console.log(`! ${report.agents ? `${sec.agent} · ` : ''}${s.skill} · ${r.id}: ${r.flags.join(', ')} (bare ${r.bare.pass}/${r.bare.runs}, skill ${r.skill.pass}/${r.skill.runs})`);
+        }
       }
-      for (const s of report.skills.filter((x) => x.trials)) {
-        for (const r of s.byScenario.filter((x) => x.flags.length)) console.log(`! ${s.skill} · ${r.id}: ${r.flags.join(', ')} (bare ${r.bare.pass}/${r.bare.runs}, skill ${r.skill.pass}/${r.skill.runs})`);
-      }
-      const kept = report.skills.flatMap((s) => s.runs ?? []).filter((r) => r.output).length;
+      for (const x of report.skipped ?? []) console.log(`skipped ${x.agent}: ${x.reason}`);
+      for (const d of report.disagreements ?? []) console.log(`disagreement · ${d.skill}: ${d.verdicts.map((v) => `${v.agent} ${v.verdict}`).join(', ')}`);
+      const kept = sections.flatMap((sec) => sec.skills).flatMap((s) => s.runs ?? []).filter((r) => r.output).length;
       if (kept) console.log(`outputs: ${kept} kept under ${join(root, '.hyve', 'evals', report.runId)}`);
       console.log(`report: ${file}`);
       if (o.report) {
