@@ -40,6 +40,9 @@
   when the checkout is behind.
 - **`review-change`**: the author never grades their own change; a refute pass on
   every finding and every "looks fine"; coverage arithmetic in the report.
+- **`ai-exchange`**: data-minimisation and context-economy dimensions (fields sent
+  vs needed, bounded context, measured), and absence scans for the checks that should
+  exist and don't.
 
 ## 0.2.0 — 2026-10-26
 

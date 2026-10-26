@@ -1,0 +1,9 @@
+{
+  "id": "oversharing-call",
+  "fixture": "fixtures/whole-record",
+  "prompt": "Grade the model call in src/reply.js A-F on the quality of the app↔model information exchange. The reply only needs the ticket text and the customer's first name. Be brief. End with exactly one line: GRADE: <letter>",
+  "checks": [
+    { "type": "output-matches", "pattern": "GRADE:\\s*[C-F]\\b", "flags": "i" },
+    { "type": "output-matches", "pattern": "minimi|only (the )?fields|over-?shar|PII|ssn|whole (record|history)|unbounded|privacy", "flags": "i" }
+  ]
+}

@@ -138,7 +138,7 @@ hyvemind still ties the verdict to the exact tree.
 | `parallel-work` | always | Git hygiene for many sessions or agents in one repo: separate worktrees, never stash a shared tree, an advisory shared queue, delete a branch only once proved landed |
 | `skill-eval` | meta | Scaffold economics: how much each skill lifts the model compared with the model bare |
 | `mine-skills` | meta | Mines Claude Code transcripts (locally, after asking) for repeated skill chains and proposes combined skills; reports aggregates only |
-| `ai-exchange` | review (AI) | Grades every place the app talks to an LLM: runtime schemas from the source of truth, state read before writing, validated output with one bounded repair, gated apply |
+| `ai-exchange` | review (AI) | Grades every place the app talks to an LLM: runtime schemas from the source of truth, state read before writing, only the data it needs, validated output with one bounded repair, gated apply |
 | `live-ai-check` | test (AI) | Runs the app's AI flows against real vendors on a loopback-only stack, with allowlisted key names only; paces and resumes on 429. Classifies results honestly: pass, app-bug, contract-gap, vendor-refusal, quota |
 
 ## CLI
