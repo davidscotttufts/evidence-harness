@@ -2,8 +2,24 @@
   "$schema": "./schema/hyvemind.schema.json",
   "version": 1,
   "preset": "node",
-  "skills": { "targets": [".claude/skills"] },
-  "agentsMd": { "paths": [] },
-  "gates": [{ "name": "test", "run": "npm test" }],
-  "probe": { "command": "node --test {test}" }
+  "skills": {
+    "targets": [
+      ".claude/skills"
+    ]
+  },
+  "agentsMd": {
+    "paths": []
+  },
+  "gates": [
+    {
+      "name": "test",
+      "run": "npm test"
+    }
+  ],
+  "probe": {
+    "command": "node --test {test}"
+  },
+  "train": {
+    "setup": "npm install --no-audit --no-fund"
+  }
 }
