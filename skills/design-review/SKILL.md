@@ -34,10 +34,8 @@ The spec or design doc, the code it touches, and any earlier decision records in
 6. **Authorization and tenancy.** Is every new read and write checked by the **same**
    rule the existing route uses? Fail closed. Never trust a caller-supplied
    owner, tenant or role.
-7. **Model-facing surfaces** (if AI is involved). The schema the model sees is generated
-   from the source of truth or pinned to it by a test. Model output is validated
-   before it reaches durable state, and invalid output is a typed failure. The agent
-   reads current state before it writes.
+7. **Model-facing surfaces** (if AI is involved): apply `{{skill:ai-exchange}}`'s
+   dimensions to each new model call.
 8. **Migration and rollback.** Can it ship dark? Can it roll back without data loss?
    What happens to existing data?
 9. **Testability.** Can each acceptance criterion become a test that would fail if the

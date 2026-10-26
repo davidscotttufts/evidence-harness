@@ -23,15 +23,13 @@ cd ../<repo>-<task> && <install dependencies for real>        # don't symlink no
 
 ## Shared queue (advisory)
 
-Worktrees share one git common dir, so a note there is seen by every session:
-`$(git rev-parse --git-common-dir)/hyvemind-queue.md`, one line per claim
-(branch, files or area, session, date).
+Every worktree sees `$(git rev-parse --git-common-dir)/hyvemind-queue.md`. Claim
+your work there in one line (branch, area, session, date); edit only your own lines.
 
-- Before trusting it, reconcile it with reality: `git ls-remote --heads origin`,
-  open/merged PR state. A claim whose branch is merged or gone is stale; mark it so.
-- Add your own claim; edit only your own lines.
-- It is advisory. Never impose a hold, freeze or lock on another session; if you
-  overlap, tell the user and let them decide.
+- Reconcile it before trusting it: `git ls-remote --heads origin` and PR state. A
+  claim whose branch is merged or gone is stale.
+- It is advisory. Never impose a hold or freeze on another session; on overlap, tell
+  the user.
 
 ## While working
 

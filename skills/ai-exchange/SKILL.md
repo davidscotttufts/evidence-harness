@@ -62,7 +62,6 @@ that one of them is missing.
 
 - `catch { return {} }`, `?? []`, or `|| defaultValue` after parsing model output. That is
   **success-with-empty**: the caller cannot tell the model failed.
-- A prompt that says "use the X tool" when no X tool is registered.
 - Schema text in a prompt that differs from the validator. Diff them, never eyeball.
 - A "repair" loop that retries without passing the errors back.
 - **Absence scans.** Search for the checks that should exist and don't: output used
