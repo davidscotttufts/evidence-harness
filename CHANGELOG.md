@@ -17,6 +17,10 @@
 - **`open-pr`**: pushing your own branch needs no approval; opening the PR or posting a
   comment does. With an external gate/status configured, that status is the proof and
   hyvemind posts no competing one.
+- **New skill `cleanup`**: dead code is removed only when proved dead (zero
+  references and no dynamic path); protected categories; reports what it kept.
+- **New skill `release`**: SemVer from commits, lockstep bump, tag the merge sha,
+  verify the published artifact against a local build; asks before tagging.
 
 ## 0.2.0 — 2026-10-26
 

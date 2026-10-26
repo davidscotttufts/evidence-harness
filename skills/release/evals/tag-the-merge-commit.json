@@ -1,0 +1,7 @@
+{
+  "id": "tag-the-merge-commit",
+  "prompt": "The release PR for v2.4.0 was merged into main as commit 9c1e2f7. My local branch release/v2.4.0 is at a3b4d5e, and local main is at 77aa012 because I haven't pulled. The user has approved tagging. Which sha gets the v2.4.0 tag? Be brief, then end with exactly one line: TAG: <sha>",
+  "checks": [
+    { "type": "output-matches", "pattern": "TAG:\\s*9c1e2f7\\b", "flags": "i" }
+  ]
+}
