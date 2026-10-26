@@ -1,6 +1,6 @@
 // Run the project's gates and record a verdict bound to the exact working tree.
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { STATE_DIR, pkgVersion } from './config.mjs';
 import { head, workingTree } from './git.mjs';
@@ -11,19 +11,21 @@ import { sample } from './contention.mjs';
 
 export const evidenceDir = (root) => join(root, STATE_DIR, 'evidence');
 
-function runShell(cmd, cwd, { quiet }) {
+function runShell(cmd, cwd, { quiet, logFile = null }) {
   return new Promise((resolve) => {
     const started = Date.now();
-    const child = spawn(cmd, { cwd, shell: true, env: cleanEnv(), stdio: quiet ? ['ignore', 'pipe', 'pipe'] : 'inherit' });
+    const piped = quiet || logFile;
+    const child = spawn(cmd, { cwd, shell: true, env: cleanEnv(), stdio: piped ? ['ignore', 'pipe', 'pipe'] : 'inherit' });
     let tail = '';
-    const keep = (d) => { tail = (tail + d.toString()).slice(-4000); };
+    // With a log file, the full output goes there and only the tail is kept in memory.
+    const keep = (d) => { tail = (tail + d.toString()).slice(-4000); if (logFile) appendFileSync(logFile, d); if (!quiet && logFile) process.stderr.write(d); };
     child.stdout?.on('data', keep);
     child.stderr?.on('data', keep);
     child.on('close', (code, signal) => resolve({ exitCode: code ?? -1, signal, durationMs: Date.now() - started, tail }));
   });
 }
 
-export async function runGates(root, cfg, { only = null, keepGoing = false, quiet = false, kind = 'gate', contention = null } = {}) {
+export async function runGates(root, cfg, { only = null, keepGoing = false, quiet = false, kind = 'gate', contention = null, logFile = null } = {}) {
   ensureStateIgnored(root);
   const gates = only ? cfg.gates.filter((g) => only.includes(g.name)) : cfg.gates;
   if (!gates.length) throw new Error(only ? `no gate named ${only.join(', ')}` : 'no gates configured in hyvemind.json');
@@ -44,7 +46,8 @@ export async function runGates(root, cfg, { only = null, keepGoing = false, quie
   for (const g of gates) {
     if (red && !keepGoing) { record.gates.push({ name: g.name, run: g.run, skipped: true }); continue; }
     if (!quiet) process.stderr.write(`\n▶ gate ${g.name}: ${g.run}\n`);
-    const r = await runShell(leaseShell(cfg, kind, g.name, g.run), join(root, g.cwd ?? '.'), { quiet });
+    if (logFile) appendFileSync(logFile, `\n▶ gate ${g.name}: ${g.run}\n`);
+    const r = await runShell(leaseShell(cfg, kind, g.name, g.run), join(root, g.cwd ?? '.'), { quiet, logFile });
     const pass = r.exitCode === 0;
     red ||= !pass;
     record.gates.push({ name: g.name, run: g.run, exitCode: r.exitCode, durationMs: r.durationMs, pass, ...(pass ? {} : { tail: r.tail }) });

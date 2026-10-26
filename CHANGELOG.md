@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.0 — unreleased
+
+- **Sandboxed `run`** (`--sandbox podman|docker`, `run.sandbox`). Exit checks and
+  setup run in a container: no network for checks, dropped capabilities, memory and
+  CPU limits, and only allowlisted environment variables. While sandboxed, the agent
+  gets read and edit tools only, so nothing it writes runs on the host. `doctor`
+  checks the runtime.
+- **`train` prints a summary** (pass or fail per gate) and saves the full gate output
+  to `.hyve/train/`; `--verbose` streams it. The census tests skip with "run npm ci"
+  when TypeScript isn't installed. `.hyve/.gitignore` also covers `train/`, `runs/` and
+  the `affected` ledger.
+
 ## Unreleased
 
 - **Honest eval verdicts** (#17). New `saturated` verdict when both arms pass every

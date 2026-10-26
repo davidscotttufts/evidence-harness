@@ -50,9 +50,12 @@ Usage: hyvemind <command> [options]
   train <pr…>           Merge queue: gate several PRs as ONE train, merge on green, prove
                         main's tree == the gated tree, bisect a red train
             --base <branch>  --no-merge  --no-bisect  --local (ids are origin branches)
+            --verbose        stream the gate output (default: a summary, full log saved)
   run <plan.md>         Each plan task → a fresh agent in its own worktree; done = the
                         task's exit check; an independent reviewer must say GO
             --spec <file>  --only T1,T3  --no-review  --branch <name>
+            --sandbox podman|docker  run exit checks in a container (no network, allowlisted env);
+                                     the agent gets read/edit tools only
   census [path…]        Read every test case's AST: flags cases that cannot fail or claim
                         little, gives each file a grade CEILING, and keeps a ledger keyed
                         on blob sha (--out <ledger.json>, default .hyve/census.json;
@@ -83,7 +86,7 @@ const { values: o, positionals } = parseArgs({
     only: { type: 'string' }, 'keep-going': { type: 'boolean' }, quiet: { type: 'boolean' },
     agent: { type: 'string' }, model: { type: 'string' }, trials: { type: 'string' }, keep: { type: 'boolean' },
     filter: { type: 'string' }, all: { type: 'boolean' }, root: { type: 'string' }, json: { type: 'boolean' },
-    post: { type: 'boolean' }, yes: { type: 'boolean' }, wait: { type: 'string' }, observe: { type: 'boolean' }, status: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
+    post: { type: 'boolean' }, yes: { type: 'boolean' }, verbose: { type: 'boolean' }, sandbox: { type: 'string' }, wait: { type: 'string' }, observe: { type: 'boolean' }, status: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
     'no-bisect': { type: 'boolean' }, local: { type: 'boolean' }, spec: { type: 'string' }, 'no-review': { type: 'boolean' },
     branch: { type: 'string' }, concurrency: { type: 'string' }, md: { type: 'string' }, report: { type: 'boolean' }, out: { type: 'string' }, render: { type: 'string' }, lint: { type: 'boolean' },
     'allow-fresh': { type: 'boolean' }, scenario: { type: 'string', multiple: true }, 'clean-profile': { type: 'boolean' }, matrix: { type: 'boolean' }, help: { type: 'boolean', short: 'h' }, version: { type: 'boolean', short: 'v' },
@@ -335,11 +338,12 @@ async function main() {
       const base = o.base ?? cfg.train?.base ?? 'main';
       const forge = o.local ? localForge(root, base) : githubForge(root);
       const r = await runTrain(root, cfg, rest, {
-        base, forge, merge: !o['no-merge'], bisect: !o['no-bisect'], quiet: o.quiet,
+        base, forge, merge: !o['no-merge'], bisect: !o['no-bisect'], quiet: o.quiet, verbose: o.verbose,
         log: (m) => console.log(m),
       });
       const label = (ids) => ids.map(forge.label).join(' ') || '—';
       console.log(`\nmerged: ${label(r.merged)} · gated (not merged): ${label(r.gated)} · red: ${label(r.red)} · conflicts: ${label(r.conflicts)} · refused: ${label(r.refused)} · gate runs: ${r.gates}`);
+      if (r.gates) console.log(`full gate log: ${r.logFile}`);
       if (r.red.length || r.conflicts.length || r.refused.length) process.exitCode = 1;
       return;
     }
@@ -347,7 +351,7 @@ async function main() {
       if (!rest[0]) throw new Error('usage: hyvemind run <plan.md>');
       const cfg = readConfig(root);
       const { report, file } = runPlan(root, cfg, rest[0], {
-        spec: o.spec, only: o.only?.split(','), review: !o['no-review'], branch: o.branch, base: o.base,
+        spec: o.spec, only: o.only?.split(','), review: !o['no-review'], branch: o.branch, base: o.base, sandbox: o.sandbox,
         log: (m) => console.log(m),
       });
       for (const t of report.tasks) console.log(`${t.id.padEnd(4)} ${(t.status ?? '').padEnd(15)} ${t.title ?? ''}`);

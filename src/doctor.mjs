@@ -5,6 +5,7 @@ import { CONFIG_FILE, pkgVersion, readConfig } from './config.mjs';
 import { isRepo } from './git.mjs';
 import { brokerHealth } from './broker.mjs';
 import { checkIntegrity } from './integrity.mjs';
+import { runtimeHealth, sandboxConfig } from './sandbox.mjs';
 import { BLOCK_END, installSkills, readManifest, selectedSkills } from './install.mjs';
 
 // With an external gate, the skills defer to it (open-pr, review-change and
@@ -55,6 +56,8 @@ export function doctor(root) {
   const bh = brokerHealth(cfg);
   if (bh) add(bh.ok ? true : 'warn', 'broker', bh.ok ? `${cfg.broker.command ?? 'tracegate'} lease wraps gates, trains, probes and eval runs` : `configured but not reachable: ${bh.detail}`);
   for (const c of checkIntegrity(root, cfg)) add(c.ok, c.name, c.detail);
+  const sb = sandboxConfig(cfg);
+  if (sb) { const h = runtimeHealth(sb); add(h.ok ? true : 'warn', 'sandbox', h.detail); }
   const ign = join(root, '.hyve/.gitignore');
   add(existsSync(ign) ? true : 'warn', 'evidence ignored by git', existsSync(ign) ? '' : 'run "hyvemind update"');
   return checks;

@@ -638,5 +638,45 @@
     "expectOutput": [
       "consent covers the whole matrix"
     ]
+  },
+  {
+    "id": "sandbox-check-no-network",
+    "src": "src/run.mjs",
+    "old": "    return runInSandbox(sb, dir, command, runCfg.timeoutSec, { network: false });",
+    "new": "    return runInSandbox(sb, dir, command, runCfg.timeoutSec, { network: true });",
+    "test": "test/sandbox.test.mjs",
+    "expectOutput": [
+      "the exit check runs in the container"
+    ]
+  },
+  {
+    "id": "sandbox-env-allowlist",
+    "src": "src/sandbox.mjs",
+    "old": "  for (const name of sb.env) if (process.env[name] !== undefined) argv.push('-e', `${name}=${process.env[name]}`);",
+    "new": "  for (const name of Object.keys(process.env)) argv.push('-e', `${name}=${process.env[name]}`);",
+    "test": "test/sandbox.test.mjs",
+    "expectOutput": [
+      "only allowlisted env"
+    ]
+  },
+  {
+    "id": "sandbox-roles-no-shell",
+    "src": "src/sandbox.mjs",
+    "old": "'--allowedTools', 'Read,Grep,Glob,Edit,Write'],",
+    "new": "'--allowedTools', 'Read,Grep,Glob,Edit,Write,Bash'],",
+    "test": "test/sandbox.test.mjs",
+    "expectOutput": [
+      "no shell for the agent"
+    ]
+  },
+  {
+    "id": "train-saves-full-log",
+    "src": "src/gate.mjs",
+    "old": "if (logFile) appendFileSync(logFile, d);",
+    "new": "",
+    "test": "test/train.test.mjs",
+    "expectOutput": [
+      "saves the full gate output"
+    ]
   }
 ]
