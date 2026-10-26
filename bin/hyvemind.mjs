@@ -217,7 +217,7 @@ async function main() {
       const cfg = readConfig(root);
       const skills = rest.length ? rest : selectedSkills(cfg);
       if (o.render) {
-        process.stdout.write(renderReport(JSON.parse(readFileSync(resolve(o.render), 'utf8'))));
+        process.stdout.write(renderReport(JSON.parse(readFileSync(resolve(o.render), 'utf8')), cfg.evals));
         return;
       }
       const { report, file } = await runEvals(root, cfg, {
@@ -232,10 +232,13 @@ async function main() {
         const pct = (x) => `${Math.round(x * 100)}%`.padEnd(6);
         console.log(`${s.skill.padEnd(16)} ${pct(s.bare)} ${pct(s.withSkill)} ${String(s.lift).padEnd(6)} ${s.verdict}`);
       }
+      for (const s of report.skills.filter((x) => x.trials)) {
+        for (const r of s.byScenario.filter((x) => x.flags.length)) console.log(`! ${s.skill} · ${r.id}: ${r.flags.join(', ')} (bare ${r.bare.pass}/${r.bare.runs}, skill ${r.skill.pass}/${r.skill.runs})`);
+      }
       console.log(`report: ${file}`);
       if (o.report) {
         const md = o.out ? resolve(o.out) : join(root, '.hyve', 'evals', 'REPORT.md');
-        writeFileSync(md, renderReport(report));
+        writeFileSync(md, renderReport(report, cfg.evals));
         console.log(`markdown: ${md}`);
       }
       return;

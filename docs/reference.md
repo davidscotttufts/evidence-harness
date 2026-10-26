@@ -314,11 +314,31 @@ output patterns, files or commands. Agents are argv templates in `evals.agents`:
 Verdicts:
 
 - `no-signal`: neither arm ever passes, so the scenario (or the skill) is broken.
-- `earning`: lift ≥ `liftThreshold` (default 0.2).
+- `saturated`: both arms pass every run. These scenarios cannot measure the skill;
+  write one the bare model still fails ("unmeasured below ceiling"), don't retire it.
+- `earning`: lift ≥ `liftThreshold` (default 0.2) **and** the 95% lift interval excludes 0.
+- `earning (low n)`: lift ≥ `liftThreshold`, but the interval still includes 0, so a
+  flipped run or two could explain it. Run more trials before citing it.
 - `marginal`: lift is positive but below the threshold.
-- `retire-candidate`: lift ≤ 0.
+- `retire-candidate`: lift ≤ 0 with the bare arm below 100%.
 - `insufficient-data`: fewer than `minRuns` runs (default 3). Never retire a skill on
   one run.
+
+Uncertainty: each arm gets a 95% Wilson score interval. The lift interval is
+Newcombe's hybrid score interval for a difference of proportions (method 10 in
+Newcombe 1998): with skill arm (p₁, l₁, u₁) and bare arm (p₂, l₂, u₂),
+`lower = d − √((p₁−l₁)² + (u₂−p₂)²)` and `upper = d + √((u₁−p₁)² + (p₂−l₂)²)`, where
+d = p₁ − p₂. It treats the two arms as independent samples. At 3 runs per arm only
+3/3 vs 0/3 clears 0.
+
+Per scenario: the report has a row per scenario (bare and skill pass counts, lift) and
+flags `harmful` (the skill arm passes less often than bare) and `no-signal` (neither
+arm passes). Flagged scenarios are listed at the top of the markdown report, because a
+skill-level average hides them. The report also shows each skill's rendered size in
+words, with tokens approximated as words × 1.3, next to its lift.
+
+`--render <report.json>` recomputes verdicts, intervals and per-scenario rows from the
+report's runs, so a report from an older hyvemind renders with today's rules.
 
 **Measured results:** [docs/evals/2026-10-26-claude.md](evals/2026-10-26-claude.md) has two
 132-run evals on Claude Code. `spec` (+0.50), `pr` (+0.67) and, after a
@@ -344,8 +364,9 @@ node bin/hyvemind.mjs probe test/self-probes.json # hyvemind probes its own test
 
 Each core guarantee has a self-probe showing that its test goes red when the guarantee
 is broken. The guarantees covered: tree-bound evidence, partial runs never counting,
-local edits being kept, probes restoring the file, eval lift, and chain splitting in
-the miner.
+local edits being kept, probes restoring the file, eval lift, eval verdicts
+(saturated, earning vs low n, per-scenario harmful/no-signal flags, the lift
+interval, old reports re-rendered), and chain splitting in the miner.
 
 ## Releasing
 

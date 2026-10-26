@@ -52,11 +52,11 @@
   {
     "id": "eval-lift",
     "src": "src/evals.mjs",
-    "old": "    const lift = +(rate(w) - rate(b)).toFixed(3);",
-    "new": "    const lift = +(rate(w)).toFixed(3);",
+    "old": "  const lift = +(rate(w) - rate(b)).toFixed(3);",
+    "new": "  const lift = +(rate(w)).toFixed(3);",
     "test": "test/evals.test.mjs",
     "expectOutput": [
-      "retire-candidate"
+      "cancel out"
     ]
   },
   {
@@ -417,6 +417,66 @@
     "test": "test/cli.test.mjs",
     "expectOutput": [
       "warns only on the real gaps"
+    ]
+  },
+  {
+    "id": "eval-saturated",
+    "src": "src/evals.mjs",
+    "old": "  if (bare === 1 && withSkill === 1) return 'saturated';\n",
+    "new": "",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "100% in both arms cannot measure the skill"
+    ]
+  },
+  {
+    "id": "eval-scenario-harmful",
+    "src": "src/evals.mjs",
+    "old": "    if (rs < rb) flags.push('harmful');\n",
+    "new": "",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "skill average hides"
+    ]
+  },
+  {
+    "id": "eval-scenario-no-signal",
+    "src": "src/evals.mjs",
+    "old": "    if (bare.runs && skill.runs && !bare.pass && !skill.pass) flags.push('no-signal');\n",
+    "new": "",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "skill average hides"
+    ]
+  },
+  {
+    "id": "eval-earning-low-n",
+    "src": "src/evals.mjs",
+    "old": "liftLow == null || liftLow > 0 ? 'earning' : 'earning (low n)'",
+    "new": "'earning'",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "earning (low n)"
+    ]
+  },
+  {
+    "id": "eval-newcombe-interval",
+    "src": "src/evals.mjs",
+    "old": "d - Math.sqrt((p1 - l1) ** 2 + (u2 - p2) ** 2)",
+    "new": "d - Math.sqrt((p1 - l1) ** 2)",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "published values"
+    ]
+  },
+  {
+    "id": "eval-render-recomputes",
+    "src": "src/evals.mjs",
+    "old": "  const skills = report.skills.map((s) => (s.trials ? summarize(s, th) : s));",
+    "new": "  const skills = report.skills.map((s) => (s.trials ? { ...s, ...summarize(s, th), verdict: s.verdict } : s));",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "recomputes them from its runs"
     ]
   },
   {
