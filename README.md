@@ -1,6 +1,6 @@
 # hyvemind 🐝
 
-*myndhyve, flipped.* A hive of SDLC skills for coding agents. It gives your agent a
+A hive of SDLC skills for coding agents. It gives your agent a
 gated **spec → design review → plan → implement → review → PR** workflow, where "done"
 is decided by evidence and never by the agent's own say-so. It also measures, for each
 model you use, whether each skill still makes that model better than it is on its own.
