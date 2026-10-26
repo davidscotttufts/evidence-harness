@@ -1,5 +1,5 @@
 ---
-name: pr
+name: open-pr
 description: "Open a pull request only when the current working tree has green gate evidence: verifies with {{cli}} evidence, writes the title and body from the actual diff (what, why, how verified, risk), uses Conventional Commits and sign-off, and asks the user before pushing. Use whenever a change is ready to propose."
 ---
 

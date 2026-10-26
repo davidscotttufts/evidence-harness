@@ -22,6 +22,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { PKG_ROOT, STATE_DIR, pkgVersion } from './config.mjs';
 import { renderSkill } from './install.mjs';
+import { leaseArgv } from './broker.mjs';
 
 export function loadScenarios(root, cfg, skill) {
   const own = join(root, cfg.evals.scenariosDir ?? '.hyve/scenarios', skill);
@@ -131,7 +132,7 @@ export async function runEvals(root, cfg, { skills, agent, model, trials, keep =
       const j = jobs[next++];
       const dir = workspace(j.sc, cfg, j.skill, j.arm);
       try {
-        const [cmd, ...args] = argv(agentCfg.command, { prompt: j.sc.prompt, workdir: dir, model });
+        const [cmd, ...args] = leaseArgv(cfg, 'eval', `${j.skill}/${j.sc.id}`, argv(agentCfg.command, { prompt: j.sc.prompt, workdir: dir, model }));
         const r = await runAgent(cmd, args, dir, cfg.evals.timeoutSec, j.arm);
         const checks = r.error ? [{ type: 'agent-run', pass: false, error: r.error }] : score(j.sc.checks, r.output, dir);
         const pass = checks.every((c) => c.pass);

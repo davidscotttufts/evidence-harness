@@ -67,3 +67,12 @@ test('v0.2 commands: affected --json, evidence --post refusal, eval --render, tr
   assert.match(run(dir, 'train').stderr, /usage: hyvemind train/);
   assert.match(run(dir, 'run').stderr, /usage: hyvemind run/);
 });
+
+test('doctor warns when an external gate is paired with skills that add a second done/merge path', () => {
+  const dir = repo();
+  writeFileSync(join(dir, 'hyvemind.json'), JSON.stringify({ version: 1, externalGate: { run: 'make verify', done: 'make verify passes' }, skills: { include: ['write-spec', 'open-pr'] } }));
+  assert.equal(run(dir, 'update').status, 0);
+  const out = run(dir, 'doctor').stdout;
+  assert.match(out, /✓ gate — external: make verify/);
+  assert.match(out, /! competing skills — open-pr use hyvemind gate\/evidence\/train/);
+});

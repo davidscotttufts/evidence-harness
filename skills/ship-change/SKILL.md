@@ -1,17 +1,17 @@
 ---
-name: ship
+name: ship-change
 description: "Take a feature or change from idea to an open PR as one gated pipeline: spec → design review → plan → implement → review → PR, stopping at every gate. Each phase exits on a mechanical check, not on the agent's say-so. Use for any non-trivial change; start mid-pipeline by naming a phase ('ship from review')."
 ---
 
 # Ship a change
 
 ```
-{{skill:spec}} → {{skill:design-review}} → {{skill:plan}} → implement → {{skill:review}} → {{skill:pr}}
+{{skill:write-spec}} → {{skill:design-review}} → {{skill:plan-tasks}} → implement → {{skill:review-change}} → {{skill:open-pr}}
 ```
 
 This skill **orchestrates** the other bee skills. It reimplements none of them.
 Pass each phase's artifact into the next. **Stop at every ⛔ gate** and wait for the
-user. `{{skill:evidence}}` applies throughout.
+user. `{{skill:evidence-rules}}` applies throughout.
 
 ## Size the process to the change
 
@@ -28,13 +28,13 @@ a wire format is **Structural**, however small the diff.
 
 ## Phases
 
-1. **Spec** with `{{skill:spec}}`. Produces a spec with testable acceptance criteria
+1. **Spec** with `{{skill:write-spec}}`. Produces a spec with testable acceptance criteria
    and, for Structural changes, a decision record in the project's `specs.dir`.
    ⛔ The user approves the spec.
 2. **Design review** with `{{skill:design-review}}`. Fold its corrections back into
    the spec. ⛔ Stop on any boundary collision, duplicated system, or unsafe data or
    auth path.
-3. **Plan** with `{{skill:plan}}`. Phased tasks, each sized for one fresh-context
+3. **Plan** with `{{skill:plan-tasks}}`. Phased tasks, each sized for one fresh-context
    session and each with its own check.
 4. **Implement**, one plan task at a time. `{{cli}} run plan.md --spec <spec>` automates
    this step: a fresh agent per task, the task's own exit check, and an independent
@@ -46,9 +46,9 @@ a wire format is **Structural**, however small the diff.
    - **Inner loop:** `{{cli}} affected --run` runs only the tests your change can
      reach, and everything when it can't tell.
    - **Exit check per task:** the task's own check passes. Never move on with a red task.
-5. **Review** with `{{skill:review}}`. It starts with `{{cli}} gate` (full).
+5. **Review** with `{{skill:review-change}}`. It starts with `{{cli}} gate` (full).
    ⛔ Stop on any blocker, go back to step 4, then review again.
-6. **PR** with `{{skill:pr}}`. ⛔ The user approves before anything outward-facing
+6. **PR** with `{{skill:open-pr}}`. ⛔ The user approves before anything outward-facing
    (push, PR, comment).
 7. **Merge.** Several approved PRs can go through one gate with
    `{{cli}} train <pr> <pr>…`. It merges on green only if the base did not move,

@@ -11,7 +11,9 @@ export const DEFAULTS = {
   version: 1,
   preset: 'generic',
   skills: {
-    prefix: 'bee-',
+    // No prefix: skill names are chosen to be distinct (ship-change, open-pr, …).
+    // A project can still set one if it wants its own namespace.
+    prefix: '',
     // Claude Code reads .claude/skills; .agents/skills is the cross-agent Agent Skills location.
     targets: ['.claude/skills', '.agents/skills'],
     include: 'all',
@@ -70,6 +72,11 @@ export function validate(cfg) {
   need(Array.isArray(cfg.skills?.targets) && cfg.skills.targets.length > 0, 'skills.targets must be a non-empty array');
   need(cfg.skills?.include === 'all' || Array.isArray(cfg.skills?.include), 'skills.include must be "all" or an array');
   need(Array.isArray(cfg.gates), 'gates must be an array');
+  if (cfg.externalGate !== undefined) {
+    need(isObject(cfg.externalGate) && typeof cfg.externalGate.run === 'string' && cfg.externalGate.run && typeof cfg.externalGate.done === 'string' && cfg.externalGate.done,
+      'externalGate needs "run" (the project\'s own gate command) and "done" (what counts as done)');
+    need(!cfg.gates.length, 'externalGate and gates are mutually exclusive: one definition of done');
+  }
   for (const [i, g] of (cfg.gates ?? []).entries()) {
     need(typeof g?.name === 'string' && g.name, `gates[${i}].name is required`);
     need(typeof g?.run === 'string' && g.run, `gates[${i}].run is required`);

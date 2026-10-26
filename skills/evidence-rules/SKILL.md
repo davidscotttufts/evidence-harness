@@ -1,5 +1,5 @@
 ---
-name: evidence
+name: evidence-rules
 description: "The hive constitution: rules for what counts as evidence before you claim anything is done, fixed, green, safe or verified. Applies to every task. Use whenever you are about to report an outcome, cite a measurement, trust a check, or decide a test or gate result means something."
 ---
 

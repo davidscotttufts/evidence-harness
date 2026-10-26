@@ -125,7 +125,7 @@ export async function runTrain(root, cfg, ids, opts = {}) {
         if (s.status !== 0) throw new Error(`train.setup failed: ${cfg.train.setup}`);
       }
       result.gates++;
-      const { record } = await runGates(dir, cfg, { quiet: opts.quiet });
+      const { record } = await runGates(dir, cfg, { quiet: opts.quiet, kind: 'train' });
       return record;
     };
 

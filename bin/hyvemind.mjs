@@ -76,8 +76,8 @@ function projectRoot() {
 function summarize(actions) {
   const counts = {};
   for (const a of actions) counts[a.action] = (counts[a.action] ?? 0) + 1;
-  for (const a of actions.filter((x) => x.action === 'modified' || x.action === 'foreign')) {
-    console.log(`  kept ${a.action === 'modified' ? '(edited locally)' : '(existed before hyvemind)'}: ${a.rel}`);
+  for (const a of actions.filter((x) => ['modified', 'foreign', 'orphan-modified'].includes(x.action))) {
+    console.log(`  kept ${a.action === 'foreign' ? '(existed before hyvemind)' : a.action === 'orphan-modified' ? '(no longer produced, but edited locally: remove it yourself)' : '(edited locally)'}: ${a.rel}`);
   }
   return Object.entries(counts).map(([k, v]) => `${v} ${k}`).join(', ');
 }

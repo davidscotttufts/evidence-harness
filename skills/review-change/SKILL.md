@@ -1,5 +1,5 @@
 ---
-name: review
+name: review-change
 description: "Senior code review of the current branch: runs the full hyvemind gate first, scans the diff for the project's banned patterns, then reviews for correctness, security/authorization, data integrity, error honesty, tests and simplicity. Findings are severity-ordered with concrete failure scenarios; ends with a GO / NO-GO for opening a PR."
 ---
 

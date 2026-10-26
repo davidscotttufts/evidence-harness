@@ -43,7 +43,7 @@ tests; regression tests that cite an incident; contract and conformance tests.
    restores them; never run two at once in one worktree). Verdicts:
    - `witnessed`: the test went red. The claim is backed.
    - `vacuous`: the test stayed green. Before you blame the test, check the break was
-     reachable (see `{{skill:evidence}}`).
+     reachable (see `{{skill:evidence-rules}}`).
    - `other-red`: something failed, but not the expected case. Investigate.
    - `error`: red for the wrong reason (timeout, environment). This is not a witness.
 3. **Grade and act.** Fix B/C up to A: sharpen the assertions, cut redundant cases,

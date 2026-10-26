@@ -3,7 +3,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONFIG_FILE, pkgVersion, readConfig } from './config.mjs';
 import { isRepo } from './git.mjs';
-import { BLOCK_END, installSkills, readManifest } from './install.mjs';
+import { brokerHealth } from './broker.mjs';
+import { BLOCK_END, installSkills, readManifest, selectedSkills } from './install.mjs';
+
+// These skills tell agents to use hyvemind's own gate/evidence/train.
+export const COMPETES_WITH_EXTERNAL_GATE = ['ship-change', 'open-pr', 'review-change', 'evidence-rules'];
 
 // Each check: { ok: true | false | 'warn', name, detail }
 export function doctor(root) {
@@ -12,7 +16,14 @@ export function doctor(root) {
   add(isRepo(root), 'git repository', isRepo(root) ? '' : 'gate evidence is bound to git trees; run inside a repo');
   let cfg;
   try { cfg = readConfig(root); add(true, CONFIG_FILE, `preset ${cfg.preset}`); } catch (e) { add(false, CONFIG_FILE, e.message); return checks; }
-  add(cfg.gates.length > 0 ? true : 'warn', 'gates', cfg.gates.length ? cfg.gates.map((g) => g.name).join(' → ') : 'none configured; "hyvemind gate" will refuse to run');
+  if (cfg.externalGate) {
+    add(true, 'gate', `external: ${cfg.externalGate.run}`);
+    // Skills that would add a second done signal or merge path beside the project's own.
+    const competing = selectedSkills(cfg).filter((s) => COMPETES_WITH_EXTERNAL_GATE.includes(s));
+    if (competing.length) add('warn', 'competing skills', `${competing.map((s) => cfg.skills.prefix + s).join(', ')} use hyvemind gate/evidence/train; with an external gate, exclude them`);
+  } else {
+    add(cfg.gates.length > 0 ? true : 'warn', 'gates', cfg.gates.length ? cfg.gates.map((g) => g.name).join(' → ') : 'none configured; "hyvemind gate" will refuse to run');
+  }
   const m = readManifest(root);
   add(m.version === pkgVersion() ? true : 'warn', 'installed version', m.version ? `${m.version} (hyvemind is ${pkgVersion()})` : 'skills not installed; run "hyvemind init"');
   const plan = installSkills(root, cfg, { dryRun: true });
@@ -36,6 +47,8 @@ export function doctor(root) {
     const global = !local && spawnSync('sh', ['-c', 'command -v hyvemind'], { encoding: 'utf8' }).status === 0;
     add(local || global ? true : 'warn', 'cli', local ? `${cfg.cli} → node_modules/.bin` : global ? `${cfg.cli} → global install` : `"${cfg.cli}" does not resolve locally; install hyvemind as a devDependency or pin "cli" to an exact version`);
   }
+  const bh = brokerHealth(cfg);
+  if (bh) add(bh.ok ? true : 'warn', 'broker', bh.ok ? `${cfg.broker.command ?? 'tracegate'} lease wraps gates, trains, probes and eval runs` : `configured but not reachable: ${bh.detail}`);
   const ign = join(root, '.hyve/.gitignore');
   add(existsSync(ign) ? true : 'warn', 'evidence ignored by git', existsSync(ign) ? '' : 'run "hyvemind update"');
   return checks;

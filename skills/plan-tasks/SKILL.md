@@ -1,5 +1,5 @@
 ---
-name: plan
+name: plan-tasks
 description: "Turn an approved spec into a phased, dependency-ordered task list where every task fits one fresh-context session and has its own exit check. Discovers the existing surface first and classifies the change. Use after a spec is approved and before implementation."
 ---
 
