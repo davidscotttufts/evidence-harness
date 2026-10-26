@@ -49,7 +49,8 @@ test('runCensus: duplicate bodies across files, blob-keyed ledger, grades surviv
   assert.equal(first.summary.files, 2, 'only test files');
   assert.equal(first.summary.flags.DUPLICATE_BODY, 2);
   assert.deepEqual(first.files.map((f) => f.status), ['new', 'new']);
-  first.files[0].grade = 'D'; // a grader records a grade
+  first.files[0].grade = 'D'; // a grader records grades on both files
+  first.files[1].grade = 'A';
   write(dir, { 'b.test.ts': `/** #2 */\nit('changed', () => { expect(g(2)).toBe(3); });\n` });
   sh(dir, 'git', ['commit', '-qam', 'edit b']);
   const second = runCensus(dir, cfg, { ts, previous: first });
