@@ -337,6 +337,7 @@ order: defaults, then the preset, then `hyvemind.json`. Objects merge; arrays re
 ## Development
 
 ```bash
+npm ci                                            # once per fresh checkout: the census tests need typescript (dev only)
 npm test                                          # node:test
 node bin/hyvemind.mjs probe test/self-probes.json # hyvemind probes its own tests
 ```
