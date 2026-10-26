@@ -1,5 +1,5 @@
 ---
-name: live-qualify
+name: live-ai-check
 description: "Run an application's LLM-powered flows against REAL model vendors with the user's own keys, on a local test stack only, and record what actually happens: pass, app bug, vendor refusal, quota, or contract mismatch. Gives static reviews live evidence. Keys never pass through the agent; failures are recorded, never auto-fixed. Use before claiming an AI feature works, after changing prompts or model versions, or when a grader holds a feature below A for 'never run live'."
 ---
 

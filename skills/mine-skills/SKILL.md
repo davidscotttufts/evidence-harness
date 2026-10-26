@@ -1,5 +1,5 @@
 ---
-name: skill-miner
+name: mine-skills
 description: "Mine Claude Code session transcripts for how skills are actually used: frequency, and the chains run by hand again and again (A → B → C). Proposes composite skills for repeated chains and new skills for repeated manual work, each backed by counts and confidence. Read-only unless asked to scaffold."
 ---
 
@@ -24,7 +24,7 @@ sequences. Installed bee skills are counted under their unprefixed names.
 
 - **Composite skill:** a chain with count ≥ 5 and confidence ≥ 0.5. Package it as one
   skill that **calls the existing skills in order** with gates between them, like
-  `{{skill:ship}}` does. Never copy their content into it.
+  `{{skill:ship-change}}` does. Never copy their content into it.
 - **New skill:** the same manual multi-step work repeated across sessions with no
   skill behind it (look at recent sequences and at what happens between skill calls).
 - **Retire signal:** a skill nobody has run in 60+ days. Check it with

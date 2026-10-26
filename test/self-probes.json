@@ -198,5 +198,25 @@
     "expectOutput": [
       "no-signal"
     ]
+  },
+  {
+    "id": "install-removes-stale",
+    "src": "src/install.mjs",
+    "old": "    if (!dryRun && !edited) {",
+    "new": "    if (false) {",
+    "test": "test/install.test.mjs",
+    "expectOutput": [
+      "no longer produces"
+    ]
+  },
+  {
+    "id": "external-gate-no-second-done",
+    "src": "src/install.mjs",
+    "old": "    ...(cfg.externalGate\n",
+    "new": "    ...(false\n",
+    "test": "test/install.test.mjs",
+    "expectOutput": [
+      "externalGate"
+    ]
   }
 ]

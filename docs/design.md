@@ -19,8 +19,8 @@ month.
 | Leading feature | Where it comes from | Here |
 |---|---|---|
 | Portable procedures as text | Agent Skills, Spec Kit's 41 integrations | `skills/*/SKILL.md` installed to `.claude/skills` and `.agents/skills`, plus an AGENTS.md block |
-| Process sized to the change | BMAD, cc-sdd | `bee-ship` classifies changes as trivial, contained or structural |
-| Fresh subagent per task plus an independent reviewer | Superpowers, cc-sdd, Archon | `bee-ship` step 4, `bee-plan` task sizing |
+| Process sized to the change | BMAD, cc-sdd | `ship-change` classifies changes as trivial, contained or structural |
+| Fresh subagent per task plus an independent reviewer | Superpowers, cc-sdd, Archon | `ship-change` step 4, `plan-tasks` task sizing |
 | Code decides when it's done | Archon `until_bash`, Spec Kit converge | `hyvemind gate` / `evidence` |
 | Proof that scaffolding still pays | CCPM with/without, Superpowers RED baseline | `hyvemind eval` with per-model lift and verdicts |
 

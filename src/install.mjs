@@ -1,7 +1,7 @@
 // Install the bundled skills into a project, and keep them updated without
 // overwriting anything the project changed or already owned.
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync, appendFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, appendFileSync } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
 import { PKG_ROOT, STATE_DIR, pkgVersion } from './config.mjs';
 
@@ -97,6 +97,20 @@ export function installSkills(root, cfg, { dryRun = false, force = false } = {})
       }
     }
   }
+  // Files hyvemind installed earlier that it no longer produces (a renamed or
+  // excluded skill): remove them if untouched, keep and report them if edited.
+  for (const [rel, known] of Object.entries(manifest.files)) {
+    if (rel in next.files) continue;
+    const abs = join(root, rel);
+    if (!existsSync(abs)) continue;
+    const edited = sha(readFileSync(abs)) !== known;
+    actions.push({ rel, action: edited ? 'orphan-modified' : 'remove' });
+    if (!dryRun && !edited) {
+      rmSync(abs);
+      let d = dirname(abs);
+      while (d.startsWith(root) && d !== root && readdirSync(d).length === 0) { rmSync(d, { recursive: true }); d = dirname(d); }
+    }
+  }
   if (!dryRun) {
     for (const [k, v] of Object.entries(next.files)) if (v === null) delete next.files[k];
     writeManifest(root, next);
@@ -116,13 +130,22 @@ export function agentsBlock(cfg) {
     'This project uses [hyvemind](https://github.com/davidscotttufts/hyvemind). Procedures live as',
     `skills (\`${cfg.skills.targets.join('`, `')}\`): ${skills.map((s) => `\`${p}${s}\``).join(', ')}.`,
     '',
-    `- **Gate:** ${gates}. Run it with \`${cfg.cli} gate\`; the verdict is bound to the exact working tree.`,
-    `- **Done means evidence.** A change is finished when \`${cfg.cli} evidence\` reports a green gate for the current tree — not when an agent says so.`,
+    // A project with its own established gate keeps it: hyvemind points at it and
+    // claims no second definition of done.
+    ...(cfg.externalGate
+      ? [
+        `- **Gate:** this project's own \`${cfg.externalGate.run}\`. hyvemind does not run or replace it.`,
+        `- **Done means:** ${cfg.externalGate.done}. Not when an agent says so.`,
+      ]
+      : [
+        `- **Gate:** ${gates}. Run it with \`${cfg.cli} gate\`; the verdict is bound to the exact working tree.`,
+        `- **Done means evidence.** A change is finished when \`${cfg.cli} evidence\` reports a green gate for the current tree — not when an agent says so.`,
+      ]),
     // Point only at skills this project actually installs.
     ...[
-      skills.includes('pr') && `- **Before any PR:** follow \`${p}pr\`.`,
-      skills.includes('ship') && `- **For any feature:** follow \`${p}ship\`.`,
-      skills.includes('evidence') && `- **Always:** the \`${p}evidence\` rules apply.`,
+      skills.includes('open-pr') && `- **Before any PR:** follow \`${p}open-pr\`.`,
+      skills.includes('ship-change') && `- **For any feature:** follow \`${p}ship-change\`.`,
+      skills.includes('evidence-rules') && `- **Always:** the \`${p}evidence-rules\` apply.`,
     ].filter(Boolean),
     '- Never weaken a gate, delete a failing test, or add a suppression to get green. Fix the cause.',
     BLOCK_END,

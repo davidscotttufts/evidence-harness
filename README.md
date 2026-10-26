@@ -85,26 +85,59 @@ stronger review skill):
 Change the version in `cli` (or bump the dev dependency), then run `update`.
 `update` replaces the skills hyvemind installed. It **keeps** any skill file you
 edited, and any same-named skill that existed before hyvemind, and reports both.
-`--force` overwrites them. Skills are installed with a `bee-` prefix
-(`skills.prefix`), so they never collide with a project's own `review` or `plan`.
+`--force` overwrites them. Skill names are chosen so they don't collide with common project skills
+(`review`, `plan`, `pr`). Set `skills.prefix` if you want your own namespace.
+
+### A project that already has its own gate
+
+Some repos already have an established merge gate with its own queue, lock and status
+check. Point hyvemind at it rather than adding a second definition of done:
+
+```json
+{ "version": 1, "preset": "openwop",
+  "externalGate": { "run": "node scripts/local-ci.mjs --pr <n> --post",
+                    "done": "the `ci/local-verify` status is success on the PR head" },
+  "skills": { "include": ["write-spec", "design-review", "plan-tasks", "parallel-work", "skill-eval"] } }
+```
+
+The `AGENTS.md` block then names that gate and that definition of done. hyvemind runs
+neither. `doctor` warns if a skill that uses hyvemind's own gate, evidence or train is
+also installed (`ship-change`, `open-pr`, `review-change`, `evidence-rules`).
+
+### Optional: a machine-wide CI broker (tracegate-ci)
+
+When several agent sessions share one machine, their test suites starve each other.
+[tracegate-ci](https://github.com/davidscotttufts/tracegate-ci)'s broker is one
+capacity-aware queue for all of a machine's CI work. Configure it and hyvemind wraps
+every gate, train gate, sabotage probe and eval agent run in `tracegate lease`:
+
+```json
+"broker": { "command": "tracegate", "tokens": { "eval": 1 } }
+```
+
+hyvemind never depends on it. Without `broker`, commands run directly. `doctor`
+checks that the broker is reachable. For Vitest projects, tracegate can also be the
+gate itself, running only what a change can affect once that has been earned:
+`"gates": [{ "name": "backend", "run": "tracegate run --lane backend -- vitest run" }]`.
+hyvemind still ties the verdict to the exact tree.
 
 ## The skills
 
 | Skill | Phase | What it does |
 |---|---|---|
-| `bee-ship` | all | The pipeline from spec to PR, stopping at each gate. Sizes the process to the change (trivial / contained / structural) |
-| `bee-spec` | requirements | A spec grounded in the existing code; WHEN/THEN acceptance criteria; a numbered decision record for structural changes |
-| `bee-design-review` | design | Architecture review in which every finding names a concrete failure scenario; ends GO / NO-GO |
-| `bee-plan` | planning | Dependency-ordered tasks, each sized for one fresh-context session and each with its own exit check |
-| `bee-review` | review | Runs the full gate first, scans for banned patterns, then reviews the change for defects |
-| `bee-test-necessity` | test | Grades tests A–F with sabotage probes; fixes B/C up to A, deletes D/F with evidence |
-| `bee-pr` | release | Opens a PR only when the current tree has green evidence, and asks before pushing |
-| `bee-evidence` | always | The hive constitution: what counts as evidence (a status code doesn't, an empty result is suspect, change one variable at a time…) |
-| `bee-parallel-work` | always | Git hygiene for many sessions or agents in one repo: separate worktrees, never stash a shared tree |
-| `bee-skill-eval` | meta | Scaffold economics: how much each skill lifts the model compared with the model bare |
-| `bee-skill-miner` | meta | Mines Claude Code transcripts for repeated skill chains and proposes combined skills |
-| `bee-ai-exchange` | review (AI) | Grades every place the app talks to an LLM: runtime schemas from the source of truth, state read before writing, validated output with one bounded repair, gated apply |
-| `bee-live-qualify` | test (AI) | Runs the app's AI flows against real vendors on a local stack, with key names only. Classifies results honestly: pass, app-bug, contract-gap, vendor-refusal, quota |
+| `ship-change` | all | The pipeline from spec to PR, stopping at each gate. Sizes the process to the change (trivial / contained / structural) |
+| `write-spec` | requirements | A spec grounded in the existing code; WHEN/THEN acceptance criteria; a numbered decision record for structural changes |
+| `design-review` | design | Architecture review in which every finding names a concrete failure scenario; ends GO / NO-GO |
+| `plan-tasks` | planning | Dependency-ordered tasks, each sized for one fresh-context session and each with its own exit check |
+| `review-change` | review | Runs the full gate first, scans for banned patterns, then reviews the change for defects |
+| `test-necessity` | test | Grades tests A–F with sabotage probes; fixes B/C up to A, deletes D/F with evidence |
+| `open-pr` | release | Opens a PR only when the current tree has green evidence, and asks before pushing |
+| `evidence-rules` | always | The hive constitution: what counts as evidence (a status code doesn't, an empty result is suspect, change one variable at a time…) |
+| `parallel-work` | always | Git hygiene for many sessions or agents in one repo: separate worktrees, never stash a shared tree |
+| `skill-eval` | meta | Scaffold economics: how much each skill lifts the model compared with the model bare |
+| `mine-skills` | meta | Mines Claude Code transcripts for repeated skill chains and proposes combined skills |
+| `ai-exchange` | review (AI) | Grades every place the app talks to an LLM: runtime schemas from the source of truth, state read before writing, validated output with one bounded repair, gated apply |
+| `live-ai-check` | test (AI) | Runs the app's AI flows against real vendors on a local stack, with key names only. Classifies results honestly: pass, app-bug, contract-gap, vendor-refusal, quota |
 
 ## CLI
 
@@ -167,7 +200,7 @@ survive between trains (`train.setup`, for example `npm ci`, runs before each ga
 
 ### Running a plan
 
-`hyvemind run plan.md` reads the task format that `bee-plan` writes:
+`hyvemind run plan.md` reads the task format that `plan-tasks` writes:
 
 ```
 T2 — Add the parser

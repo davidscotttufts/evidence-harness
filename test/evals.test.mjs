@@ -7,7 +7,7 @@ import { repo, write } from './helpers.mjs';
 
 // Fake agents: one that succeeds only when the skill is installed in its workspace,
 // one that always succeeds (a model that no longer needs the skill).
-const NEEDS_SKILL = `const fs=require('fs');console.log(fs.existsSync('.claude/skills/bee-pr/SKILL.md')?'ANSWER: right':'ANSWER: wrong')`;
+const NEEDS_SKILL = `const fs=require('fs');console.log(fs.existsSync('.claude/skills/open-pr/SKILL.md')?'ANSWER: right':'ANSWER: wrong')`;
 const ALWAYS = `console.log('ANSWER: right')`;
 
 const SCENARIO = JSON.stringify({ id: 'one', prompt: 'hi', checks: [{ type: 'output-includes', text: 'ANSWER: right' }] });
@@ -18,13 +18,13 @@ function project(skill) {
 }
 const cfg = (code, includeBundled = true) => resolveConfig({
   version: 1,
-  skills: { include: ['pr'] },
+  skills: { include: ['open-pr'] },
   evals: { agent: 'fake', agents: { fake: { command: ['node', '-e', code, '{prompt}'] } }, trials: 2, includeBundled },
 });
 
 test('lift is with-skill minus bare; a skill the model needs is "earning"', async () => {
-  const dir = project('pr');
-  const { report, file } = await runEvals(dir, cfg(NEEDS_SKILL), { skills: ['pr'], trials: 2, concurrency: 4 });
+  const dir = project('open-pr');
+  const { report, file } = await runEvals(dir, cfg(NEEDS_SKILL), { skills: ['open-pr'], trials: 2, concurrency: 4 });
   const pr = report.skills[0];
   assert.ok(pr.scenarios >= 2, 'bundled + project scenarios both load');
   const projectRuns = pr.runs.filter((r) => r.scenario === 'one');
@@ -33,15 +33,15 @@ test('lift is with-skill minus bare; a skill the model needs is "earning"', asyn
 });
 
 test('a model that passes bare gets lift 0 and "retire-candidate"; the report says what to do', async () => {
-  const dir = project('review');
-  const { report } = await runEvals(dir, cfg(ALWAYS, false), { skills: ['review'], trials: 3 });
+  const dir = project('review-change');
+  const { report } = await runEvals(dir, cfg(ALWAYS, false), { skills: ['review-change'], trials: 3 });
   assert.equal(report.skills[0].bare, 1);
   assert.equal(report.skills[0].lift, 0);
   assert.equal(report.skills[0].verdict, 'retire-candidate');
   const md = renderReport(report);
-  assert.match(md, /\| review \| 1 \| 3 \| 100% \| 100% \| 0 \| \*\*retire-candidate\*\* \|/);
-  assert.match(md, /- \*\*review\*\* \(retire-candidate\): Propose retiring/);
-  assert.match(md, /\| review \| one \| 3\/3 \| 3\/3 \|/);
+  assert.match(md, /\| review-change \| 1 \| 3 \| 100% \| 100% \| 0 \| \*\*retire-candidate\*\* \|/);
+  assert.match(md, /- \*\*review-change\*\* \(retire-candidate\): Propose retiring/);
+  assert.match(md, /\| review-change \| one \| 3\/3 \| 3\/3 \|/);
 });
 
 test('verdict thresholds, argv placeholders, and check types', () => {

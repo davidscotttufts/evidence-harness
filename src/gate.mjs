@@ -6,6 +6,7 @@ import { STATE_DIR, pkgVersion } from './config.mjs';
 import { head, workingTree } from './git.mjs';
 import { ensureStateIgnored } from './install.mjs';
 import { cleanEnv } from './probe.mjs';
+import { leaseShell } from './broker.mjs';
 
 export const evidenceDir = (root) => join(root, STATE_DIR, 'evidence');
 
@@ -21,7 +22,7 @@ function runShell(cmd, cwd, { quiet }) {
   });
 }
 
-export async function runGates(root, cfg, { only = null, keepGoing = false, quiet = false } = {}) {
+export async function runGates(root, cfg, { only = null, keepGoing = false, quiet = false, kind = 'gate' } = {}) {
   ensureStateIgnored(root);
   const gates = only ? cfg.gates.filter((g) => only.includes(g.name)) : cfg.gates;
   if (!gates.length) throw new Error(only ? `no gate named ${only.join(', ')}` : 'no gates configured in hyvemind.json');
@@ -38,7 +39,7 @@ export async function runGates(root, cfg, { only = null, keepGoing = false, quie
   for (const g of gates) {
     if (red && !keepGoing) { record.gates.push({ name: g.name, run: g.run, skipped: true }); continue; }
     if (!quiet) process.stderr.write(`\n▶ gate ${g.name}: ${g.run}\n`);
-    const r = await runShell(g.run, join(root, g.cwd ?? '.'), { quiet });
+    const r = await runShell(leaseShell(cfg, kind, g.name, g.run), join(root, g.cwd ?? '.'), { quiet });
     const pass = r.exitCode === 0;
     red ||= !pass;
     record.gates.push({ name: g.name, run: g.run, exitCode: r.exitCode, durationMs: r.durationMs, pass, ...(pass ? {} : { tail: r.tail }) });

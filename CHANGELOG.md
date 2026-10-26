@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0 — unreleased
+
+- **Skills drop the `bee-` prefix** and use distinct names instead: ship-change,
+  write-spec, plan-tasks, review-change, open-pr, evidence-rules, mine-skills and
+  live-ai-check. design-review, test-necessity, parallel-work, skill-eval and
+  ai-exchange are unchanged. `skills.prefix` now defaults to `''`.
+- **`update` removes skills it installed but no longer produces.** Untouched ones are
+  removed; edited ones are kept and reported. This migrates 0.2.x `bee-*` installs.
+- **`externalGate`**: a repo keeps its own gate and definition of done. `doctor`
+  warns when an installed skill would add a competing one.
+- **`broker`**: an optional tracegate-ci lease for gates, train gates, probes and
+  eval agent runs.
+
 ## 0.2.0 — 2026-10-26
 
 - **`evidence --post`**: publishes gate evidence as a `hyvemind/gate` GitHub commit

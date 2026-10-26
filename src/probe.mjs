@@ -18,6 +18,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { git, isClean } from './git.mjs';
+import { leaseShell } from './broker.mjs';
 
 const shq = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
 
@@ -53,7 +54,7 @@ export function runProbe(root, cfg, p) {
   const text = readFileSync(abs, 'utf8');
   const n = text.split(p.old).length - 1;
   if (n !== 1) return { id: p.id, verdict: 'error', error: `old text matched ${n} times (must be exactly 1)` };
-  const cmd = cfg.probe.command.replaceAll('{test}', shq(p.test));
+  const cmd = leaseShell(cfg, 'probe', p.id, cfg.probe.command.replaceAll('{test}', shq(p.test)));
   try {
     writeFileSync(abs, text.replace(p.old, () => p.new));
     const r = spawnSync(cmd, {

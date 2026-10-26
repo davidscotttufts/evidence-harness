@@ -14,18 +14,18 @@ test('extract: one slash command per line counts; compaction summaries listing m
   assert.deepEqual(extract(`${cmd('a')} ${cmd('b')}`), []);
   assert.deepEqual(extract(tool('pr')), [{ source: 'agent', skill: 'pr' }]);
   assert.equal(canon('frontend-design:frontend-design'), 'frontend-design');
-  assert.equal(canon('bee-review', 'bee-'), 'review');
+  assert.equal(canon('acme-review', 'acme-'), 'review');
 });
 
 test('mine counts skills and chains with confidence, splitting on reset skills', () => {
   const root = mkdtempSync(join(tmpdir(), 'hyve-mine-'));
   const session = (...lines) => lines.join('\n') + '\n';
   write(root, {
-    '-Users-me-dev-app/s1.jsonl': session(cmd('plan'), tool('bee-review'), cmd('pr')),
+    '-Users-me-dev-app/s1.jsonl': session(cmd('plan'), tool('acme-review'), cmd('pr')),
     '-Users-me-dev-app/s2.jsonl': session(cmd('plan'), cmd('review'), cmd('clear'), cmd('pr')),
     '-Users-me-dev-other/s3.jsonl': session(cmd('plan'), cmd('review')),
   });
-  const r = mine({ root, filter: '-Users-me-dev-app', prefix: 'bee-' });
+  const r = mine({ root, filter: '-Users-me-dev-app', prefix: 'acme-' });
   assert.equal(r.sessions, 2);
   assert.deepEqual(Object.fromEntries(r.top), { plan: 2, pr: 2, review: 2, clear: 1 });
   const byChain = Object.fromEntries(r.bigrams.map((b) => [b.chain, b]));

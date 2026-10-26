@@ -1,5 +1,5 @@
 ---
-name: spec
+name: write-spec
 description: "Turn an idea, issue or PRD into a reviewed spec: problem, scope, testable acceptance criteria (WHEN/THEN), and — for structural changes — a numbered decision record (ADR) with alternatives and a phased plan. Grounds every claim in the existing code first. Use before building anything non-trivial."
 ---
 

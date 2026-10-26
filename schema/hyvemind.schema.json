@@ -285,6 +285,47 @@
           "type": "string"
         }
       }
+    },
+    "externalGate": {
+      "type": "object",
+      "required": [
+        "run",
+        "done"
+      ],
+      "description": "The project already has its own gate. hyvemind points agents at it and claims no second definition of done. Mutually exclusive with gates.",
+      "properties": {
+        "run": {
+          "type": "string",
+          "description": "The project's gate command, e.g. node scripts/local-ci.mjs --pr <n> --post"
+        },
+        "done": {
+          "type": "string",
+          "description": "What counts as done, e.g. the `ci/local-verify` status is success on the PR head"
+        }
+      }
+    },
+    "broker": {
+      "type": "object",
+      "description": "Optional machine-wide CI broker (tracegate-ci). When set, gates, train gates, probes and eval agent runs are wrapped in `<command> lease` so they wait for capacity.",
+      "properties": {
+        "command": {
+          "type": "string",
+          "default": "tracegate"
+        },
+        "classes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "tokens": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
     }
   }
 }

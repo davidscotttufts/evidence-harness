@@ -2,7 +2,7 @@
 // dedicated worktree, is accepted only when its own exit check passes, then is
 // reviewed by an independent agent before the next task starts.
 //
-// Plan format (what bee-plan writes):
+// Plan format (what plan-tasks writes):
 //   T2 — Add the parser
 //     Depends on: T1
 //     Files: src/parse.mjs, test/parse.test.mjs
