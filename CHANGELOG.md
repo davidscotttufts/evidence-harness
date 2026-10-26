@@ -39,6 +39,12 @@
 - Fixed: `ENOBUFS` from git on repos with tens of thousands of files.
 - README rewritten around the problem and real output; the reference moved to
   `docs/reference.md`.
+- **`evidence.status`**: one source of truth for done. When set, `hyvemind evidence`
+  takes a `success` commit status of that context on a clean HEAD (latest by
+  `created_at`) as the proof, names the proof source in its output, and
+  `evidence --post` posts no `hyvemind/gate` beside it.
+- **`train.via: "external"`**: `hyvemind train` refuses to merge and prints
+  `train.message` (where merges go instead), with no git changes.
 
 ## 0.2.0 — 2026-10-26
 

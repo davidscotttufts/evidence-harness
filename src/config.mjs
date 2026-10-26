@@ -29,6 +29,13 @@ export const DEFAULTS = {
   },
   review: { bannedPatterns: [] },
   specs: { dir: 'docs/decisions', nextNumberCommand: null },
+  // ── external evidence (one source of truth for "done") ──
+  // evidence.status: a commit-status context the project's own gate posts; when set it
+  // IS the proof, and hyvemind posts no second status. train.via "external": the
+  // project merges through its own path, and `hyvemind train` refuses to merge.
+  evidence: { status: null },
+  train: { via: 'hyvemind', message: null },
+  // ── end external evidence ──
   evals: {
     agent: 'claude',
     agents: {
@@ -77,6 +84,11 @@ export function validate(cfg) {
       'externalGate needs "run" (the project\'s own gate command) and "done" (what counts as done)');
     need(!cfg.gates.length, 'externalGate and gates are mutually exclusive: one definition of done');
   }
+  // ── external evidence ──
+  need(cfg.evidence?.status === null || (typeof cfg.evidence?.status === 'string' && cfg.evidence.status.trim() !== ''), 'evidence.status must be null or a commit-status context, e.g. "ci/local-verify"');
+  need(['hyvemind', 'external'].includes(cfg.train?.via), 'train.via must be "hyvemind" or "external"');
+  need(cfg.train?.message === null || typeof cfg.train?.message === 'string', 'train.message must be a string');
+  // ── end external evidence ──
   for (const [i, g] of (cfg.gates ?? []).entries()) {
     need(typeof g?.name === 'string' && g.name, `gates[${i}].name is required`);
     need(typeof g?.run === 'string' && g.run, `gates[${i}].run is required`);

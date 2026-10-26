@@ -230,6 +230,18 @@
           "type": "integer",
           "minimum": 0,
           "default": 1
+        },
+        "via": {
+          "enum": [
+            "hyvemind",
+            "external"
+          ],
+          "default": "hyvemind",
+          "description": "\"external\": the project merges through its own path; hyvemind train refuses to merge"
+        },
+        "message": {
+          "type": "string",
+          "description": "Where merges go when train.via is \"external\", e.g. \"merges go through the release queue\""
         }
       }
     },
@@ -350,6 +362,20 @@
             "type": "integer",
             "minimum": 1
           }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "description": "Where hyvemind evidence gets its proof",
+      "properties": {
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Commit-status context posted by the project's own gate (e.g. the one externalGate.done names). When set, a success status of this context on a clean HEAD is the proof, and evidence --post posts no hyvemind/gate."
         }
       }
     }

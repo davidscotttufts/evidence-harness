@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { repo, sh } from './helpers.mjs';
@@ -103,4 +103,29 @@ test('affected --observe: a failure outside the selection is a MISS and resets t
   assert.equal(r.status, 1, r.stdout + r.stderr);
   assert.match(r.stdout, /MISS: src\/b\.test\.mjs failed outside the selection/);
   assert.match(run(dir, 'affected', '--status').stdout, /SHADOW: 0\/20 .*last miss/);
+});
+
+test('evidence.status + train.via external: evidence names its source, --post defers, train refuses', () => {
+  const dir = repo({ '.gitignore': 'bin/\n.hyve/\n', 'hyvemind.json': JSON.stringify({ version: 1, evidence: { status: 'ci/local-verify' }, train: { via: 'external', message: 'merges go through the release queue' } }) });
+  sh(dir, 'git', ['remote', 'add', 'origin', 'https://github.com/acme/widgets.git']);
+  const fake = join(dir, 'bin');
+  mkdirSync(fake);
+  writeFileSync(join(fake, 'gh'), `#!/bin/sh\necho "$*" >> "${dir}/bin/calls"\necho '[{"context":"ci/local-verify","state":"success","created_at":"2026-10-25T10:00:00Z"}]'\n`);
+  chmodSync(join(fake, 'gh'), 0o755);
+  const env = { ...process.env, PATH: `${fake}:${process.env.PATH}` };
+  const go = (...args) => spawnSync('node', [BIN, ...args], { cwd: dir, encoding: 'utf8', env });
+
+  const ev = go('evidence');
+  assert.equal(ev.status, 0, ev.stdout + ev.stderr);
+  assert.match(ev.stdout, /proof: commit status "ci\/local-verify" = success/);
+  const post = go('evidence', '--post');
+  assert.equal(post.status, 0, post.stdout + post.stderr);
+  assert.match(post.stdout, /not posting hyvemind\/gate: "ci\/local-verify" \(evidence\.status\) is authoritative/);
+  assert.doesNotMatch(readFileSync(join(fake, 'calls'), 'utf8'), /POST/);
+  writeFileSync(join(dir, 'README.md'), 'edited\n');
+  assert.equal(go('evidence').status, 1, 'dirty tree: not proof');
+
+  const train = go('train', '12');
+  assert.notEqual(train.status, 0);
+  assert.match(train.stderr, /merges go through the release queue/);
 });

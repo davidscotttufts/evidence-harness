@@ -85,6 +85,13 @@ function acquireLock(root) {
 }
 
 export async function runTrain(root, cfg, ids, opts = {}) {
+  // A project with its own merge path (a release queue, a bot) must not get a second
+  // one: refuse before taking the lock or touching any worktree.
+  if (cfg.train?.via === 'external') {
+    const e = new Error(`train.via is "external": hyvemind does not merge in this project. ${cfg.train.message ?? 'Merges go through the project\'s own merge path.'}`);
+    e.external = true;
+    throw e;
+  }
   const base = opts.base ?? cfg.train?.base ?? 'main';
   const forge = opts.forge ?? githubForge(root);
   const bisect = opts.bisect ?? true;

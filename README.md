@@ -140,6 +140,8 @@ harder scenarios and to test a second model, not yet a reason to delete them.
 
 Install all of them, or pick some. A repo that already has its own gate keeps it
 (`externalGate`), and hyvemind doesn't add a second definition of done.
+`evidence.status` and `train.via` make the CLI read that gate's verdict and leave
+merging to it.
 
 ## Works with
 
