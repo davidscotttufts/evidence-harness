@@ -119,3 +119,14 @@ test('if what lands on main is not the gated tree, the train stops loudly (TREE 
   };
   await assert.rejects(runTrain(w.root, cfg(), ['ok-a'], { forge: sneaky, dir: w.dir, quiet: true }), /TREE MISMATCH/);
 });
+
+test('train.via "external": refuses to merge, says where merges go, and touches no git state', async () => {
+  const w = world();
+  const c = resolveConfig({ version: 1, gates: [{ name: 'ci', run: 'true' }], train: { via: 'external', message: 'merges go through the release queue' } });
+  const before = git(w.origin, ['rev-parse', 'main']).out;
+  await assert.rejects(runTrain(w.root, c, ['ok-a'], { forge: localForge(w.root, 'main'), dir: w.dir, quiet: true }), /train\.via is "external".*merges go through the release queue/);
+  assert.ok(!existsSync(w.dir), 'no train worktree created');
+  const common = git(w.root, ['rev-parse', '--path-format=absolute', '--git-common-dir']).out;
+  assert.ok(!existsSync(join(common, 'hyve-train.lock')), 'no lock taken');
+  assert.equal(git(w.origin, ['rev-parse', 'main']).out, before, 'nothing merged');
+});

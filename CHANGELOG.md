@@ -12,6 +12,12 @@
   warns when an installed skill would add a competing one.
 - **`broker`**: an optional tracegate-ci lease for gates, train gates, probes and
   eval agent runs.
+- **`evidence.status`**: one source of truth for done. When set, `hyvemind evidence`
+  takes a `success` commit status of that context on a clean HEAD (latest by
+  `created_at`) as the proof, names the proof source in its output, and
+  `evidence --post` posts no `hyvemind/gate` beside it.
+- **`train.via: "external"`**: `hyvemind train` refuses to merge and prints
+  `train.message` (where merges go instead), with no git changes.
 
 ## 0.2.0 — 2026-10-26
 

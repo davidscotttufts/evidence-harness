@@ -43,6 +43,26 @@ tool: portable skills, plus the scaffold-economics eval. The app's chain packs c
 the same CLI (`gate`, `evidence`, `probe`) as mechanical exit checks, so the in-app
 workflow and the terminal workflow share one definition of "done".
 
+## One definition of done
+
+A repo that already has a merge gate must not get a second one from hyvemind. Two
+"done" signals on a PR (say `ci/local-verify` and `hyvemind/gate`) can disagree, and
+two merge paths (the repo's queue and `hyvemind train`) can race. The config splits the
+problem by audience:
+
+- `externalGate {run, done}` is for **agents**: the AGENTS.md block names the
+  project's gate and its definition of done, in prose. hyvemind runs neither.
+- `evidence.status` is the same definition of done for the **CLI**: the commit-status
+  context that `done` refers to. `hyvemind evidence` reads it (latest post on a clean
+  HEAD) instead of local gate records, and `evidence --post` stops posting
+  `hyvemind/gate`.
+- `train.via: "external"` removes the second merge path: `hyvemind train` refuses
+  and points at the project's own (`train.message`).
+
+They are separate keys because they are separable: a repo may have a gate that posts
+no status (externalGate alone), or a status-posting CI that it still wants hyvemind's
+skills to drive (evidence.status alone).
+
 ## Shipped in 0.2.0 (the 0.1 roadmap)
 
 - Running each plan task through its own agent (`hyvemind run`): a fresh agent per

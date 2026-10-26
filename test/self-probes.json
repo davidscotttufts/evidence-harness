@@ -218,5 +218,35 @@
     "expectOutput": [
       "externalGate"
     ]
+  },
+  {
+    "id": "external-evidence-needs-clean-tree",
+    "src": "src/status.mjs",
+    "old": "if (tree !== git(root, ['rev-parse', 'HEAD^{tree}']).out) {",
+    "new": "if (false) {",
+    "test": "test/status.test.mjs",
+    "expectOutput": [
+      "uncommitted edits are never covered"
+    ]
+  },
+  {
+    "id": "external-evidence-latest-wins",
+    "src": "src/status.mjs",
+    "old": "String(b.created_at).localeCompare(String(a.created_at))",
+    "new": "String(a.created_at).localeCompare(String(b.created_at))",
+    "test": "test/status.test.mjs",
+    "expectOutput": [
+      "latest post for the context wins"
+    ]
+  },
+  {
+    "id": "train-external-refuses",
+    "src": "src/train.mjs",
+    "old": "if (cfg.train?.via === 'external') {",
+    "new": "if (false) {",
+    "test": "test/train.test.mjs",
+    "expectOutput": [
+      "train.via \"external\""
+    ]
   }
 ]

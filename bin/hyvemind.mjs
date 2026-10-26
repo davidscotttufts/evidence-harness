@@ -8,13 +8,13 @@ import { detect } from '../src/detect.mjs';
 import { doctor } from '../src/doctor.mjs';
 import { affected } from '../src/affected.mjs';
 import { renderReport, runEvals } from '../src/evals.mjs';
-import { evidenceFor, runGates } from '../src/gate.mjs';
+import { runGates } from '../src/gate.mjs';
 import { git } from '../src/git.mjs';
 import { bundledSkills, installAgentsMd, installSkills, selectedSkills } from '../src/install.mjs';
 import { mine } from '../src/mine.mjs';
 import { runProbes } from '../src/probe.mjs';
 import { runPlan } from '../src/run.mjs';
-import { postStatus } from '../src/status.mjs';
+import { checkEvidence, postStatus } from '../src/status.mjs';
 import { githubForge, localForge, runTrain } from '../src/train.mjs';
 
 const HELP = `hyvemind ${pkgVersion()}
@@ -30,9 +30,11 @@ Usage: hyvemind <command> [options]
   gate      Run the configured gates; record a verdict bound to the working tree
             --only <a,b>  run a subset (recorded as partial; never counts as evidence)
             --keep-going  run every gate even after a red one   --quiet
-  evidence  Exit 0 if the CURRENT working tree has a full green gate record
+  evidence  Exit 0 if the CURRENT working tree has a full green gate record, or, with
+            evidence.status set, a success status of that context on a clean HEAD
             --post        publish it as a GitHub commit status (hyvemind/gate) on HEAD
-                          (refused unless the tree is clean and gated); --dry-run prints it
+                          (refused unless the tree is clean and gated; never posted when
+                          evidence.status names the project's own status); --dry-run prints it
   affected  List the tests a change can reach (static import graph; ALL when untraceable)
             --base <ref>  include commits since <ref>   --json   --run (affected.command)
   train <pr…>           Merge queue: gate several PRs as ONE train, merge on green, prove
@@ -142,17 +144,19 @@ async function main() {
       return;
     }
     case 'evidence': {
+      // No config is fine (local records only); a broken one is an error.
+      const cfg = existsSync(join(root, CONFIG_FILE)) ? readConfig(root) : null;
       if (o.post) {
-        const r = postStatus(root, { dryRun: o['dry-run'] });
+        const r = postStatus(root, { dryRun: o['dry-run'], cfg });
+        if (r.deferred) { console.log(`not posting hyvemind/gate: "${r.context}" (evidence.status) is authoritative and is posted by the project's own gate\n${r.external.message}`); return; }
         if (r.reason) { console.log(`not posted: ${r.reason}`); process.exitCode = 1; return; }
         console.log(`${r.posted ? 'posted' : 'would post'} ${r.state} to ${r.slug}@${r.sha.slice(0, 12)} (hyvemind/gate): ${r.description}`);
         if (r.state !== 'success') process.exitCode = 1;
         return;
       }
-      const { tree, match, latest } = evidenceFor(root);
-      if (match) { console.log(`green · tree ${tree.slice(0, 12)} · ${match.finishedAt} · ${match.file}`); return; }
-      console.log(latest ? `no green evidence for tree ${tree.slice(0, 12)}; latest run on it was ${latest.verdict}${latest.partial ? ' (partial)' : ''}` : `no gate has run on tree ${tree.slice(0, 12)}; run "hyvemind gate"`);
-      process.exitCode = 1;
+      const r = checkEvidence(root, cfg);
+      console.log(r.message);
+      if (!r.ok) process.exitCode = 1;
       return;
     }
     case 'probe': {

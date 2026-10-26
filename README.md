@@ -104,6 +104,34 @@ The `AGENTS.md` block then names that gate and that definition of done. hyvemind
 neither. `doctor` warns if a skill that uses hyvemind's own gate, evidence or train is
 also installed (`ship-change`, `open-pr`, `review-change`, `evidence-rules`).
 
+#### Let hyvemind read that gate's verdict: `evidence.status` and `train.via`
+
+`externalGate` tells agents, in prose, what the gate is and what done means. When that
+gate posts a commit status, two more keys let the CLI itself defer to it, so there is
+exactly one definition of done and one merge path:
+
+```json
+"externalGate": { "run": "node scripts/local-ci.mjs --pr <n> --post",
+                  "done": "the `ci/local-verify` status is success on the PR head" },
+"evidence": { "status": "ci/local-verify" },
+"train": { "via": "external", "message": "merges go through the release queue" }
+```
+
+- **`evidence.status`**: `hyvemind evidence` exits 0 only when the latest status with
+  that context on HEAD (by `created_at`, read with
+  `gh api repos/{owner}/{repo}/commits/{sha}/statuses`) is `success` **and** the
+  working tree is clean and equal to HEAD. Uncommitted edits are never covered by a
+  status on HEAD, however green. The output names the proof source
+  (`proof: commit status "ci/local-verify" …` or `proof: local gate record …`), and
+  local gate records are not consulted while the key is set.
+- **`evidence --post`** posts nothing when `evidence.status` is set: it says the
+  external status is authoritative, reports it, and exits 0.
+- **`train.via: "external"`**: `hyvemind train` refuses to merge, prints
+  `train.message`, exits non-zero, and touches no git state.
+
+Set `evidence.status` to the status named in `externalGate.done`. Unset (the
+default), evidence comes from local `hyvemind gate` records, as before.
+
 ### Optional: a machine-wide CI broker (tracegate-ci)
 
 When several agent sessions share one machine, their test suites starve each other.
@@ -178,6 +206,10 @@ invalid one. It **refuses** to post when:
 
 `--dry-run` prints the call without making it.
 
+With `evidence.status` set, the project's own gate posts the status that means done,
+and `--post` does not add `hyvemind/gate` beside it (see
+[A project that already has its own gate](#a-project-that-already-has-its-own-gate)).
+
 ### Merge queue
 
 ```bash
@@ -197,6 +229,8 @@ survive between trains (`train.setup`, for example `npm ci`, runs before each ga
   the culprit is named and left open.
 - **A PR that doesn't merge cleanly onto the train:** reported and skipped.
 - One train per clone at a time. Never `--delete-branch` (it would close stacked PRs).
+- `train.via: "external"` turns the train off for a project that merges some other
+  way; it refuses and prints `train.message`.
 
 ### Running a plan
 
