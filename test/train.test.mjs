@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { resolveConfig } from '../src/config.mjs';
@@ -129,4 +129,13 @@ test('train.via "external": refuses to merge, says where merges go, and touches 
   const common = git(w.root, ['rev-parse', '--path-format=absolute', '--git-common-dir']).out;
   assert.ok(!existsSync(join(common, 'hyve-train.lock')), 'no lock taken');
   assert.equal(git(w.origin, ['rev-parse', 'main']).out, before, 'nothing merged');
+});
+
+test('a train prints a per-gate summary and saves the full gate output to a log file', async () => {
+  const w = world();
+  const lines = [];
+  const r = await runTrain(w.root, cfg('echo FULL-GATE-OUTPUT; test ! -f BAD'), ['ok-a'], { forge: localForge(w.root, 'main'), dir: w.dir, log: (m) => lines.push(m) });
+  assert.deepEqual(r.merged, ['ok-a']);
+  assert.ok(lines.some((l) => /✓ ci \d/.test(l)), lines.join('\n'));
+  assert.match(readFileSync(r.logFile, 'utf8'), /FULL-GATE-OUTPUT/);
 });
