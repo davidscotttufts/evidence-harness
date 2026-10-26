@@ -181,7 +181,8 @@ hyvemind affected [--base ref] [--json] [--run]
 hyvemind train <pr…> [--no-merge] [--no-bisect] [--local] [--base branch]
 hyvemind run plan.md [--spec spec.md] [--only T1,T2] [--no-review]
 hyvemind probe probes.json             # sabotage probes
-hyvemind eval [skill…] [--agent claude|codex|opencode] [--model id] [--trials n] [--concurrency n] [--report] [--render report.json]
+hyvemind eval [skill[:scenario]…] [--scenario id]… [--agent claude|codex|opencode] [--model id] [--trials n] [--concurrency n]
+              [--dry-run] [--yes] [--keep] [--clean-profile] [--report] [--render report.json]
 hyvemind mine [--all] [--json]         # Claude Code transcript mining
 ```
 
@@ -314,11 +315,31 @@ output patterns, files or commands. Agents are argv templates in `evals.agents`:
 Verdicts:
 
 - `no-signal`: neither arm ever passes, so the scenario (or the skill) is broken.
-- `earning`: lift ≥ `liftThreshold` (default 0.2).
+- `saturated`: both arms pass every run. These scenarios cannot measure the skill;
+  write one the bare model still fails ("unmeasured below ceiling"), don't retire it.
+- `earning`: lift ≥ `liftThreshold` (default 0.2) **and** the 95% lift interval excludes 0.
+- `earning (low n)`: lift ≥ `liftThreshold`, but the interval still includes 0, so a
+  flipped run or two could explain it. Run more trials before citing it.
 - `marginal`: lift is positive but below the threshold.
-- `retire-candidate`: lift ≤ 0.
+- `retire-candidate`: lift ≤ 0 with the bare arm below 100%.
 - `insufficient-data`: fewer than `minRuns` runs (default 3). Never retire a skill on
   one run.
+
+Uncertainty: each arm gets a 95% Wilson score interval. The lift interval is
+Newcombe's hybrid score interval for a difference of proportions (method 10 in
+Newcombe 1998): with skill arm (p₁, l₁, u₁) and bare arm (p₂, l₂, u₂),
+`lower = d − √((p₁−l₁)² + (u₂−p₂)²)` and `upper = d + √((u₁−p₁)² + (p₂−l₂)²)`, where
+d = p₁ − p₂. It treats the two arms as independent samples. At 3 runs per arm only
+3/3 vs 0/3 clears 0.
+
+Per scenario: the report has a row per scenario (bare and skill pass counts, lift) and
+flags `harmful` (the skill arm passes less often than bare) and `no-signal` (neither
+arm passes). Flagged scenarios are listed at the top of the markdown report, because a
+skill-level average hides them. The report also shows each skill's rendered size in
+words, with tokens approximated as words × 1.3, next to its lift.
+
+`--render <report.json>` recomputes verdicts, intervals and per-scenario rows from the
+report's runs, so a report from an older hyvemind renders with today's rules.
 
 **Measured results:** [docs/evals/2026-10-26-claude.md](evals/2026-10-26-claude.md) has two
 132-run evals on Claude Code. `spec` (+0.50), `pr` (+0.67) and, after a
@@ -326,8 +347,109 @@ measured rewrite, `plan` (+0.50) clearly earn their place. The other ten are sat
 these scenarios*, which is a prompt to write harder scenarios and to check a second
 model, not to retire anything yet.
 
-Caveat: the bare run can still see user-level skills (`~/.claude/skills`) and global
-instructions. For a strict baseline, run evals from a clean profile.
+#### Scenario lint
+
+A scenario can carry example outputs: `good` (an answer that should pass) and `bad`
+(a plausible wrong answer, typically the one the prompt's trap invites). Each is a
+string or a list of strings. `hyvemind eval --lint` checks them with no model calls,
+and so does `npm test` for every bundled scenario:
+
+- every `good` must pass all of the scenario's checks;
+- every `bad` must fail at least one;
+- a scenario without either is counted as **unlinted**. That is reported, not an error.
+
+`output-*` checks are linted from the string. `file-exists` and `command` checks read
+the workspace the agent changed, which a string can't stand in for, so a scenario that
+has them is linted on its output checks only and marked **partial** with that reason.
+
+**Contradiction check.** The lint reads the lines the prompt tells the model to print,
+for example "end with exactly one line: `GRADE: <letter>`" or "exactly two lines:
+`PUSH: ask | go` and `PR: ask | go`". It then scores each line against the checks that
+name its label (plus every `output-excludes` / `output-not-matches` check):
+
+- A line dictated word for word that fails those checks is an **error**: obeying the
+  prompt would fail the scenario.
+- A menu (`a | b`, or `LABEL: a  or  LABEL: b`) where no offered answer passes is an
+  **error**.
+- Templates (`<…>`) are not scored.
+- A `LABEL: a | b` menu that fails when echoed verbatim is a **warning** (`menu-echo`).
+  Round 2's `docs-are-not-the-code` prompt said `GRADE: A | unverified`, and the model
+  printed exactly that in every run of both arms. `LABEL: <a or b>` is unambiguous.
+- The reverse, a verbatim echo that *passes*, is also a **warning**
+  (`menu-echo-passes`): the checks can't tell copying the menu from answering.
+
+#### Running evals
+
+**Cost preview and consent.** Before any agent starts, `eval` prints the plan to stderr:
+skills, scenarios, trials, the two arms, total agent runs, concurrency, and a duration.
+The duration is an upper bound (every run hitting `timeoutSec`) and, when an earlier
+report under `.hyve/evals/` recorded run times, an estimate from their median. On a
+TTY it asks `[y/N]`. Otherwise it refuses to start without `--yes`. `--dry-run` prints
+the preview and exits.
+
+**One scenario.** `hyvemind eval write-spec:do-nothing-alternative` runs only that
+scenario. `--scenario <id>` (repeatable) filters every named skill. A filter that
+matches no scenario is an error. The report row then says which scenarios it covers
+(`selected`).
+
+**Environment.** Agent processes get an allowlisted environment, never the whole
+`process.env`: `PATH`, `HOME`, `LANG`, `LC_*`, `TERM`, `TMPDIR`, `SHELL`, `USER` and
+`HYVE_EVAL_ARM`. Scenario `setup` and `command` checks get the same list (plus git
+identity for setup). If your agent authenticates with an environment variable, name it
+in that agent's `env`, for example:
+
+```json
+"evals": { "agents": { "claude": { "env": ["ANTHROPIC_API_KEY"] }, "codex": { "env": ["OPENAI_API_KEY"] } } }
+```
+
+Only names go in config. Values come from your environment. No auth variable is
+passed by default, so an agent that logs in through its own credential store (Claude
+Code's login, for example) needs nothing here. A broker (`broker`) that needs its own
+variables gets them the same way.
+
+**Kept outputs.** Every failing run's full output (up to the 8 MB capture cap) is saved
+to `.hyve/evals/<run-id>/<skill>/<scenario>/<arm>-<trial>.txt`, and the run records the
+path as `output`. `--keep` also keeps passing runs' output, plus the scratch
+workspaces. The report keeps the last 2,000 characters inline as `tail`. The markdown
+report links each failed run's file.
+
+**Version.** Reports are stamped `<version>+<short sha>` when hyvemind runs from a git
+checkout, with `-dirty` added when that checkout has changes, and the plain version
+when it runs from an installed package.
+
+**Clean profile (`--clean-profile`).** By default the bare arm is not fully bare: an
+agent CLI loads the user's own skills, global instructions, settings, MCP servers and
+memory in both arms. `--clean-profile` inserts the agent's `cleanArgs` right after the
+executable and sets its `cleanEnv`, in **both** arms. `eval` refuses `--clean-profile`
+for an agent that has no `cleanArgs`. The default for `claude`:
+
+```json
+"cleanArgs": ["--setting-sources", "project,local", "--strict-mcp-config"],
+"cleanEnv": { "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1" }
+```
+
+What is documented (Claude Code CLI reference, memory and authentication docs):
+- `--setting-sources` selects which settings sources load (`user`, `project`, `local`).
+- Project skills in `.claude/skills` depend on the `project` source, so the skill arm still works.
+- `--strict-mcp-config` with no `--mcp-config` loads no MCP servers.
+- `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` turns off auto-memory.
+- Authentication does not depend on setting sources, so login keeps working.
+
+What is **not** documented, and so not guaranteed: that leaving out the `user` source
+also drops `~/.claude/skills`, `~/.claude/CLAUDE.md` and user plugins (the docs imply
+it but don't state it). Verify on your machine with a canary before citing a clean
+baseline. Put a uniquely named skill in `~/.claude/skills`, run one scenario with
+`--clean-profile --keep`, and check that neither arm's kept output mentions it.
+
+Rejected options:
+- `--safe-mode` also disables project skills, so the skill arm would be bare too.
+- `--bare` never reads OAuth or the keychain, and needs an API key.
+- `CLAUDE_CONFIG_DIR` pointed at an empty directory loses the login.
+- Copying credentials into a temporary profile was ruled out.
+
+hyvemind never reads, copies or prints credential files or tokens. Other agents
+(`codex`, `opencode`) have no default `cleanArgs`. Add your own if the agent has an
+equivalent flag.
 
 ## Configuration
 
@@ -344,8 +466,9 @@ node bin/hyvemind.mjs probe test/self-probes.json # hyvemind probes its own test
 
 Each core guarantee has a self-probe showing that its test goes red when the guarantee
 is broken. The guarantees covered: tree-bound evidence, partial runs never counting,
-local edits being kept, probes restoring the file, eval lift, and chain splitting in
-the miner.
+local edits being kept, probes restoring the file, eval lift, eval verdicts
+(saturated, earning vs low n, per-scenario harmful/no-signal flags, the lift
+interval, old reports re-rendered, the eval safety rails, scenario lint), and chain splitting in the miner.
 
 ## Releasing
 

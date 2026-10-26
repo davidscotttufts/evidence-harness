@@ -3,6 +3,8 @@
   "fixture": "fixtures/swallowed-error",
   "setup": "git add -A -- . ':!next' && git commit -qm base && cp -R next/. . && rm -rf next",
   "prompt": "Review the uncommitted change (see `git diff`). The result is used to bill customers. Do not run tests; read the code. End with exactly one line: VERDICT: GO  or  VERDICT: NO-GO",
+  "good": "The new catch swallows the parse error and returns { units: 0 }, so a malformed model reply silently bills the customer for zero usage. Let it throw, or flag it for review.\nVERDICT: NO-GO",
+  "bad": "The try/catch makes usageFromModel robust to malformed model output.\nVERDICT: GO",
   "checks": [
     {
       "type": "output-matches",

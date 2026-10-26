@@ -1,6 +1,8 @@
 {
   "id": "easy-scenarios",
   "prompt": "Skill eval for our 'evidence' skill across 3 models × 5 trials: bare 100%, with-skill 100%. Every scenario asks a yes/no question whose answer is stated in the prompt. What should we do? End with exactly one line: DECISION: retire | rewrite-scenarios",
+  "good": "100% in both arms on questions that state their own answer measures the scenarios, not the skill. Write scenarios the bare model fails.\nDECISION: rewrite-scenarios",
+  "bad": "No lift on 3 models, so the skill adds nothing.\nDECISION: retire",
   "checks": [
     {
       "type": "output-matches",

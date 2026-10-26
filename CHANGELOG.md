@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased
+
+- **Honest eval verdicts** (#17). New `saturated` verdict when both arms pass every
+  run (previously `retire-candidate`). Reports carry per-scenario rows with pass counts,
+  lift and `harmful` / `no-signal` flags, listed at the top of the markdown report.
+  Each arm gets a 95% Wilson interval and lift a Newcombe hybrid score interval; a skill
+  is `earning` only when that interval excludes 0, otherwise `earning (low n)`. The
+  report shows each skill's rendered words (≈ tokens) next to its lift. `--render`
+  recomputes all of this from an old report's runs.
+- **Running evals safely** (#17).
+  - `eval` prints a cost preview before starting: runs × arms × trials, concurrency, and
+    duration as a timeout upper bound plus a historical median. It needs `--yes` when
+    stdin is not a TTY and asks y/N on one. `--dry-run` only previews.
+  - Agents, setup and command checks get an allowlisted env instead of `process.env`.
+    Per-agent `evals.agents.<name>.env` lists the extra variable names to pass.
+  - `--clean-profile` applies the agent's `cleanArgs` and `cleanEnv` to both arms. For
+    claude these are `--setting-sources project,local --strict-mcp-config` and
+    auto-memory off. See the reference for what is and isn't guaranteed.
+  - Failing runs keep their full output under `.hyve/evals/<run-id>/`, and `--keep`
+    keeps passes too. The inline tail is now 2,000 characters.
+  - `skill:scenario` and `--scenario <id>` run single scenarios.
+  - Reports are stamped `version+sha[-dirty]` when run from a git checkout.
+- **Scenario lint** (#17). Scenarios can carry `good` and `bad` example outputs.
+  - `hyvemind eval --lint` and `npm test` assert that each `good` passes every check
+    and each `bad` fails at least one. Scenarios without examples count as unlinted.
+    Workspace checks (`file-exists`, `command`) make a scenario's lint partial.
+  - A contradiction check flags prompts that dictate a line their own checks reject,
+    and warns about `a | b` menus whose verbatim echo fails (or passes).
+  - All 58 bundled scenarios now carry `good` and `bad` examples: 0 unlinted, 0 partial.
+
 ## 0.3.1 — 2026-10-26
 
 Fixes found while adopting 0.3.0 in a repo with its own gate:

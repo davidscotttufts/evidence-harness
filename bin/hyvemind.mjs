@@ -3,13 +3,13 @@ import { spawnSync } from 'node:child_process';
 import { homedir, tmpdir } from 'node:os';
 import { createInterface } from 'node:readline';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { CONFIG_FILE, pkgVersion, readConfig, resolveConfig, writeConfig } from '../src/config.mjs';
 import { detect } from '../src/detect.mjs';
 import { doctor } from '../src/doctor.mjs';
 import { affected, failingFilesFromVitest, observe, readTrustLedger, trust } from '../src/affected.mjs';
-import { renderReport, runEvals } from '../src/evals.mjs';
+import { historicalMedian, lintScenarios, parseTargets, planEvals, preview, renderPreview, renderReport, runEvals } from '../src/evals.mjs';
 import { runGates } from '../src/gate.mjs';
 import { git } from '../src/git.mjs';
 import { bundledSkills, installAgentsMd, installSkills, selectedSkills } from '../src/install.mjs';
@@ -60,10 +60,16 @@ Usage: hyvemind <command> [options]
                         on blob sha (--out <ledger.json>, default .hyve/census.json;
                         --md <file> for a summary)
   probe <probes.json>   Sabotage probes: break the code, prove the test goes red
-  eval [skill…]         Bare model vs with-skill on each skill's scenarios
-            --agent <name>  --model <id>  --trials <n>  --concurrency <n>  --keep
+  eval [skill[:scenario]…]  Bare model vs with-skill on each skill's scenarios
+            --agent <name>  --model <id>  --trials <n>  --concurrency <n>
+            --scenario <id>   only this scenario (repeatable)
+            --dry-run         print the cost preview and exit; --yes starts without asking
+                              (required when stdin is not a TTY)
+            --keep            keep passing runs' output (failures are always kept) and workspaces
+            --clean-profile   add the agent's cleanArgs/cleanEnv to both arms
             --report          also write the markdown decision table (.hyve/evals/REPORT.md, or --out <file>)
             --render <report.json>  render an existing report without running anything
+            --lint            check scenarios against their good/bad examples (no model calls)
   mine      Mine Claude Code transcripts for skill usage and chains
             --filter <substr>  --all  --root <dir>  --json  --yes (consent; asked otherwise)
 
@@ -79,8 +85,8 @@ const { values: o, positionals } = parseArgs({
     filter: { type: 'string' }, all: { type: 'boolean' }, root: { type: 'string' }, json: { type: 'boolean' },
     post: { type: 'boolean' }, yes: { type: 'boolean' }, sandbox: { type: 'string' }, wait: { type: 'string' }, observe: { type: 'boolean' }, status: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
     'no-bisect': { type: 'boolean' }, local: { type: 'boolean' }, spec: { type: 'string' }, 'no-review': { type: 'boolean' },
-    branch: { type: 'string' }, concurrency: { type: 'string' }, md: { type: 'string' }, report: { type: 'boolean' }, out: { type: 'string' }, render: { type: 'string' },
-    'allow-fresh': { type: 'boolean' }, help: { type: 'boolean', short: 'h' }, version: { type: 'boolean', short: 'v' },
+    branch: { type: 'string' }, concurrency: { type: 'string' }, md: { type: 'string' }, report: { type: 'boolean' }, out: { type: 'string' }, render: { type: 'string' }, lint: { type: 'boolean' },
+    'allow-fresh': { type: 'boolean' }, scenario: { type: 'string', multiple: true }, 'clean-profile': { type: 'boolean' }, help: { type: 'boolean', short: 'h' }, version: { type: 'boolean', short: 'v' },
   },
 });
 const [cmd, ...rest] = positionals;
@@ -217,27 +223,57 @@ async function main() {
     }
     case 'eval': {
       const cfg = readConfig(root);
-      const skills = rest.length ? rest : selectedSkills(cfg);
       if (o.render) {
-        process.stdout.write(renderReport(JSON.parse(readFileSync(resolve(o.render), 'utf8'))));
+        process.stdout.write(renderReport(JSON.parse(readFileSync(resolve(o.render), 'utf8')), cfg.evals));
         return;
       }
+      if (o.lint) {
+        // No model calls: checks each scenario against its own good/bad examples and prompt.
+        const r = lintScenarios(root, cfg, rest.length ? [...new Set(rest.map((x) => x.split(':')[0]))] : selectedSkills(cfg));
+        if (o.json) { console.log(JSON.stringify(r, null, 2)); if (r.counts.errors) process.exitCode = 1; return; }
+        for (const x of r.rows) for (const e of x.errors) console.log(`✗ ${x.skill} · ${x.id}: ${e}`);
+        for (const x of r.rows.filter((y) => y.partial)) console.log(`~ ${x.skill} · ${x.id}: partial: ${x.partial}`);
+        for (const x of r.rows) for (const w of x.warnings) console.log(`! ${x.skill} · ${x.id}: ${w}`);
+        const c = r.counts;
+        console.log(`lint: ${c.scenarios} scenarios · ${c.linted} linted · ${c.unlinted} unlinted (no good/bad) · ${c.partial} partial · ${c.errors} with errors · ${c.warnings} with warnings`);
+        if (c.errors) process.exitCode = 1;
+        return;
+      }
+      const targets = parseTargets(rest.length ? rest : selectedSkills(cfg), o.scenario ?? []);
+      const trials = o.trials ? Number(o.trials) : undefined;
+      const concurrency = o.concurrency ? Number(o.concurrency) : 1;
+      const plan = planEvals(root, cfg, { skills: targets, trials });
+      // Every run is a model call: show the bill first, and never start unattended without --yes.
+      process.stderr.write(`${renderPreview(preview(plan, cfg, { concurrency, agent: o.agent, history: historicalMedian(root) }))}\n`);
+      if (o['dry-run']) return;
+      const consented = Boolean(o.yes);
+      if (!consented) {
+        if (!process.stdin.isTTY) throw new Error('eval spends model calls; re-run with --yes to start (or --dry-run to only preview)');
+        const rl = createInterface({ input: process.stdin, output: process.stderr });
+        const ans = await new Promise((r) => rl.question('Start these runs? [y/N] ', r));
+        rl.close();
+        if (!/^y(es)?$/i.test(ans.trim())) { console.log('not running'); return; }
+      }
       const { report, file } = await runEvals(root, cfg, {
-        skills, agent: o.agent, model: o.model, trials: o.trials ? Number(o.trials) : undefined, keep: o.keep,
-        concurrency: o.concurrency ? Number(o.concurrency) : 1,
+        plan, agent: o.agent, model: o.model, keep: o.keep, cleanProfile: o['clean-profile'], concurrency,
         log: (m) => process.stderr.write(`${m}\n`),
       });
-      console.log(`agent ${report.agent}${report.model ? ` · model ${report.model}` : ''}`);
+      console.log(`agent ${report.agent}${report.model ? ` · model ${report.model}` : ''} · hyvemind ${report.version}${report.cleanProfile ? ' · clean profile' : ''}`);
       console.log('skill            bare   skill  lift   verdict');
       for (const s of report.skills) {
         if (!s.trials) { console.log(`${s.skill.padEnd(16)} —      —      —      ${s.note}`); continue; }
         const pct = (x) => `${Math.round(x * 100)}%`.padEnd(6);
-        console.log(`${s.skill.padEnd(16)} ${pct(s.bare)} ${pct(s.withSkill)} ${String(s.lift).padEnd(6)} ${s.verdict}`);
+        console.log(`${s.skill.padEnd(16)} ${pct(s.bare)} ${pct(s.withSkill)} ${String(s.lift).padEnd(6)} ${s.verdict}${s.selected ? ` (only ${s.selected.join(', ')})` : ''}`);
       }
+      for (const s of report.skills.filter((x) => x.trials)) {
+        for (const r of s.byScenario.filter((x) => x.flags.length)) console.log(`! ${s.skill} · ${r.id}: ${r.flags.join(', ')} (bare ${r.bare.pass}/${r.bare.runs}, skill ${r.skill.pass}/${r.skill.runs})`);
+      }
+      const kept = report.skills.flatMap((s) => s.runs ?? []).filter((r) => r.output).length;
+      if (kept) console.log(`outputs: ${kept} kept under ${join(root, '.hyve', 'evals', report.runId)}`);
       console.log(`report: ${file}`);
       if (o.report) {
         const md = o.out ? resolve(o.out) : join(root, '.hyve', 'evals', 'REPORT.md');
-        writeFileSync(md, renderReport(report));
+        writeFileSync(md, renderReport(report, cfg.evals, { linkBase: relative(dirname(md), root) }));
         console.log(`markdown: ${md}`);
       }
       return;

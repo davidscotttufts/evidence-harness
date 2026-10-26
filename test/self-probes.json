@@ -52,11 +52,11 @@
   {
     "id": "eval-lift",
     "src": "src/evals.mjs",
-    "old": "    const lift = +(rate(w) - rate(b)).toFixed(3);",
-    "new": "    const lift = +(rate(w)).toFixed(3);",
+    "old": "  const lift = +(rate(w) - rate(b)).toFixed(3);",
+    "new": "  const lift = +(rate(w)).toFixed(3);",
     "test": "test/evals.test.mjs",
     "expectOutput": [
-      "retire-candidate"
+      "cancel out"
     ]
   },
   {
@@ -417,6 +417,166 @@
     "test": "test/cli.test.mjs",
     "expectOutput": [
       "warns only on the real gaps"
+    ]
+  },
+  {
+    "id": "eval-saturated",
+    "src": "src/evals.mjs",
+    "old": "  if (bare === 1 && withSkill === 1) return 'saturated';\n",
+    "new": "",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "100% in both arms cannot measure the skill"
+    ]
+  },
+  {
+    "id": "eval-scenario-harmful",
+    "src": "src/evals.mjs",
+    "old": "    if (rs < rb) flags.push('harmful');\n",
+    "new": "",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "skill average hides"
+    ]
+  },
+  {
+    "id": "eval-scenario-no-signal",
+    "src": "src/evals.mjs",
+    "old": "    if (bare.runs && skill.runs && !bare.pass && !skill.pass) flags.push('no-signal');\n",
+    "new": "",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "skill average hides"
+    ]
+  },
+  {
+    "id": "eval-earning-low-n",
+    "src": "src/evals.mjs",
+    "old": "liftLow == null || liftLow > 0 ? 'earning' : 'earning (low n)'",
+    "new": "'earning'",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "earning (low n)"
+    ]
+  },
+  {
+    "id": "eval-newcombe-interval",
+    "src": "src/evals.mjs",
+    "old": "d - Math.sqrt((p1 - l1) ** 2 + (u2 - p2) ** 2)",
+    "new": "d - Math.sqrt((p1 - l1) ** 2)",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "published values"
+    ]
+  },
+  {
+    "id": "eval-render-recomputes",
+    "src": "src/evals.mjs",
+    "old": "  const skills = report.skills.map((s) => (s.trials ? summarize(s, th) : s));",
+    "new": "  const skills = report.skills.map((s) => (s.trials ? { ...s, ...summarize(s, th), verdict: s.verdict } : s));",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "recomputes them from its runs"
+    ]
+  },
+  {
+    "id": "eval-env-allowlist",
+    "src": "src/evals.mjs",
+    "old": "for (const [k, v] of Object.entries(from)) if (names.has(k) || k.startsWith('LC_')) env[k] = v;",
+    "new": "for (const [k, v] of Object.entries(from)) env[k] = v;",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "never the whole process.env"
+    ]
+  },
+  {
+    "id": "eval-clean-both-arms",
+    "src": "src/evals.mjs",
+    "old": "return clean ? [exe, ...agentCfg.cleanArgs, ...rest] : [exe, ...rest];",
+    "new": "return [exe, ...rest];",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "BOTH arms"
+    ]
+  },
+  {
+    "id": "eval-keep-failures",
+    "src": "src/evals.mjs",
+    "old": "if (!pass || keep) {",
+    "new": "if (keep) {",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "keep their full output"
+    ]
+  },
+  {
+    "id": "eval-scenario-filter",
+    "src": "src/evals.mjs",
+    "old": "      scenarios = scenarios.filter((sc) => t.ids.includes(sc.id));\n",
+    "new": "",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "select single scenarios"
+    ]
+  },
+  {
+    "id": "eval-version-stamp",
+    "src": "src/evals.mjs",
+    "old": "  return `${v}+${sha.stdout.trim()}${dirty ? '-dirty' : ''}`;",
+    "new": "  return v;",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "version+sha"
+    ]
+  },
+  {
+    "id": "eval-needs-yes",
+    "src": "bin/hyvemind.mjs",
+    "old": "        if (!process.stdin.isTTY) throw new Error('eval spends model calls; re-run with --yes to start (or --dry-run to only preview)');\n",
+    "new": "",
+    "test": "test/cli.test.mjs",
+    "expectOutput": [
+      "must refuse to start"
+    ]
+  },
+  {
+    "id": "eval-dry-run-runs-nothing",
+    "src": "bin/hyvemind.mjs",
+    "old": "      if (o['dry-run']) return;\n",
+    "new": "",
+    "test": "test/cli.test.mjs",
+    "expectOutput": [
+      "must only preview"
+    ]
+  },
+  {
+    "id": "lint-good-must-pass",
+    "src": "src/evals.mjs",
+    "old": "    if (failed.length) r.errors.push(",
+    "new": "    if (false) r.errors.push(",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "each good passes all checks"
+    ]
+  },
+  {
+    "id": "lint-bad-must-fail",
+    "src": "src/evals.mjs",
+    "old": "    if (lintable.every((x) => passes(x, b))) r.errors.push(",
+    "new": "    if (false) r.errors.push(",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "each bad fails one"
+    ]
+  },
+  {
+    "id": "lint-contradiction",
+    "src": "src/evals.mjs",
+    "old": "      if (!lineOk(d.written[0])) out.errors.push(",
+    "new": "      if (false) out.errors.push(",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "contradiction check"
     ]
   },
   {

@@ -2,6 +2,8 @@
   "id": "reuse-existing",
   "fixture": "fixtures/has-notifications",
   "prompt": "Write a short spec for: 'email the user a download link when their export finishes'. Explore the repo first. Include a line starting with REUSES: that lists existing modules you will reuse (or REUSES: none).",
+  "good": "Spec: when runExport finishes, email the user the download link it returns.\nREUSES: src/notifications/email.js (sendEmail, with its retries and templates), src/exports/runExport.js",
+  "bad": "Spec: add a mailer for export emails using nodemailer.\nREUSES: none",
   "checks": [
     {
       "type": "output-matches",

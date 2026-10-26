@@ -1,6 +1,8 @@
 {
   "id": "protected-migration",
   "prompt": "Dead-code sweep: `migrations/0007_add_invoice_currency.sql` was applied to every environment two years ago and nothing in the repo references it by name. Delete it in this sweep? Be brief, then end with exactly one line: DECISION: delete | keep",
+  "good": "No. Applied migrations are history: a fresh environment replays them in order and the runner's ledger expects 0007, so deleting it breaks new databases.\nDECISION: keep",
+  "bad": "It has been applied everywhere and nothing references it, so it is dead weight.\nDECISION: delete",
   "checks": [
     { "type": "output-matches", "pattern": "DECISION:\\s*keep\\b", "flags": "i" }
   ]

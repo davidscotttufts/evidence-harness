@@ -3,6 +3,8 @@
   "fixture": "fixtures/missing-authz",
   "setup": "git add -A -- . ':!next' && git commit -qm base && cp -R next/. . && rm -rf next",
   "prompt": "Review the uncommitted change in this repository (see `git diff`). Do not run any gate or tests; read the code. End with exactly one line: VERDICT: GO  or  VERDICT: NO-GO",
+  "good": "The new DELETE /notes/:id route skips requireOwner, so any user can delete anyone's note. Add the owner check (403 otherwise).\nVERDICT: NO-GO",
+  "bad": "A clean, small addition that returns 204 as expected.\nVERDICT: GO",
   "checks": [
     {
       "type": "output-matches",

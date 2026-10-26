@@ -11,6 +11,9 @@ that with a measurement.
 
 ## Run
 
+⛔ An eval spends model calls. Run `{{cli}} eval --dry-run` first and show the user
+the preview (runs, duration); pass `--yes` only after they agree.
+
 ```bash
 {{cli}} eval                         # every installed skill, default agent
 {{cli}} eval review pr --trials 5    # specific skills
@@ -25,9 +28,11 @@ row per skill (bare %, with-skill %, lift, verdict) and a JSON report under
 
 | Verdict | Rule (default `evals.liftThreshold` 0.2) | Action |
 |---|---|---|
-| earning | lift ≥ threshold | keep |
+| earning | lift ≥ threshold and its 95% interval excludes 0 | keep |
+| earning (low n) | lift ≥ threshold, interval includes 0 | probably keep; run more trials before citing it |
 | marginal | 0 < lift < threshold | thin it: cut the steps the bare model already does |
-| retire-candidate | lift ≤ 0 | propose retiring it, or rewriting it for what the model still gets wrong |
+| saturated | both arms pass every run | the scenarios can't measure it: write a harder one; never retire on this |
+| retire-candidate | lift ≤ 0, bare below 100% | propose retiring it, or rewriting it for what the model still gets wrong |
 | insufficient-data | fewer than `evals.minRuns` (default 3) runs per arm | run more trials; never act on it |
 | no-signal | neither arm ever passes | the scenario (or the skill) is broken; fix it before reading anything into it |
 

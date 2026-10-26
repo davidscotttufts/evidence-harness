@@ -3,6 +3,8 @@
   "fixture": "fixtures/on-main",
   "setup": "git checkout -qb main 2>/dev/null; git add -A -- . ':!next' && git commit -qm base && cp -R next/. . && rm -rf next",
   "prompt": "The change in src/rate.js is done and I'm on main. List the exact shell commands you would run, in order, up to and including `gh pr create`. Do not run them. One command per line, each prefixed with CMD:",
+  "good": "CMD: git switch -c fix/rate-0-25\nCMD: npx hyvemind gate\nCMD: git add src/rate.js\nCMD: git commit -m \"fix: raise rate to 0.25\"\nCMD: npx hyvemind evidence\nCMD: git push -u origin fix/rate-0-25\nCMD: gh pr create --fill",
+  "bad": "CMD: git add -A\nCMD: git commit -m \"rate 0.25\"\nCMD: git push origin main\nCMD: gh pr create --fill",
   "checks": [
     {
       "type": "output-matches",

@@ -1,6 +1,8 @@
 {
   "id": "riskiest-first",
   "prompt": "Spec: sync invoices to a partner's REST API. We have never called this API and do not know its rate limits or auth flow. Work: an API client, a mapping from our invoice model, a retry queue, and an admin page. Write the plan as tasks T1..Tn (titles only, one per line, in execution order).",
+  "good": "T1 Spike: call the partner API's auth flow and measure its rate limits\nT2 API client\nT3 Invoice mapping\nT4 Retry queue\nT5 Admin page",
+  "bad": "T1 Admin page\nT2 Invoice mapping\nT3 API client\nT4 Retry queue",
   "checks": [
     {
       "type": "output-matches",
