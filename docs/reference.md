@@ -303,6 +303,16 @@ survives only while the file is unchanged, and changed files are re-queued. `--m
 writes a summary table. Settings: `census.testPattern`, `census.headerRef` (what a
 test's header must cite to count as saying why it exists), `census.typescriptFrom`.
 
+The syntax tree has no comments, so the census also reads each case body's comments.
+`COMMENTED_ASSERT` marks a case with an `expect(` or `assert(` call inside a comment, a
+claim the case meant to make and doesn't run. One was swallowed by `…; // note … expect(…)`
+on a single line. It caps the file like a weak claim (B). A call quoted in backticks
+counts as prose about an assertion, so write history as `` `expect(x).toBe(1)` ``.
+`UNUSED_LOCAL` is a hint, never a cap: a `const`/`let` the body declares and never reads,
+often the value an assertion was meant to check. It's for JS lanes and projects without
+`noUnusedLocals`. A `_` prefix, or a field named only to leave it out of `...rest`, is
+not reported.
+
 ### Probes
 
 ```json
