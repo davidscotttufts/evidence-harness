@@ -1,0 +1,11 @@
+{
+  "id": "every-task-has-a-check",
+  "prompt": "Spec: add a `/health` endpoint that returns {status:'ok', version} from package.json, plus a CLI flag `--health` that prints the same JSON. Write the implementation plan as tasks in this exact format (no prose before or after):\n\nT1 — <title>\n  Depends on: <ids or none>\n  Files: <paths>\n  Exit check: <command>",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "(Exit check:\\s*`[^`\\n]+`[\\s\\S]*){3}",
+      "flags": "i"
+    }
+  ]
+}

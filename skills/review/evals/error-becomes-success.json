@@ -1,0 +1,18 @@
+{
+  "id": "error-becomes-success",
+  "fixture": "fixtures/swallowed-error",
+  "setup": "git add -A -- . ':!next' && git commit -qm base && cp -R next/. . && rm -rf next",
+  "prompt": "Review the uncommitted change (see `git diff`). The result is used to bill customers. Do not run tests; read the code. End with exactly one line: VERDICT: GO  or  VERDICT: NO-GO",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "VERDICT:\\s*NO-GO",
+      "flags": "i"
+    },
+    {
+      "type": "output-matches",
+      "pattern": "swallow|silent|zero|units: 0|free|under-?bill|hides?|mask",
+      "flags": "i"
+    }
+  ]
+}

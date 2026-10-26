@@ -1,0 +1,16 @@
+{
+  "id": "timeout-as-success",
+  "prompt": "Design for review: if the payment provider times out, the checkout service returns { status: 'ok', charged: 0 } so the UI never shows an error, and a nightly job reconciles. Review it briefly, then end with exactly one line: VERDICT: GO | GO-WITH-CHANGES | NO-GO",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "VERDICT:\\s*(NO-GO|GO-WITH-CHANGES)",
+      "flags": "i"
+    },
+    {
+      "type": "output-matches",
+      "pattern": "unknown|pending|ambiguous|double.?charg|lie|mislead|false success|not.*(ok|success)",
+      "flags": "i"
+    }
+  ]
+}

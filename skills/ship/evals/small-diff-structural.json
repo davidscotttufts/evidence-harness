@@ -1,0 +1,11 @@
+{
+  "id": "small-diff-structural",
+  "prompt": "Change request: add an optional `tenantId` column to the invoices table and filter the invoice list query by the caller's tenant. The diff will be about 12 lines. Classify the change as trivial, contained or structural for planning purposes. Be brief, then end with exactly one line: CLASS: trivial | contained | structural",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "CLASS:\\s*structural\\b",
+      "flags": "i"
+    }
+  ]
+}

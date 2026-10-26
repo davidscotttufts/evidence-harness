@@ -52,8 +52,8 @@
   {
     "id": "eval-lift",
     "src": "src/evals.mjs",
-    "old": "rate(tally.skill) - rate(tally.bare)",
-    "new": "rate(tally.skill)",
+    "old": "    const lift = +(rate(w) - rate(b)).toFixed(3);",
+    "new": "    const lift = +(rate(w)).toFixed(3);",
     "test": "test/evals.test.mjs",
     "expectOutput": [
       "retire-candidate"
@@ -87,6 +87,116 @@
     "test": "test/gate.test.mjs",
     "expectOutput": [
       "never trusts the real index"
+    ]
+  },
+  {
+    "id": "status-no-success-for-uncommitted",
+    "src": "src/status.mjs",
+    "old": "  if (tree !== commitTree) {",
+    "new": "  if (false) {",
+    "test": "test/status.test.mjs",
+    "expectOutput": [
+      "refuses"
+    ]
+  },
+  {
+    "id": "status-never-success-without-match",
+    "src": "src/status.mjs",
+    "old": "  if (match) {",
+    "new": "  if (match || latest) {",
+    "test": "test/status.test.mjs",
+    "expectOutput": [
+      "red run posts failure"
+    ]
+  },
+  {
+    "id": "train-tree-check",
+    "src": "src/train.mjs",
+    "old": "      if (landed !== tree) {",
+    "new": "      if (false) {",
+    "test": "test/train.test.mjs",
+    "expectOutput": [
+      "TREE MISMATCH"
+    ]
+  },
+  {
+    "id": "train-refuses-moved-base",
+    "src": "src/train.mjs",
+    "old": "      if (must(dir, ['rev-parse', 'FETCH_HEAD']) !== built.baseSha) {",
+    "new": "      if (false) {",
+    "test": "test/train.test.mjs",
+    "expectOutput": [
+      "base moved"
+    ]
+  },
+  {
+    "id": "train-bisects",
+    "src": "src/train.mjs",
+    "old": "        if (group.length > 1 && bisect) {",
+    "new": "        if (false) {",
+    "test": "test/train.test.mjs",
+    "expectOutput": [
+      "bisects"
+    ]
+  },
+  {
+    "id": "run-check-decides-done",
+    "src": "src/run.mjs",
+    "old": "    if (entry.attempts.at(-1).checkExit !== 0) {",
+    "new": "    if (false) {",
+    "test": "test/run.test.mjs",
+    "expectOutput": [
+      "never satisfies the check"
+    ]
+  },
+  {
+    "id": "run-review-blocks",
+    "src": "src/run.mjs",
+    "old": "      if (!verdict || verdict[1] !== 'GO') {",
+    "new": "      if (false) {",
+    "test": "test/run.test.mjs",
+    "expectOutput": [
+      "NO-GO review blocks"
+    ]
+  },
+  {
+    "id": "run-repair-told-failure",
+    "src": "src/run.mjs",
+    "old": "      failure = `\\`${task.check}\\` exited ${check.code}${check.out ? `:\\n${check.out}` : ' with no output'}`;",
+    "new": "      failure = check.out;",
+    "test": "test/run.test.mjs",
+    "expectOutput": [
+      "repair attempt"
+    ]
+  },
+  {
+    "id": "affected-untraceable-runs-all",
+    "src": "src/affected.mjs",
+    "old": "  if (untraceable.length) return",
+    "new": "  if (false) return",
+    "test": "test/affected.test.mjs",
+    "expectOutput": [
+      "cannot trace"
+    ]
+  },
+  {
+    "id": "affected-transitive",
+    "src": "src/affected.mjs",
+    "old": "    for (const d of dependents.get(queue.pop()) ?? []) if (!seen.has(d)) { seen.add(d); queue.push(d); }",
+    "new": "    for (const d of dependents.get(queue.pop()) ?? []) if (!seen.has(d)) { seen.add(d); }",
+    "test": "test/affected.test.mjs",
+    "expectOutput": [
+      "transitively"
+    ]
+  },
+  {
+    "id": "eval-no-signal",
+    "src": "src/evals.mjs",
+    "old": "  if (withSkill === 0 && lift === 0) return 'no-signal';",
+    "new": "",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "no-signal"
     ]
   }
 ]

@@ -1,0 +1,12 @@
+{
+  "id": "tautology",
+  "fixture": "fixtures/tautology",
+  "prompt": "Grade test/discount.test.js A-F by whether it would catch a real bug in src/discount.js. Be brief. End with exactly one line: GRADE: <letter>",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "GRADE:\\s*[DF]\\b",
+      "flags": ""
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "trivial-stays-trivial",
+  "prompt": "Change request: fix the typo 'recieve' → 'receive' in README.md. Classify the change as trivial, contained or structural for planning purposes. Be brief, then end with exactly one line: CLASS: trivial | contained | structural",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "CLASS:\\s*trivial\\b",
+      "flags": "i"
+    }
+  ]
+}

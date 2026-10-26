@@ -30,7 +30,9 @@ export const DEFAULTS = {
   evals: {
     agent: 'claude',
     agents: {
-      claude: { command: ['claude', '-p', '{prompt}'] },
+      // Read-only tools, identical in both arms: an eval observes, it never writes.
+      // The prompt goes BEFORE --allowedTools: that flag is variadic and would swallow it.
+      claude: { command: ['claude', '-p', '{prompt}', '--allowedTools', 'Read,Grep,Glob,Bash(git diff:*),Bash(git status:*),Bash(git log:*)'] },
       codex: { command: ['codex', 'exec', '{prompt}'] },
       opencode: { command: ['opencode', 'run', '{prompt}'] },
     },

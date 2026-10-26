@@ -1,16 +1,21 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { CONFIG_FILE, pkgVersion, readConfig, resolveConfig, writeConfig } from '../src/config.mjs';
 import { detect } from '../src/detect.mjs';
 import { doctor } from '../src/doctor.mjs';
-import { runEvals } from '../src/evals.mjs';
+import { affected } from '../src/affected.mjs';
+import { renderReport, runEvals } from '../src/evals.mjs';
 import { evidenceFor, runGates } from '../src/gate.mjs';
 import { git } from '../src/git.mjs';
 import { bundledSkills, installAgentsMd, installSkills, selectedSkills } from '../src/install.mjs';
 import { mine } from '../src/mine.mjs';
 import { runProbes } from '../src/probe.mjs';
+import { runPlan } from '../src/run.mjs';
+import { postStatus } from '../src/status.mjs';
+import { githubForge, localForge, runTrain } from '../src/train.mjs';
 
 const HELP = `hyvemind ${pkgVersion()}
 
@@ -26,9 +31,21 @@ Usage: hyvemind <command> [options]
             --only <a,b>  run a subset (recorded as partial; never counts as evidence)
             --keep-going  run every gate even after a red one   --quiet
   evidence  Exit 0 if the CURRENT working tree has a full green gate record
+            --post        publish it as a GitHub commit status (hyvemind/gate) on HEAD
+                          (refused unless the tree is clean and gated); --dry-run prints it
+  affected  List the tests a change can reach (static import graph; ALL when untraceable)
+            --base <ref>  include commits since <ref>   --json   --run (affected.command)
+  train <pr…>           Merge queue: gate several PRs as ONE train, merge on green, prove
+                        main's tree == the gated tree, bisect a red train
+            --base <branch>  --no-merge  --no-bisect  --local (ids are origin branches)
+  run <plan.md>         Each plan task → a fresh agent in its own worktree; done = the
+                        task's exit check; an independent reviewer must say GO
+            --spec <file>  --only T1,T3  --no-review  --branch <name>
   probe <probes.json>   Sabotage probes: break the code, prove the test goes red
   eval [skill…]         Bare model vs with-skill on each skill's scenarios
-            --agent <name>  --model <id>  --trials <n>  --keep
+            --agent <name>  --model <id>  --trials <n>  --concurrency <n>  --keep
+            --report          also write the markdown decision table (.hyve/evals/REPORT.md, or --out <file>)
+            --render <report.json>  render an existing report without running anything
   mine      Mine Claude Code transcripts for skill usage and chains
             --filter <substr>  --all  --root <dir>  --json
 
@@ -42,6 +59,9 @@ const { values: o, positionals } = parseArgs({
     only: { type: 'string' }, 'keep-going': { type: 'boolean' }, quiet: { type: 'boolean' },
     agent: { type: 'string' }, model: { type: 'string' }, trials: { type: 'string' }, keep: { type: 'boolean' },
     filter: { type: 'string' }, all: { type: 'boolean' }, root: { type: 'string' }, json: { type: 'boolean' },
+    post: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
+    'no-bisect': { type: 'boolean' }, local: { type: 'boolean' }, spec: { type: 'string' }, 'no-review': { type: 'boolean' },
+    branch: { type: 'string' }, concurrency: { type: 'string' }, report: { type: 'boolean' }, out: { type: 'string' }, render: { type: 'string' },
     help: { type: 'boolean', short: 'h' }, version: { type: 'boolean', short: 'v' },
   },
 });
@@ -122,6 +142,13 @@ async function main() {
       return;
     }
     case 'evidence': {
+      if (o.post) {
+        const r = postStatus(root, { dryRun: o['dry-run'] });
+        if (r.reason) { console.log(`not posted: ${r.reason}`); process.exitCode = 1; return; }
+        console.log(`${r.posted ? 'posted' : 'would post'} ${r.state} to ${r.slug}@${r.sha.slice(0, 12)} (hyvemind/gate): ${r.description}`);
+        if (r.state !== 'success') process.exitCode = 1;
+        return;
+      }
       const { tree, match, latest } = evidenceFor(root);
       if (match) { console.log(`green · tree ${tree.slice(0, 12)} · ${match.finishedAt} · ${match.file}`); return; }
       console.log(latest ? `no green evidence for tree ${tree.slice(0, 12)}; latest run on it was ${latest.verdict}${latest.partial ? ' (partial)' : ''}` : `no gate has run on tree ${tree.slice(0, 12)}; run "hyvemind gate"`);
@@ -142,8 +169,13 @@ async function main() {
     case 'eval': {
       const cfg = readConfig(root);
       const skills = rest.length ? rest : selectedSkills(cfg);
-      const { report, file } = runEvals(root, cfg, {
+      if (o.render) {
+        process.stdout.write(renderReport(JSON.parse(readFileSync(resolve(o.render), 'utf8'))));
+        return;
+      }
+      const { report, file } = await runEvals(root, cfg, {
         skills, agent: o.agent, model: o.model, trials: o.trials ? Number(o.trials) : undefined, keep: o.keep,
+        concurrency: o.concurrency ? Number(o.concurrency) : 1,
         log: (m) => process.stderr.write(`${m}\n`),
       });
       console.log(`agent ${report.agent}${report.model ? ` · model ${report.model}` : ''}`);
@@ -154,6 +186,53 @@ async function main() {
         console.log(`${s.skill.padEnd(16)} ${pct(s.bare)} ${pct(s.withSkill)} ${String(s.lift).padEnd(6)} ${s.verdict}`);
       }
       console.log(`report: ${file}`);
+      if (o.report) {
+        const md = o.out ? resolve(o.out) : join(root, '.hyve', 'evals', 'REPORT.md');
+        writeFileSync(md, renderReport(report));
+        console.log(`markdown: ${md}`);
+      }
+      return;
+    }
+    case 'affected': {
+      const cfg = readConfig(root);
+      const r = affected(root, cfg, { base: o.base ?? null });
+      if (o.json) { console.log(JSON.stringify(r, null, 2)); return; }
+      console.log(r.all ? `ALL tests (${r.reason})` : r.reason);
+      for (const t of r.tests) console.log(`  ${t}`);
+      if (o.run) {
+        const a = cfg.affected ?? {};
+        const quote = (f) => `'${f.replace(/'/g, `'\\''`)}'`;
+        const command = r.all ? (a.allCommand ?? cfg.gates.map((g) => g.run).join(' && ')) : r.tests.length ? (a.command ?? cfg.probe.command).replace('{test}', '{tests}').replace('{tests}', r.tests.map(quote).join(' ')) : null;
+        if (!command) { console.log('nothing to run'); return; }
+        console.log(`\n▶ ${command}`);
+        process.exitCode = spawnSync(command, { cwd: root, shell: true, stdio: 'inherit' }).status ?? 1;
+      }
+      return;
+    }
+    case 'train': {
+      if (!rest.length) throw new Error('usage: hyvemind train <pr> [<pr>…]');
+      const cfg = readConfig(root);
+      const base = o.base ?? cfg.train?.base ?? 'main';
+      const forge = o.local ? localForge(root, base) : githubForge(root);
+      const r = await runTrain(root, cfg, rest, {
+        base, forge, merge: !o['no-merge'], bisect: !o['no-bisect'], quiet: o.quiet,
+        log: (m) => console.log(m),
+      });
+      const label = (ids) => ids.map(forge.label).join(' ') || '—';
+      console.log(`\nmerged: ${label(r.merged)} · gated (not merged): ${label(r.gated)} · red: ${label(r.red)} · conflicts: ${label(r.conflicts)} · refused: ${label(r.refused)} · gate runs: ${r.gates}`);
+      if (r.red.length || r.conflicts.length || r.refused.length) process.exitCode = 1;
+      return;
+    }
+    case 'run': {
+      if (!rest[0]) throw new Error('usage: hyvemind run <plan.md>');
+      const cfg = readConfig(root);
+      const { report, file } = runPlan(root, cfg, rest[0], {
+        spec: o.spec, only: o.only?.split(','), review: !o['no-review'], branch: o.branch, base: o.base,
+        log: (m) => console.log(m),
+      });
+      for (const t of report.tasks) console.log(`${t.id.padEnd(4)} ${(t.status ?? '').padEnd(15)} ${t.title ?? ''}`);
+      console.log(`branch ${report.branch} · worktree ${report.dir}\nreport: ${file}`);
+      if (report.tasks.some((t) => !['done', 'already-done', 'no-change'].includes(t.status))) process.exitCode = 1;
       return;
     }
     case 'mine': {

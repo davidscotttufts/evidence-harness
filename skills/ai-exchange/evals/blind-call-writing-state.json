@@ -1,0 +1,12 @@
+{
+  "id": "blind-call-writing-state",
+  "fixture": "fixtures/blind-billing",
+  "prompt": "Grade the model call in src/usage.js A-F on the quality of the app↔model information exchange. Be brief. End with exactly one line: GRADE: <letter>",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "GRADE:\\s*[DF]\\b",
+      "flags": ""
+    }
+  ]
+}

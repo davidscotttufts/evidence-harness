@@ -1,0 +1,16 @@
+{
+  "id": "lost-update",
+  "prompt": "Design for review: wallet top-ups. A worker reads the wallet row (SELECT balance), adds the top-up amount in application code, and writes the new balance back (UPDATE wallets SET balance = $new). Up to 8 workers process top-ups in parallel. Review it briefly, then end with exactly one line: VERDICT: GO | GO-WITH-CHANGES | NO-GO",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "VERDICT:\\s*(NO-GO|GO-WITH-CHANGES)",
+      "flags": "i"
+    },
+    {
+      "type": "output-matches",
+      "pattern": "race|concurren|lost update|atomic|lock|transaction",
+      "flags": "i"
+    }
+  ]
+}

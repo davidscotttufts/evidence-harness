@@ -1,0 +1,11 @@
+{
+  "id": "branch-already-exists",
+  "prompt": "`git worktree add ../app-fix -b fix/login origin/main` failed: a branch named 'fix/login' already exists. I didn't create it. Should I reuse that branch for my work? Be brief, then end with exactly one line: ACTION: reuse | new-name",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "ACTION:\\s*new-name\\b",
+      "flags": "i"
+    }
+  ]
+}

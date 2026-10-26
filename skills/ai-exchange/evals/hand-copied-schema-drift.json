@@ -1,0 +1,17 @@
+{
+  "id": "hand-copied-schema-drift",
+  "fixture": "fixtures/drifted-prompt",
+  "prompt": "Audit the model call in src/extract.js and its prompt. Be brief. Name the most important defect, then end with exactly one line: GRADE: <letter>",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "qty|quantity|drift|mismatch|out of sync",
+      "flags": "i"
+    },
+    {
+      "type": "output-matches",
+      "pattern": "GRADE:\\s*[CDF]\\b",
+      "flags": ""
+    }
+  ]
+}

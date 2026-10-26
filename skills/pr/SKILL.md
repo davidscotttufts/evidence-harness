@@ -16,7 +16,13 @@ description: "Open a pull request only when the current working tree has green g
 4. The branch is up to date with the base (`git fetch` and confirm it isn't behind). If
    you rebase, the tree changes: gate again.
 
-## 2. Commit hygiene
+## 2. Make the evidence visible
+
+After committing and gating, run `{{cli}} evidence --post`. It publishes the verdict as
+a `hyvemind/gate` commit status on HEAD, so reviewers see on the PR that this exact
+commit was gated. It refuses when the tree has uncommitted changes, so commit first.
+
+## 3. Commit hygiene
 
 - Stage explicit paths; never `git add -A` in a shared checkout.
 - Review `git diff --cached` before committing.
@@ -24,7 +30,7 @@ description: "Open a pull request only when the current working tree has green g
   record if there is one (`(ADR 0042 §3)`).
 - Sign off (`git commit -s`) if the project uses DCO.
 
-## 3. Write the PR from the diff
+## 4. Write the PR from the diff
 
 ```markdown
 ## What
@@ -44,7 +50,7 @@ description: "Open a pull request only when the current working tree has green g
 Describe only what the diff does. Leave out anything that was planned but not built,
 and say which checks were skipped.
 
-## 4. Gate
+## 5. Gate
 
 ⛔ Pushing and opening a PR are visible to others. Show the user the title, body and
 target branch, and wait for an explicit yes. Then `git push -u origin <branch>` and

@@ -22,6 +22,17 @@ claim counts only after it has been verified.
   which is evidence for thinning or retiring it.
 - **Proves tests can fail.** `hyvemind probe` breaks the code a test is supposed to
   guard and records whether the test goes red.
+- **Evidence on the PR.** `hyvemind evidence --post` publishes the verdict as a
+  `hyvemind/gate` commit status, but only for a clean, gated commit.
+- **Merge queue.** `hyvemind train` gates several PRs in one run, merges them only if
+  the base didn't move, proves the base's tree is the gated tree, and bisects a red
+  train to name the culprit.
+- **One fresh agent per task.** `hyvemind run plan.md` gives each plan task to a new
+  agent in its own worktree. The task's own exit check decides done, and an
+  independent reviewer must say GO.
+- **Only the tests that matter, unless unsure.** `hyvemind affected` walks the import
+  graph from your change to the tests it can reach, and selects everything when it
+  can't trace a change.
 - **No dependencies.** Node ≥ 20 and git.
 
 It grew out of the skill suite used to build the [OpenWOP](https://github.com/openwop)
@@ -32,10 +43,10 @@ at `docs/research/sdlc-agent-landscape-and-proposal-2026-10-25.md`.
 ## Install into a project
 
 ```bash
-npx -y hyvemind@0.1.0 init      # detects the project, writes hyvemind.json,
+npx -y hyvemind@0.2.0 init      # detects the project, writes hyvemind.json,
                                 # installs the skills and the AGENTS.md block
-npx -y hyvemind@0.1.0 doctor    # checks that everything is wired up
-npx -y hyvemind@0.1.0 gate      # runs your gates and records evidence
+npx -y hyvemind@0.2.0 doctor    # checks that everything is wired up
+npx -y hyvemind@0.2.0 gate      # runs your gates and records evidence
 ```
 
 Installed skills call the CLI as `npx -y hyvemind@<exact version>` (the `cli` field in
@@ -43,8 +54,8 @@ Installed skills call the CLI as `npx -y hyvemind@<exact version>` (the `cli` fi
 package. If you'd rather pin hyvemind as a dev dependency, install it first:
 
 ```bash
-npm i -D hyvemind@0.1.0                                  # from npm
-npm i -D github:davidscotttufts/hyvemind#v0.1.0          # or straight from GitHub
+npm i -D hyvemind@0.2.0                                  # from npm
+npm i -D github:davidscotttufts/hyvemind#v0.2.0          # or straight from GitHub
 npx hyvemind init                                        # writes "cli": "npx hyvemind"
 ```
 
@@ -92,15 +103,20 @@ edited, and any same-named skill that existed before hyvemind, and reports both.
 | `bee-parallel-work` | always | Git hygiene for many sessions or agents in one repo: separate worktrees, never stash a shared tree |
 | `bee-skill-eval` | meta | Scaffold economics: how much each skill lifts the model compared with the model bare |
 | `bee-skill-miner` | meta | Mines Claude Code transcripts for repeated skill chains and proposes combined skills |
+| `bee-ai-exchange` | review (AI) | Grades every place the app talks to an LLM: runtime schemas from the source of truth, state read before writing, validated output with one bounded repair, gated apply |
+| `bee-live-qualify` | test (AI) | Runs the app's AI flows against real vendors on a local stack, with key names only. Classifies results honestly: pass, app-bug, contract-gap, vendor-refusal, quota |
 
 ## CLI
 
 ```
 hyvemind init | update | doctor | list
 hyvemind gate [--only a,b] [--keep-going] [--quiet]
-hyvemind evidence                      # exit 0 only if the current tree has a full green gate
+hyvemind evidence [--post [--dry-run]]  # exit 0 only if the current tree has a full green gate
+hyvemind affected [--base ref] [--json] [--run]
+hyvemind train <pr…> [--no-merge] [--no-bisect] [--local] [--base branch]
+hyvemind run plan.md [--spec spec.md] [--only T1,T2] [--no-review]
 hyvemind probe probes.json             # sabotage probes
-hyvemind eval [skill…] [--agent claude|codex|opencode] [--model id] [--trials n]
+hyvemind eval [skill…] [--agent claude|codex|opencode] [--model id] [--trials n] [--concurrency n] [--report] [--render report.json]
 hyvemind mine [--all] [--json]         # Claude Code transcript mining
 ```
 
@@ -116,6 +132,71 @@ Each run writes `.hyve/evidence/gate-<time>.json` containing `head`, `treeBefore
 
 The tree hash covers tracked **and untracked** files, minus ignored ones. It is
 computed in a throwaway index, so your staging area is never touched.
+
+### Posting evidence to a PR
+
+`hyvemind evidence --post` sets a `hyvemind/gate` commit status on HEAD through the `gh`
+CLI: `success` for a full green run, `failure` for a red one, and `error` for an
+invalid one. It **refuses** to post when:
+- the working tree differs from HEAD (evidence for uncommitted edits describes no
+  commit);
+- the only run is a partial one (`--only`);
+- nothing has been gated.
+
+`--dry-run` prints the call without making it.
+
+### Merge queue
+
+```bash
+hyvemind train 412 415 419          # GitHub PRs
+hyvemind train --local feat-a feat-b # branches on origin, merged with git
+```
+
+The train is `origin/<base>` plus each head merged in order. It runs in a persistent
+worktree (`train.dir`, default `../<repo>-hyve-train`), so installed dependencies
+survive between trains (`train.setup`, for example `npm ci`, runs before each gate).
+
+- **Green:** it merges each PR, then checks that the base's new tree **equals** the
+  gated tree. If not, it stops with `TREE MISMATCH`.
+- **Base moved during the gate:** it rebuilds and gates again (`train.retries`,
+  default 1), and otherwise refuses to merge.
+- **Red:** it splits the train in half and gates each half; green halves merge and
+  the culprit is named and left open.
+- **A PR that doesn't merge cleanly onto the train:** reported and skipped.
+- One train per clone at a time. Never `--delete-branch` (it would close stacked PRs).
+
+### Running a plan
+
+`hyvemind run plan.md` reads the task format that `bee-plan` writes:
+
+```
+T2 — Add the parser
+  Depends on: T1
+  Files: src/parse.mjs
+  Exit check: `node --test test/parse.test.mjs`
+```
+
+For each task, in dependency order, on branch `hyve/run-<plan>` in its own worktree:
+1. A **fresh** agent process implements it (`run.agent`, default Claude Code with
+   `acceptEdits`).
+2. The task's exit check decides whether it's done. A failed attempt is rolled back
+   and retried once, with the failing command and its output passed to the agent.
+3. An **independent** reviewer (`run.reviewer`) must end with `VERDICT: GO`.
+4. One commit per task. Re-running resumes after the last committed task.
+
+### Affected tests
+
+`hyvemind affected` walks the JS/TS import graph backwards from changed files:
+- committed since `--base`, uncommitted, and untracked changes all count;
+- static and dynamic imports, `require`, TS `.js`→`.ts`, `index` files, and
+  `affected.aliases` are followed.
+
+It selects **all** tests when a change can't be traced:
+- `package.json`, lockfiles, test/build config, or `.env` (`affected.fullRunOn`);
+- any non-code file that isn't ignored, such as a JSON fixture.
+
+Docs and skills select nothing (`affected.ignore`). `--run` runs `affected.command`
+with `{tests}`. It's for fast inner loops; the full gate still decides "done".
 
 ### Probes
 
@@ -148,17 +229,18 @@ output patterns, files or commands. Agents are argv templates in `evals.agents`:
 
 Verdicts:
 
+- `no-signal`: neither arm ever passes, so the scenario (or the skill) is broken.
 - `earning`: lift ≥ `liftThreshold` (default 0.2).
 - `marginal`: lift is positive but below the threshold.
 - `retire-candidate`: lift ≤ 0.
 - `insufficient-data`: fewer than `minRuns` runs (default 3). Never retire a skill on
   one run.
 
-**First live run (2026-10-25, Claude Code):** the bundled starter scenarios for
-`evidence` and `test-necessity` scored 100% bare and 100% with the skill (one trial).
-That means the starter scenarios are too easy for the current model. The next step is
-a scenario aimed at a failure the model still makes. Treat the bundled scenarios as
-smoke tests, and write your own for the mistakes your agents actually make.
+**Measured results:** [docs/evals/2026-10-26-claude.md](docs/evals/2026-10-26-claude.md) has two
+132-run evals on Claude Code. `spec` (+0.50), `pr` (+0.67) and, after a
+measured rewrite, `plan` (+0.50) clearly earn their place. The other ten are saturated on today's model *for
+these scenarios*, which is a prompt to write harder scenarios and to check a second
+model, not to retire anything yet.
 
 Caveat: the bare run can still see user-level skills (`~/.claude/skills`) and global
 instructions. For a strict baseline, run evals from a clean profile.

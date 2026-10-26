@@ -1,0 +1,1 @@
+{ "version": 1, "preset": "generic", "gates": [{ "name": "test", "run": "node --test" }] }

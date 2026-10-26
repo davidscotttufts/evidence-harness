@@ -1,0 +1,1926 @@
+{
+  "tool": "hyvemind",
+  "version": "0.1.0",
+  "startedAt": "2026-10-26T01:13:38.033Z",
+  "agent": "claude",
+  "model": null,
+  "skills": [
+    {
+      "skill": "ai-exchange",
+      "scenarios": 2,
+      "bare": 1,
+      "withSkill": 1,
+      "trials": 4,
+      "lift": 0,
+      "verdict": "retire-candidate",
+      "runs": [
+        {
+          "scenario": "blind-call-writing-state",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "blind-call-writing-state",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "blind-call-writing-state",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "blind-call-writing-state",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "hand-copied-schema-drift",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "hand-copied-schema-drift",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "hand-copied-schema-drift",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "hand-copied-schema-drift",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "design-review",
+      "scenarios": 3,
+      "bare": 1,
+      "withSkill": 1,
+      "trials": 6,
+      "lift": 0,
+      "verdict": "retire-candidate",
+      "runs": [
+        {
+          "scenario": "lost-update",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "lost-update",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "lost-update",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "lost-update",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "second-system",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "second-system",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "second-system",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "second-system",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "timeout-as-success",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "timeout-as-success",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "timeout-as-success",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "timeout-as-success",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "evidence",
+      "scenarios": 4,
+      "bare": 1,
+      "withSkill": 1,
+      "trials": 8,
+      "lift": 0,
+      "verdict": "retire-candidate",
+      "runs": [
+        {
+          "scenario": "changed-two-variables",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "changed-two-variables",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "changed-two-variables",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "changed-two-variables",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "empty-query-is-not-absence",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "flake-in-the-diff",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "vacuous-green",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "live-qualify",
+      "scenarios": 3,
+      "bare": 1,
+      "withSkill": 1,
+      "trials": 6,
+      "lift": 0,
+      "verdict": "retire-candidate",
+      "runs": [
+        {
+          "scenario": "never-print-keys",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "never-print-keys",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "never-print-keys",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "never-print-keys",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "no-key-shopping",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "no-key-shopping",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "no-key-shopping",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "no-key-shopping",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "quota-is-not-a-result",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "quota-is-not-a-result",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "quota-is-not-a-result",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "quota-is-not-a-result",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "parallel-work",
+      "scenarios": 2,
+      "bare": 1,
+      "withSkill": 1,
+      "trials": 4,
+      "lift": 0,
+      "verdict": "retire-candidate",
+      "runs": [
+        {
+          "scenario": "branch-already-exists",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "branch-already-exists",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "branch-already-exists",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "branch-already-exists",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "dirty-shared-checkout",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "dirty-shared-checkout",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "dirty-shared-checkout",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "dirty-shared-checkout",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "plan",
+      "scenarios": 2,
+      "bare": 0.5,
+      "withSkill": 0.75,
+      "trials": 4,
+      "lift": 0.25,
+      "verdict": "earning",
+      "runs": [
+        {
+          "scenario": "every-task-has-a-check",
+          "trial": 1,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": ": node bin/cli.js --health | node -e \"let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);const v=require('./package.json').version;process.exit(j.status==='ok'&&j.version===v?0:1)})\"\n\nT5 — Add parity test that /health response and --health output are identical, and document both in README\n  Depends on: T3, T4\n  Files: test/parity.test.js, README.md\n  Exit check: npm test"
+        },
+        {
+          "scenario": "every-task-has-a-check",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "every-task-has-a-check",
+          "trial": 2,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": ".js, package.json\n  Exit check: node src/cli.js --health | node -e \"const b=JSON.parse(require('fs').readFileSync(0));process.exit(b.status==='ok'&&b.version===require('./package.json').version?0:1)\"\n\nT4 — Add tests checking that /health and --health return the same JSON, with a version that matches package.json\n  Depends on: T2, T3\n  Files: test/health.test.js, package.json\n  Exit check: npm test"
+        },
+        {
+          "scenario": "every-task-has-a-check",
+          "trial": 2,
+          "arm": "skill",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "est test/cli.test.js && node src/cli.js --health | node -e \"let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);process.exit(j.status==='ok'&&j.version===require('./package.json').version?0:1)})\"\n\nT5 — Document /health endpoint and --health flag\n  Depends on: T3, T4\n  Files: README.md\n  Exit check: grep -q '/health' README.md && grep -q -- '--health' README.md && npm test"
+        },
+        {
+          "scenario": "riskiest-first",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "riskiest-first",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "riskiest-first",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "riskiest-first",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "pr",
+      "scenarios": 3,
+      "bare": 0.3333333333333333,
+      "withSkill": 0.3333333333333333,
+      "trials": 6,
+      "lift": 0,
+      "verdict": "retire-candidate",
+      "runs": [
+        {
+          "scenario": "commands-before-pr",
+          "trial": 1,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": false
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ],
+          "tail": "git add src/rate.js\nCMD: git commit -m \"Update rate logic in src/rate.js\" -m \"Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\"\nCMD: git push -u origin update-rate-logic\nCMD: gh pr create --base main --head update-rate-logic --title \"Update rate logic in src/rate.js\" --body $'## Summary\\n- Update rate logic in `src/rate.js`\\n\\n🤖 Generated with [Claude Code](https://claude.com/claude-code)'"
+        },
+        {
+          "scenario": "commands-before-pr",
+          "trial": 1,
+          "arm": "skill",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": false
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ],
+          "tail": "e` exits non-zero, run `npx -y hyvemind@0.1.0 gate` and then `evidence` again.\n  - If `git rev-list` prints a number above 0, the branch is behind `main`. Run `git rebase origin/main`, then gate and check evidence again before posting.\n- **Before pushing:** I'd stop after `evidence --post` and show you the title, body and target branch. I'd run `git push` and `gh pr create` only after you say yes."
+        },
+        {
+          "scenario": "commands-before-pr",
+          "trial": 2,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": false
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ],
+          "tail": "CMD: git add src/rate.js\nCMD: git commit -m \"Update rate from 0.2 to 0.25\" -m \"Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\"\nCMD: git push -u origin update-rate-0.25\nCMD: gh pr create --base main --head update-rate-0.25 --title \"Update rate from 0.2 to 0.25\" --body $'Changes `rate` in `src/rate.js` from `0.2` to `0.25`.\\n\\n🤖 Generated with [Claude Code](https://claude.com/claude-code)'"
+        },
+        {
+          "scenario": "commands-before-pr",
+          "trial": 2,
+          "arm": "skill",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": false
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ],
+          "tail": " It publishes a commit status on HEAD, and I'm assuming GitHub only accepts that once the commit exists on the remote, so I put it after the push. That's an inference, not something I've tested.\n- **Placeholders:** the branch name `fix/rate` and the `<summary>` are stand-ins. I haven't read the diff in `src/rate.js` yet, so the real name and commit message would come from what it actually changes."
+        },
+        {
+          "scenario": "refuses-without-evidence",
+          "trial": 1,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "belongs in the PR description instead.\n- **Tests:** run `node --test` and confirm it reports actual passing tests, not zero.\n- **Diff:** confirm it contains only the intended change.\n\nTo continue, I need three things from you: the original `rate.js` (or approval to start from the current file), the remote to use, and whether you want the input check. I'll wait for those before doing anything else."
+        },
+        {
+          "scenario": "refuses-without-evidence",
+          "trial": 1,
+          "arm": "skill",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "ge with the same signature: callers still passing percentages (e.g. `10`) will silently get negative prices. All callers must be updated. Rollback: revert this commit.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n```\n\n## Decisions I need from you\n\n- Which remote/repo should this go to?\n- Should `.claude/` and `.agents/` be committed?\n- Should I add the test?\n- What's the \"Why\"?"
+        },
+        {
+          "scenario": "refuses-without-evidence",
+          "trial": 2,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "eprecation path.\n- Whether the comment on line 2 (\"changed: … was a percentage\") should stay. It describes the change rather than the code, so it fits better in the commit or PR text.\n- The `node --test` check really runs tests and passes.\n\n## What I need from you\n1. Do you have the original `rate.js` for the baseline commit?\n2. What's the remote URL?\n3. Should I add the tests and the range guard?"
+        },
+        {
+          "scenario": "refuses-without-evidence",
+          "trial": 2,
+          "arm": "skill",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            }
+          ],
+          "tail": "r audit results: <…>\n\n## Risk & rollback\nBreaking change: callers still passing percentages get a negative price. Revert this commit to roll back.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n```\n\nTo go ahead, I need:\n- the remote URL\n- confirmation that the initial commit on `main` should include the scaffolding files\n- the \"why\" for the PR body\n- whether you want a test added"
+        },
+        {
+          "scenario": "shared-checkout-staging",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "shared-checkout-staging",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "shared-checkout-staging",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "shared-checkout-staging",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-not-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "review",
+      "scenarios": 2,
+      "bare": 1,
+      "withSkill": 1,
+      "trials": 4,
+      "lift": 0,
+      "verdict": "retire-candidate",
+      "runs": [
+        {
+          "scenario": "error-becomes-success",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "error-becomes-success",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "error-becomes-success",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "error-becomes-success",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "missing-authorization",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "missing-authorization",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "missing-authorization",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "missing-authorization",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "ship",
+      "scenarios": 3,
+      "bare": 1,
+      "withSkill": 1,
+      "trials": 6,
+      "lift": 0,
+      "verdict": "retire-candidate",
+      "runs": [
+        {
+          "scenario": "no-review-on-red",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "no-review-on-red",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "no-review-on-red",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "no-review-on-red",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "small-diff-structural",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "small-diff-structural",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "small-diff-structural",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "small-diff-structural",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "trivial-stays-trivial",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "trivial-stays-trivial",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "trivial-stays-trivial",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "trivial-stays-trivial",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "skill-eval",
+      "scenarios": 2,
+      "bare": 1,
+      "withSkill": 1,
+      "trials": 4,
+      "lift": 0,
+      "verdict": "retire-candidate",
+      "runs": [
+        {
+          "scenario": "easy-scenarios",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "easy-scenarios",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "easy-scenarios",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "easy-scenarios",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "one-run-is-an-anecdote",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "one-run-is-an-anecdote",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "one-run-is-an-anecdote",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "one-run-is-an-anecdote",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "skill-miner",
+      "scenarios": 2,
+      "bare": 1,
+      "withSkill": 1,
+      "trials": 4,
+      "lift": 0,
+      "verdict": "retire-candidate",
+      "runs": [
+        {
+          "scenario": "call-dont-copy",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "call-dont-copy",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "call-dont-copy",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "call-dont-copy",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "thin-evidence",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "thin-evidence",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "thin-evidence",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "thin-evidence",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "spec",
+      "scenarios": 2,
+      "bare": 0.5,
+      "withSkill": 1,
+      "trials": 4,
+      "lift": 0.5,
+      "verdict": "earning",
+      "runs": [
+        {
+          "scenario": "falsifiable-criteria",
+          "trial": 1,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ],
+          "tail": "eturn irrelevant fuzzy results.\n7. A query that returns nothing even after typo tolerance shows a \"no results\" state with suggested alternatives. It never shows an error.\n8. On a benchmark set of 200 misspelled queries, the correct product appears in the top 5 results for at least 90% of them.\n9. Search matches product name, brand, SKU, and category, and is case-insensitive and accent-insensitive."
+        },
+        {
+          "scenario": "falsifiable-criteria",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "falsifiable-criteria",
+          "trial": 2,
+          "arm": "bare",
+          "pass": false,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": false
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ],
+          "tail": " only exact or prefix matches are returned.\n- Given a misspelled query that produces corrected results, the page shows \"Showing results for [corrected term]\" with a link to search the original term instead.\n- Given a query with no exact or fuzzy matches, a \"No results\" message appears within the same latency target.\n- Given a newly added or updated product, it becomes searchable within 60 seconds."
+        },
+        {
+          "scenario": "falsifiable-criteria",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            },
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "reuse-existing",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "reuse-existing",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "reuse-existing",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "reuse-existing",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "test-necessity",
+      "scenarios": 3,
+      "bare": 1,
+      "withSkill": 1,
+      "trials": 6,
+      "lift": 0,
+      "verdict": "retire-candidate",
+      "runs": [
+        {
+          "scenario": "grades-vacuous-test",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "grades-vacuous-test",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "grades-vacuous-test",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "grades-vacuous-test",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "keeps-a-strong-test",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "keeps-a-strong-test",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "keeps-a-strong-test",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "keeps-a-strong-test",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "tautology",
+          "trial": 1,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "tautology",
+          "trial": 1,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "tautology",
+          "trial": 2,
+          "arm": "bare",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        },
+        {
+          "scenario": "tautology",
+          "trial": 2,
+          "arm": "skill",
+          "pass": true,
+          "checks": [
+            {
+              "type": "output-matches",
+              "pass": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "finishedAt": "2026-10-26T01:18:29.532Z"
+}

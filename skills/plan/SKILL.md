@@ -31,11 +31,15 @@ T3 — <imperative title>
   Depends on: T1
   Files: src/a.ts, src/a.test.ts
   Test first: <the failing test that defines done>
-  Exit check: <command> passes   (e.g. `{{cli}} gate --only test`)
+  Exit check: `<command that exits 0 when the task is done>`   ← in backticks
   Size: S (≤ 1 h) | M (≤ ½ day)   ← anything larger gets split
 ```
 
 Rules:
+- **The exit check is a command in backticks**, exactly `Exit check: \`<command>\``.
+  `hyvemind run` executes the first backticked span, and its exit code is the only
+  thing that marks the task done. Prose such as "tests pass", or `npm test` without
+  backticks, is not a check. A check must fail before the task is implemented.
 - **One fresh-context session per task.** A subagent given only the spec, this task and
   its files should be able to finish it. If it can't, split the task.
 - **Order by dependency, then by risk.** The riskiest unknown goes first, while it is
@@ -47,7 +51,15 @@ Rules:
 - Name tasks that can run in parallel (no shared files), and the worktrees for them
   (`{{skill:parallel-work}}`).
 
-## 4. Output
+## 4. Run it
+
+This format is machine-readable. `{{cli}} run plan.md --spec spec.md` gives each task
+to a **fresh agent** in its own worktree, accepts it only when its exit check exits 0
+(with one repair attempt that is told the failure), has an independent reviewer
+say GO, and commits one task per commit. Re-running resumes after the last
+committed task.
+
+## 5. Output
 
 The task list, a short dependency diagram if it helps, and the list of exit checks the
 reviewer will run. Save it next to the spec or in the PR description draft.

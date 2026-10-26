@@ -1,0 +1,11 @@
+{
+  "id": "easy-scenarios",
+  "prompt": "Skill eval for our 'evidence' skill across 3 models × 5 trials: bare 100%, with-skill 100%. Every scenario asks a yes/no question whose answer is stated in the prompt. What should we do? End with exactly one line: DECISION: retire | rewrite-scenarios",
+  "checks": [
+    {
+      "type": "output-matches",
+      "pattern": "DECISION:\\s*rewrite-scenarios\\b",
+      "flags": "i"
+    }
+  ]
+}

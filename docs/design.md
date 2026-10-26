@@ -43,10 +43,21 @@ tool: portable skills, plus the scaffold-economics eval. The app's chain packs c
 the same CLI (`gate`, `evidence`, `probe`) as mechanical exit checks, so the in-app
 workflow and the terminal workflow share one definition of "done".
 
-## Roadmap
+## Shipped in 0.2.0 (the 0.1 roadmap)
 
-- Executor adapters to run plan tasks through an ACP agent, with a worktree per task.
-- GitHub lane: open the PR, read checks, re-run only flake-triaged failures.
-- Merge-queue mode: gate a train of PRs once, check the tree hash, and bisect on red
-  (port of openwop-app `merge-train.sh`).
-- Harder bundled eval scenarios aimed at failures current models still make.
+- Running each plan task through its own agent (`hyvemind run`): a fresh agent per
+  task, its own worktree, its own exit check, and an independent reviewer.
+- GitHub evidence lane (`hyvemind evidence --post`) and merge queue
+  (`hyvemind train`): tree-hash check and bisect on red.
+- Test-impact selection (`hyvemind affected`): a static, conservative counterpart to
+  openwop-app's Tracegate.
+- Bundled eval scenarios aimed at failures the skills exist to prevent, plus a
+  markdown decision report.
+
+## Next
+
+- ACP adapter for `run`, so any ACP agent can implement tasks without per-agent argv.
+- Parallel `run` for tasks with no dependency between them and no file overlap.
+- CI babysitting: re-run only failures that `probe`/history show to be flaky.
+- Learned test selection: record what each test actually executed, as Tracegate does,
+  instead of only the static graph.
