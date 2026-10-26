@@ -162,8 +162,8 @@
   {
     "id": "run-repair-told-failure",
     "src": "src/run.mjs",
-    "old": "      failure = `\\`${task.check}\\` exited ${check.code}${check.out ? `:\\n${check.out}` : ' with no output'}`;",
-    "new": "      failure = check.out;",
+    "old": "      failure = `\\`${task.check}\\` exited ${result.code}${result.out ? `:\\n${result.out}` : ' with no output'}`;",
+    "new": "      failure = result.out;",
     "test": "test/run.test.mjs",
     "expectOutput": [
       "repair attempt"
