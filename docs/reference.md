@@ -64,7 +64,7 @@ To install only some of the skills (for example, in a repo that already has its 
 stronger review skill):
 
 ```json
-{ "version": 1, "preset": "openwop", "skills": { "include": ["evidence", "skill-eval", "skill-miner"] } }
+{ "version": 1, "preset": "openwop", "skills": { "include": ["evidence-rules", "skill-eval", "mine-skills"] } }
 ```
 
 To keep a bundled skill but let a project skill for the same job win, defer it:
@@ -160,6 +160,7 @@ hyvemind still ties the verdict to the exact tree.
 | `review-change` | review | Independent of the author: runs the full gate first, scans for banned patterns, reviews for defects, refutes its own findings, and accounts for every file |
 | `cleanup` | maintenance | Removes dead code only with proof (no static references and no dynamic path); protected categories kept; reports what looked dead but was saved |
 | `test-necessity` | test | Grades tests A–F with sabotage probes; fixes B/C up to A, deletes D/F with evidence |
+| `grade` | audit | Grades code, data, UX, localization, or two lists that should match (`rubrics/*.md`), A–F, in a tracker that resumes instead of restarting; evidence for every grade, an independent grader, and an ordered path to A+ |
 | `open-pr` | release | Opens a PR only when the current tree has green evidence; pushes the branch freely, asks before the PR or any comment |
 | `release` | release | SemVer from commits (a migration forces a minor), lockstep version bump, tag the merge commit, verify the published artifact against a local build; asks before tagging or publishing |
 | `evidence-rules` | always | The hive constitution: what counts as evidence (a status code doesn't, an empty result is suspect, change one variable at a time…) |

@@ -4,10 +4,12 @@ import { join } from 'node:path';
 import { CONFIG_FILE, pkgVersion, readConfig } from './config.mjs';
 import { isRepo } from './git.mjs';
 import { brokerHealth } from './broker.mjs';
+import { checkIntegrity } from './integrity.mjs';
 import { BLOCK_END, installSkills, readManifest, selectedSkills } from './install.mjs';
 
-// These skills tell agents to use hyvemind's own gate/evidence/train.
-export const COMPETES_WITH_EXTERNAL_GATE = ['ship-change', 'open-pr', 'review-change', 'evidence-rules'];
+// With an external gate, the skills defer to it (open-pr, review-change and
+// evidence-rules read evidence.status / externalGate). Two gaps remain worth a warning:
+// no machine-checkable done signal, and ship-change merging through hyvemind's train.
 
 // Each check: { ok: true | false | 'warn', name, detail }
 export function doctor(root) {
@@ -18,9 +20,12 @@ export function doctor(root) {
   try { cfg = readConfig(root); add(true, CONFIG_FILE, `preset ${cfg.preset}`); } catch (e) { add(false, CONFIG_FILE, e.message); return checks; }
   if (cfg.externalGate) {
     add(true, 'gate', `external: ${cfg.externalGate.run}`);
-    // Skills that would add a second done signal or merge path beside the project's own.
-    const competing = selectedSkills(cfg).filter((s) => COMPETES_WITH_EXTERNAL_GATE.includes(s));
-    if (competing.length) add('warn', 'competing skills', `${competing.map((s) => cfg.skills.prefix + s).join(', ')} use hyvemind gate/evidence/train; with an external gate, exclude them`);
+    if (!cfg.evidence?.status) {
+      add('warn', 'external evidence', 'externalGate is set without evidence.status: agents follow the prose, but `evidence` cannot check it. Set evidence.status to the commit-status context your gate posts');
+    }
+    if (selectedSkills(cfg).includes('ship-change') && cfg.train?.via !== 'external') {
+      add('warn', 'merge path', `${cfg.skills.prefix}ship-change would merge through hyvemind's train beside your own process; set train.via to "external" (or exclude ship-change)`);
+    }
   } else {
     add(cfg.gates.length > 0 ? true : 'warn', 'gates', cfg.gates.length ? cfg.gates.map((g) => g.name).join(' → ') : 'none configured; "hyvemind gate" will refuse to run');
   }
@@ -49,6 +54,7 @@ export function doctor(root) {
   }
   const bh = brokerHealth(cfg);
   if (bh) add(bh.ok ? true : 'warn', 'broker', bh.ok ? `${cfg.broker.command ?? 'tracegate'} lease wraps gates, trains, probes and eval runs` : `configured but not reachable: ${bh.detail}`);
+  for (const c of checkIntegrity(root, cfg)) add(c.ok, c.name, c.detail);
   const ign = join(root, '.hyve/.gitignore');
   add(existsSync(ign) ? true : 'warn', 'evidence ignored by git', existsSync(ign) ? '' : 'run "hyvemind update"');
   return checks;

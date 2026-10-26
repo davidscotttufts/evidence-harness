@@ -388,5 +388,35 @@
     "expectOutput": [
       "train.via \"external\""
     ]
+  },
+  {
+    "id": "doctor-external-evidence-warning",
+    "src": "src/doctor.mjs",
+    "old": "    if (!cfg.evidence?.status) {",
+    "new": "    if (false) {",
+    "test": "test/cli.test.mjs",
+    "expectOutput": [
+      "warns only on the real gaps"
+    ]
+  },
+  {
+    "id": "doctor-merge-path-warning",
+    "src": "src/doctor.mjs",
+    "old": "    if (selectedSkills(cfg).includes('ship-change') && cfg.train?.via !== 'external') {",
+    "new": "    if (false) {",
+    "test": "test/cli.test.mjs",
+    "expectOutput": [
+      "warns only on the real gaps"
+    ]
+  },
+  {
+    "id": "doctor-integrity-wired",
+    "src": "src/doctor.mjs",
+    "old": "  for (const c of checkIntegrity(root, cfg)) add(c.ok, c.name, c.detail);\n",
+    "new": "",
+    "test": "test/cli.test.mjs",
+    "expectOutput": [
+      "warns only on the real gaps"
+    ]
   }
 ]
