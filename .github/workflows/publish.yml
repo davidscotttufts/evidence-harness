@@ -1,0 +1,80 @@
+name: Publish
+# Publishes hyvemind to npm when a release tag (vX.Y.Z) is pushed.
+#
+# Uses npm trusted publishing (OIDC) with provenance, the same way openwop
+# publishes: `id-token: write` lets npm >= 11.5.1 log in with a short-lived
+# GitHub token. No npm token is stored in this repository.
+#
+# One-time setup per package, at npmjs.com/package/hyvemind/access:
+#   Trusted publisher → GitHub Actions → davidscotttufts/hyvemind → publish.yml
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to (re)publish, e.g. v0.1.0'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      # OIDC trusted publishing needs npm 11.5.1+; Node 22 ships npm 10.
+      - run: npm install -g npm@11
+      - run: git config --global user.email ci@example.com && git config --global user.name CI
+
+      - name: Tag matches package.json version
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          VER="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "v$VER" ]; then
+            echo "::error::tag $TAG does not match package.json version $VER"; exit 1
+          fi
+          echo "VER=$VER" >> "$GITHUB_ENV"
+
+      - run: npm test
+      - name: Self-probes (tests must be able to fail)
+        run: node bin/hyvemind.mjs probe test/self-probes.json
+
+      # A version already on npm is never overwritten. Same contents: skip.
+      # Different contents: fail, and bump the version.
+      - name: Identity guard
+        id: guard
+        run: |
+          if PUBLISHED="$(npm view "hyvemind@$VER" dist.shasum 2>/dev/null)" && [ -n "$PUBLISHED" ]; then
+            LOCAL="$(npm pack --dry-run --json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8'))[0].shasum")"
+            if [ "$PUBLISHED" = "$LOCAL" ]; then
+              echo "hyvemind@$VER is already published with identical contents; skipping."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "::error::hyvemind@$VER is already published with DIFFERENT contents ($PUBLISHED vs $LOCAL). Bump the version."
+              exit 1
+            fi
+          fi
+
+      - name: Publish (OIDC, provenance)
+        if: steps.guard.outputs.skip != 'true'
+        run: npm publish --access public --provenance $(case "$VER" in *-*) echo "--tag next";; esac)
+
+      - name: Verify the registry serves this version
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          for i in 1 2 3 4 5 6; do
+            npm view "hyvemind@$VER" version && exit 0
+            sleep 10
+          done
+          echo "::error::hyvemind@$VER is not visible on the registry after publish"; exit 1

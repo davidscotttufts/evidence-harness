@@ -180,6 +180,22 @@ is broken. The guarantees covered: tree-bound evidence, partial runs never count
 local edits being kept, probes restoring the file, eval lift, and chain splitting in
 the miner.
 
+## Releasing
+
+Releases publish from GitHub Actions with npm trusted publishing (OIDC) and
+provenance, so no npm token is stored anywhere. To release:
+
+1. Bump `version` in `package.json` and add a `CHANGELOG.md` entry.
+2. Commit, then `git tag -a vX.Y.Z -m vX.Y.Z && git push origin main vX.Y.Z`.
+
+[`publish.yml`](.github/workflows/publish.yml) checks that the tag matches the
+version, runs the tests and self-probes, and publishes. It refuses to overwrite a
+version already on npm with different contents.
+
+The package's trusted publisher is configured once at
+`npmjs.com/package/hyvemind/access`: GitHub Actions, `davidscotttufts/hyvemind`,
+`publish.yml`.
+
 ## License
 
 Apache-2.0
