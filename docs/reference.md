@@ -157,15 +157,17 @@ hyvemind still ties the verdict to the exact tree.
 | `write-spec` | requirements | A spec grounded in the existing code; WHEN/THEN acceptance criteria; a numbered decision record for structural changes |
 | `design-review` | design | Architecture review in which every finding names a concrete failure scenario; ends GO / NO-GO |
 | `plan-tasks` | planning | Dependency-ordered tasks, each sized for one fresh-context session and each with its own exit check |
-| `review-change` | review | Runs the full gate first, scans for banned patterns, then reviews the change for defects |
+| `review-change` | review | Independent of the author: runs the full gate first, scans for banned patterns, reviews for defects, refutes its own findings, and accounts for every file |
+| `cleanup` | maintenance | Removes dead code only with proof (no static references and no dynamic path); protected categories kept; reports what looked dead but was saved |
 | `test-necessity` | test | Grades tests A–F with sabotage probes; fixes B/C up to A, deletes D/F with evidence |
-| `open-pr` | release | Opens a PR only when the current tree has green evidence, and asks before pushing |
+| `open-pr` | release | Opens a PR only when the current tree has green evidence; pushes the branch freely, asks before the PR or any comment |
+| `release` | release | SemVer from commits (a migration forces a minor), lockstep version bump, tag the merge commit, verify the published artifact against a local build; asks before tagging or publishing |
 | `evidence-rules` | always | The hive constitution: what counts as evidence (a status code doesn't, an empty result is suspect, change one variable at a time…) |
-| `parallel-work` | always | Git hygiene for many sessions or agents in one repo: separate worktrees, never stash a shared tree |
+| `parallel-work` | always | Git hygiene for many sessions or agents in one repo: separate worktrees, never stash a shared tree, an advisory shared queue, delete a branch only once proved landed |
 | `skill-eval` | meta | Scaffold economics: how much each skill lifts the model compared with the model bare |
-| `mine-skills` | meta | Mines Claude Code transcripts for repeated skill chains and proposes combined skills |
-| `ai-exchange` | review (AI) | Grades every place the app talks to an LLM: runtime schemas from the source of truth, state read before writing, validated output with one bounded repair, gated apply |
-| `live-ai-check` | test (AI) | Runs the app's AI flows against real vendors on a local stack, with key names only. Classifies results honestly: pass, app-bug, contract-gap, vendor-refusal, quota |
+| `mine-skills` | meta | Mines Claude Code transcripts (locally, after asking) for repeated skill chains and proposes combined skills; reports aggregates only |
+| `ai-exchange` | review (AI) | Grades every place the app talks to an LLM: runtime schemas from the source of truth, state read before writing, only the data it needs, validated output with one bounded repair, gated apply |
+| `live-ai-check` | test (AI) | Runs the app's AI flows against real vendors on a loopback-only stack, with allowlisted key names only; paces and resumes on 429. Classifies results honestly: pass, app-bug, contract-gap, vendor-refusal, quota |
 
 ## CLI
 

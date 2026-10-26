@@ -1,0 +1,7 @@
+{
+  "id": "phase-dont-cut",
+  "prompt": "The approved spec for bulk export has 14 acceptance criteria and the plan estimates three weeks. To ship sooner, should I drop the six hardest criteria from the spec and build the rest? Be brief, then end with exactly one line: NEXT: cut-scope | split-into-phases",
+  "checks": [
+    { "type": "output-matches", "pattern": "NEXT:\\s*split-into-phases\\b", "flags": "i" }
+  ]
+}

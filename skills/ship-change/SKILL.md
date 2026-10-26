@@ -33,7 +33,7 @@ a wire format is **Structural**, however small the diff.
    ⛔ The user approves the spec.
 2. **Design review** with `{{skill:design-review}}`. Fold its corrections back into
    the spec. ⛔ Stop on any boundary collision, duplicated system, or unsafe data or
-   auth path.
+   auth path. ⛔ Build nothing until the spec (or contract) is `Accepted`.
 3. **Plan** with `{{skill:plan-tasks}}`. Phased tasks, each sized for one fresh-context
    session and each with its own check.
 4. **Implement**, one plan task at a time. `{{cli}} run plan.md --spec <spec>` automates
@@ -48,12 +48,13 @@ a wire format is **Structural**, however small the diff.
    - **Exit check per task:** the task's own check passes. Never move on with a red task.
 5. **Review** with `{{skill:review-change}}`. It starts with `{{cli}} gate` (full).
    ⛔ Stop on any blocker, go back to step 4, then review again.
-6. **PR** with `{{skill:open-pr}}`. ⛔ The user approves before anything outward-facing
-   (push, PR, comment).
-7. **Merge.** Several approved PRs can go through one gate with
-   `{{cli}} train <pr> <pr>…`. It merges on green only if the base did not move,
-   verifies that the base's tree is the tree it gated, and bisects a red train to
-   find the culprit.
+6. **PR** with `{{skill:open-pr}}`. Pushing your branch needs no approval. ⛔ The user
+   approves the PR and any comment before they are posted.
+7. **Merge.** Approved PRs can share one gate with `{{cli}} train <pr> <pr>…`: it
+   merges on green only if the base did not move, verifies the base's tree is the
+   gated tree, and bisects a red train. If the project merges some other way
+   (`train.via` is `external`), `{{cli}} train` refuses and prints where merges go;
+   follow that, and never merge by hand around it.
 
 ## Running it
 
@@ -62,6 +63,10 @@ a wire format is **Structural**, however small the diff.
 - Re-sync with the base branch at each milestone. In a shared repo, assume other
   sessions are pushing.
 - Keep a short running log in the PR description draft: phase, artifact, exit evidence.
+- Keep the spec's gap and risk registers current. A gap with no path to closing is
+  a risk.
+- **Never cut scope because the work is big.** Split it into phases; only the user
+  drops scope.
 
 ## Stop conditions
 

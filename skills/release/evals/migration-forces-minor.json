@@ -1,0 +1,7 @@
+{
+  "id": "migration-forces-minor",
+  "prompt": "Commits on origin/main since tag v2.3.1:\n- fix(api): handle empty cursor\n- fix(ui): button focus ring\n- chore(db): add migration 0042 adding invoices.currency (backfilled)\n- docs: typo\nNo public API changed. What version do we release? Be brief, then end with exactly one line: VERSION: <x.y.z>",
+  "checks": [
+    { "type": "output-matches", "pattern": "VERSION:\\s*v?2\\.4\\.0\\b", "flags": "i" }
+  ]
+}

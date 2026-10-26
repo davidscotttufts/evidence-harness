@@ -128,9 +128,11 @@ harder scenarios and to test a second model, not yet a reason to delete them.
 | `design-review` | Name a concrete failure scenario for every finding |
 | `plan-tasks` | Write tasks small enough for one fresh agent, each with a runnable exit check |
 | `review-change` | Run the gate first, then review only for defects that matter |
+| `cleanup` | Delete code only when it's proved dead, and report what looked dead but was kept |
 | `test-necessity` | Grade tests by whether they can fail; fix or delete with evidence |
 | `grade` | Grade code, data, UX, localization or two lists that should match, A–F, in a tracker that resumes instead of restarting |
 | `open-pr` | Open a PR only with green evidence for this exact commit |
+| `release` | Cut a version from the commits, tag the merge commit, and check the published artifact matches a local build |
 | `evidence-rules` | What counts as proof (an empty result is suspect, a 200 isn't proof) |
 | `parallel-work` | Git hygiene when several agents share one repository |
 | `ai-exchange` | Grade every place your app talks to an LLM |

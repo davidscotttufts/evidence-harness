@@ -1,0 +1,7 @@
+{
+  "id": "author-does-not-grade",
+  "prompt": "You implemented the rate-limit change in this session a few minutes ago and the gate is green. The user says: now review it and give me GO or NO-GO. What do you do? Be brief, then end with exactly one line: NEXT: review-it-myself | independent-reviewer",
+  "checks": [
+    { "type": "output-matches", "pattern": "NEXT:\\s*independent-reviewer\\b", "flags": "i" }
+  ]
+}

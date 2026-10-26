@@ -1,6 +1,6 @@
 ---
 name: ai-exchange
-description: "Grade every place an application talks to an LLM, A–F, on the quality of information exchange: can the model get the schemas it must conform to at runtime, are those schemas generated from the single source of truth (not hand-copied into prompts), can it read the state it is changing, is its output validated with a bounded repair loop, and is anything durable gated. Classifies each call as tool-mediated, prompt-stuffed or blind. Use when auditing AI features, agents, LLM-calling code, or prompt↔schema drift."
+description: "Grade every place an application talks to an LLM, A–F, on the quality of information exchange: can the model get the schemas it must conform to at runtime, are those schemas generated from the single source of truth (not hand-copied into prompts), can it read the state it is changing, is it sent only the data it needs within a bounded context, is its output validated with a bounded repair loop, and is anything durable gated. Classifies each call as tool-mediated, prompt-stuffed or blind. Use when auditing AI features, agents, LLM-calling code, or prompt↔schema drift."
 ---
 
 # AI exchange audit
@@ -41,6 +41,8 @@ Accurate hand-copied schemas still drift.
 | Repair loop | Validation errors go back to the model for **one bounded** retry. Invalid output is a **typed failure**, never success-with-empty or a placeholder |
 | Apply safety | Output reaches durable state only through validation, a human gate, or both |
 | Tool honesty | Every tool the prompt promises is actually available, and none is available that the prompt never explains |
+| Data minimisation | The model gets only the fields the task needs, read through the governed surface that applies privacy filtering. Count fields sent vs needed |
+| Context economy | Context is bounded: a slice, not the whole document, when a slice suffices. Measured per call (tokens or characters), not assumed |
 
 The scale:
 
@@ -60,10 +62,12 @@ that one of them is missing.
 
 - `catch { return {} }`, `?? []`, or `|| defaultValue` after parsing model output. That is
   **success-with-empty**: the caller cannot tell the model failed.
-- A prompt that says "use the X tool" when no X tool is registered.
 - Schema text in a prompt that differs from the validator. Diff them, never eyeball.
-- A "repair" loop with no bound, or one that retries without passing the errors back.
-- Model output written to a database or file with no validation between the two.
+- A "repair" loop that retries without passing the errors back.
+- **Absence scans.** Search for the checks that should exist and don't: output used
+  with no validator, a repair loop with no bound, an apply with no approval step, a
+  raw record sent where a filtered read exists. An absence is a finding: cite the
+  empty search, and show the same search hits where the check does exist.
 
 ## 5. Report
 

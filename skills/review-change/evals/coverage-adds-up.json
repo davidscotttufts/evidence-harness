@@ -1,0 +1,7 @@
+{
+  "id": "coverage-adds-up",
+  "prompt": "The diff touches 12 files. You reviewed 9 of them in detail and found nothing; 2 are a regenerated lockfile and a snapshot. Can you report VERDICT: GO now? Be brief, then end with exactly one line: READY: yes | no",
+  "checks": [
+    { "type": "output-matches", "pattern": "READY:\\s*no\\b", "flags": "i" }
+  ]
+}

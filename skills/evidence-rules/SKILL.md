@@ -13,6 +13,9 @@ false. When a rule and a shortcut conflict, the rule wins.
 - A change is done when `{{cli}} evidence` exits 0. That means a **full** green
   gate run is recorded for the working tree **as it is now**. A green run on an
   earlier tree, a partial run (`--only`), or "the tests I ran passed" is not evidence.
+- If the project names its own commit status (`evidence.status`), `{{cli}} evidence`
+  exits 0 only when that status is `success` on HEAD and the working tree is clean.
+  A green status never covers uncommitted edits.
 - If the gate verdict is `invalid`, the tree changed while it ran. The run proves
   nothing about either tree. Find what changed it, then re-run.
 - Report failures with their output. Report skipped steps as skipped. Do not soften
@@ -37,8 +40,12 @@ false. When a rule and a shortcut conflict, the rule wins.
 
 - **Measure the value now; don't trust what is written.** Versions, counts, limits and
   config drift. Re-read them before you act, and write the reading down with its date.
-- **A citation is a claim, not evidence.** Docs, ADRs, comments and earlier
-  summaries (including your own) can be stale. Check the mechanism before you copy it.
+- **Grade the code, not the documents.** A grade or claim taken from an ADR,
+  manifest, README, tracker, comment or earlier summary (including your own) is
+  downgraded until you have checked it against the code.
+- **Grade what will ship.** `git fetch` first. If the local checkout is behind,
+  read `origin/<base>` (`git show origin/<base>:<path>` or a fresh worktree), not the
+  stale files on disk.
 - **Enumeration is not coverage.** Listing what you looked at does not show you looked
   at everything. State the denominator: "graded 40 of 312 files".
 

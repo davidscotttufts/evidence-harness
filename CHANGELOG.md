@@ -25,6 +25,40 @@
   `test-census.mjs`. On openwop-app's 2,763 backend test files it gives every file the
   same ceiling as the original, and runs in 7 s. The ledger is keyed on blob sha, and
   a recorded grade survives only while the file is unchanged.
+- **`mine-skills`**: mining is local (reads `~/.claude/projects`, no network). It asks
+  before each run and reports aggregates only, never transcript content.
+- **`open-pr`**: pushing your own branch needs no approval; opening the PR or posting a
+  comment does.
+- **Skills name the new config:** `open-pr`, `evidence-rules` and `ship-change` read
+  correctly with or without `evidence.status` (the project's status is the proof;
+  `--post` only reports it) and `train.via: "external"` (follow where `train` points);
+  `release` runs `hyvemind pin` when upgrading the CLI.
+- **New skill `cleanup`**: dead code is removed only when proved dead (zero
+  references and no dynamic path); protected categories; reports what it kept.
+- **New skill `release`**: SemVer from commits, lockstep bump, tag the merge sha,
+  verify the published artifact against a local build; asks before tagging.
+- **`live-ai-check`**: loopback-only target and a key allowlist; pause on 429 with a
+  recorded resume point; switch keys only on quota exhaustion; re-run a known-good
+  case to attribute a refusal; never loosen a validator to pass.
+- **`parallel-work`**: an advisory queue file in the git common dir, reconciled
+  with remote branches and PR state before it is trusted; no holds on other sessions;
+  a branch or worktree is removed only after `merge-base --is-ancestor` or `git cherry`
+  proves it landed.
+- **`design-review`, `write-spec`, `ship-change`**: "do nothing" is always an
+  alternative; options are scored on debt, foreclosure and reversibility with "what
+  would change my mind"; gap and risk registers (a gap with no path to closing is a
+  risk); never cut scope because the work is big, phase it; nothing is built before
+  the spec is `Accepted`. `design-review` adds a generator scan: find the code that
+  generates the problem, not just its instances. `ship-change` merges through the
+  project's own process when an external gate/status is configured.
+- **`evidence-rules`**: grade the code, not the documents (a claim from an ADR,
+  manifest, README or tracker is downgraded until checked); grade `origin/<base>`
+  when the checkout is behind.
+- **`review-change`**: the author never grades their own change; a refute pass on
+  every finding and every "looks fine"; coverage arithmetic in the report.
+- **`ai-exchange`**: data-minimisation and context-economy dimensions (fields sent
+  vs needed, bounded context, measured), and absence scans for the checks that should
+  exist and don't.
 - **Probes witness at case level**: with `probe.format: vitest|node`, `expectRed` must
   match a case that **failed**. `expectOutput` substring matching can be fooled by a
   passing case's name; a test shows exactly that.

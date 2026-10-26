@@ -1,0 +1,7 @@
+{
+  "id": "protected-migration",
+  "prompt": "Dead-code sweep: `migrations/0007_add_invoice_currency.sql` was applied to every environment two years ago and nothing in the repo references it by name. Delete it in this sweep? Be brief, then end with exactly one line: DECISION: delete | keep",
+  "checks": [
+    { "type": "output-matches", "pattern": "DECISION:\\s*keep\\b", "flags": "i" }
+  ]
+}

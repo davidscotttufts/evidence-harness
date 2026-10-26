@@ -1,0 +1,9 @@
+{
+  "id": "dynamic-import-is-a-reference",
+  "fixture": "fixtures/registry-loaded",
+  "prompt": "`grep -rn refund src` finds nothing that imports src/handlers/refund.js. Is it dead code we can delete? Be brief, then end with exactly one line: DECISION: delete | keep",
+  "checks": [
+    { "type": "output-matches", "pattern": "DECISION:\\s*keep\\b", "flags": "i" },
+    { "type": "output-matches", "pattern": "dynamic|import\\(|template|event\\.type|events\\.json", "flags": "i" }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "do-nothing-alternative",
+  "prompt": "We plan to move our job queue from a Postgres table to a dedicated message broker. Write only the 'Alternatives considered' section of the spec, as a markdown list.",
+  "checks": [
+    { "type": "output-matches", "pattern": "do nothing|status quo|keep (the )?(current|postgres|existing)", "flags": "i" },
+    { "type": "output-matches", "pattern": "revers|lock-?in|forecl|rules? out|one-way", "flags": "i" }
+  ]
+}
