@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **Honest eval verdicts** (#17). New `saturated` verdict when both arms pass every
+  run (previously `retire-candidate`). Reports carry per-scenario rows with pass counts,
+  lift and `harmful` / `no-signal` flags, listed at the top of the markdown report.
+  Each arm gets a 95% Wilson interval and lift a Newcombe hybrid score interval; a skill
+  is `earning` only when that interval excludes 0, otherwise `earning (low n)`. The
+  report shows each skill's rendered words (≈ tokens) next to its lift. `--render`
+  recomputes all of this from an old report's runs.
+
 ## 0.3.0 — 2026-10-26
 
 - Evals round 2 (`docs/evals/2026-10-26-claude-r2.md`): the 12 changed skills re-measured. `write-spec` and `mine-skills` rules sharpened from the failing runs (now earning); `evidence-rules` scenario `docs-are-not-the-code` fixed (it dictated the wrong answer).

@@ -62,7 +62,7 @@ test('v0.2 commands: affected --json, evidence --post refusal, eval --render, tr
 
   const report = { agent: 'claude', version: '0', startedAt: 'now', skills: [{ skill: 'pr', scenarios: 1, trials: 3, bare: 0, withSkill: 1, lift: 1, verdict: 'earning', runs: [] }] };
   writeFileSync(join(dir, 'r.json'), JSON.stringify(report));
-  assert.match(run(dir, 'eval', '--render', 'r.json').stdout, /\| pr \| 1 \| 3 \| 0% \| 100% \| \+1 \| \*\*earning\*\* \|/);
+  assert.match(run(dir, 'eval', '--render', 'r.json').stdout, /\| pr \| 1 \| 3 \| 0% \[0–56%\] \| 100% \[44–100%\] \| \+1 \[\+0\.21, \+1\] \| — \| \*\*earning\*\* \|/);
 
   assert.match(run(dir, 'train').stderr, /usage: hyvemind train/);
   assert.match(run(dir, 'run').stderr, /usage: hyvemind run/);
