@@ -1,0 +1,8 @@
+{
+  "id": "generator-scan",
+  "prompt": "Design for review: customers see duplicate invoice rows. Each one appears after the `createInvoice` job is retried, because the job inserts a new row with a fresh random id on every attempt. Proposed fix: a nightly cleanup job that deletes duplicate invoice rows. Review it briefly, then end with exactly one line: VERDICT: GO | GO-WITH-CHANGES | NO-GO",
+  "checks": [
+    { "type": "output-matches", "pattern": "VERDICT:\\s*(NO-GO|GO-WITH-CHANGES)", "flags": "i" },
+    { "type": "output-matches", "pattern": "idempoten|deterministic id|upsert|unique (key|constraint|index)|root cause|at the source", "flags": "i" }
+  ]
+}

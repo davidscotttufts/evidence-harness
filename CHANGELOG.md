@@ -28,6 +28,13 @@
   with remote branches and PR state before it is trusted; no holds on other sessions;
   a branch or worktree is removed only after `merge-base --is-ancestor` or `git cherry`
   proves it landed.
+- **`design-review`, `write-spec`, `ship-change`**: "do nothing" is always an
+  alternative; options are scored on debt, foreclosure and reversibility with "what
+  would change my mind"; gap and risk registers (a gap with no path to closing is a
+  risk); never cut scope because the work is big, phase it; nothing is built before
+  the spec is `Accepted`. `design-review` adds a generator scan: find the code that
+  generates the problem, not just its instances. `ship-change` merges through the
+  project's own process when an external gate/status is configured.
 
 ## 0.2.0 — 2026-10-26
 

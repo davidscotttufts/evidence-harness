@@ -40,10 +40,13 @@ In: …   Out (explicitly): …
 What changes where: modules, data, interfaces. Name the existing pieces you reuse.
 
 ## Alternatives considered
-At least two, with why each lost.
+"Do nothing" plus at least one other. Score each on debt, foreclosure (what it rules
+out later) and reversibility. Say why each lost, and what would change your mind.
 
-## Risks
-Security, data migration, performance, rollback. "None" needs a sentence of why.
+## Gaps and risks
+Gaps: what this doesn't yet cover, each with its path to closing (phase, issue).
+Risks: security, data migration, performance, rollback, and every gap with no path
+to closing. "None" needs a sentence of why.
 
 ## Plan
 Phases, each independently shippable, each with its exit check.
@@ -56,6 +59,8 @@ Rules:
 - Every acceptance criterion must be **observable and falsifiable**. "Fast" is neither;
   "p95 < 300 ms on the list endpoint at 1k rows" is both.
 - Mark anything you have not verified as **unverified**.
+- **Big is not a reason to cut scope.** Split it into phases; dropping scope is the
+  user's call.
 - Keep it short. Cut any section that says nothing.
 
 ## 3. Structural changes get a numbered decision record
@@ -69,4 +74,6 @@ Rules:
 
 ## 4. Gate
 
-⛔ Show the spec to the user and wait for approval before design review or code.
+⛔ Show the spec to the user and wait for approval before design review. After the
+review's corrections are folded in and the user agrees, set `Status: Accepted`.
+No code is built against a spec or contract that is not Accepted.
