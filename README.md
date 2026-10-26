@@ -135,7 +135,7 @@ hyvemind still ties the verdict to the exact tree.
 | `open-pr` | release | Opens a PR only when the current tree has green evidence; pushes the branch freely, asks before the PR or any comment |
 | `release` | release | SemVer from commits (a migration forces a minor), lockstep version bump, tag the merge commit, verify the published artifact against a local build; asks before tagging or publishing |
 | `evidence-rules` | always | The hive constitution: what counts as evidence (a status code doesn't, an empty result is suspect, change one variable at a time…) |
-| `parallel-work` | always | Git hygiene for many sessions or agents in one repo: separate worktrees, never stash a shared tree |
+| `parallel-work` | always | Git hygiene for many sessions or agents in one repo: separate worktrees, never stash a shared tree, an advisory shared queue, delete a branch only once proved landed |
 | `skill-eval` | meta | Scaffold economics: how much each skill lifts the model compared with the model bare |
 | `mine-skills` | meta | Mines Claude Code transcripts (locally, after asking) for repeated skill chains and proposes combined skills; reports aggregates only |
 | `ai-exchange` | review (AI) | Grades every place the app talks to an LLM: runtime schemas from the source of truth, state read before writing, validated output with one bounded repair, gated apply |

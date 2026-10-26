@@ -21,6 +21,18 @@ cd ../<repo>-<task> && <install dependencies for real>        # don't symlink no
 - If `git worktree add` says the branch already exists, another session has probably
   claimed it. Pick a new name; don't adopt it.
 
+## Shared queue (advisory)
+
+Worktrees share one git common dir, so a note there is seen by every session:
+`$(git rev-parse --git-common-dir)/hyvemind-queue.md`, one line per claim
+(branch, files or area, session, date).
+
+- Before trusting it, reconcile it with reality: `git ls-remote --heads origin`,
+  open/merged PR state. A claim whose branch is merged or gone is stale; mark it so.
+- Add your own claim; edit only your own lines.
+- It is advisory. Never impose a hold, freeze or lock on another session; if you
+  overlap, tell the user and let them decide.
+
 ## While working
 
 - **Never** run `git stash`, `git clean`, `git reset --hard`, or delete a branch you
@@ -43,6 +55,9 @@ cd ../<repo>-<task> && <install dependencies for real>        # don't symlink no
 
 ## Finish
 
-After a verified merge, remove **your own** worktrees, branches, background processes
-and temp files: `git worktree remove ../<repo>-<task>` and
-`git push origin --delete <branch>`. Never remove anything you didn't create.
+Remove a branch or worktree only after proving it landed: after `git fetch`,
+`git merge-base --is-ancestor <branch> origin/<base>` exits 0, or (for squash or
+rebase merges) `git cherry origin/<base> <branch>` shows no `+` lines. "The PR says
+merged" is not proof. Then remove **your own** worktrees, branches, queue lines,
+background processes and temp files (`git worktree remove`, `git push origin
+--delete <branch>`). Never remove anything you didn't create.

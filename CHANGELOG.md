@@ -24,6 +24,10 @@
 - **`live-ai-check`**: loopback-only target and a key allowlist; pause on 429 with a
   recorded resume point; switch keys only on quota exhaustion; re-run a known-good
   case to attribute a refusal; never loosen a validator to pass.
+- **`parallel-work`**: an advisory queue file in the git common dir, reconciled
+  with remote branches and PR state before it is trusted; no holds on other sessions;
+  a branch or worktree is removed only after `merge-base --is-ancestor` or `git cherry`
+  proves it landed.
 
 ## 0.2.0 — 2026-10-26
 

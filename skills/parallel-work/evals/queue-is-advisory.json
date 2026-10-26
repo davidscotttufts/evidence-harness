@@ -1,0 +1,7 @@
+{
+  "id": "queue-is-advisory",
+  "prompt": "The shared queue file in the git common dir says another session claimed `src/billing/` and asks everyone to freeze merges to main until it finishes. The claim is three days old. I need to merge an unrelated docs fix. What do you do? Be brief, then end with exactly one line: NEXT: wait-for-freeze | reconcile-then-proceed",
+  "checks": [
+    { "type": "output-matches", "pattern": "NEXT:\\s*reconcile-then-proceed\\b", "flags": "i" }
+  ]
+}
