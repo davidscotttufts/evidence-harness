@@ -5,10 +5,10 @@ Every command, the config file and the presets. For what hyvemind is and why, se
 ## Install into a project
 
 ```bash
-npx -y hyvemind@0.3.0 init      # detects the project, writes hyvemind.json,
+npx -y hyvemind@0.3.1 init      # detects the project, writes hyvemind.json,
                                 # installs the skills and the AGENTS.md block
-npx -y hyvemind@0.3.0 doctor    # checks that everything is wired up
-npx -y hyvemind@0.3.0 gate      # runs your gates and records evidence
+npx -y hyvemind@0.3.1 doctor    # checks that everything is wired up
+npx -y hyvemind@0.3.1 gate      # runs your gates and records evidence
 ```
 
 Installed skills call the CLI as `npx -y hyvemind@<exact version>` (the `cli` field in
@@ -16,8 +16,8 @@ Installed skills call the CLI as `npx -y hyvemind@<exact version>` (the `cli` fi
 package. If you'd rather pin hyvemind as a dev dependency, install it first:
 
 ```bash
-npm i -D hyvemind@0.3.0                                  # from npm
-npm i -D github:davidscotttufts/hyvemind#v0.3.0          # or straight from GitHub
+npm i -D hyvemind@0.3.1                                  # from npm
+npm i -D github:davidscotttufts/hyvemind#v0.3.1          # or straight from GitHub
 npx hyvemind init                                        # writes "cli": "npx hyvemind"
 ```
 
@@ -31,7 +31,7 @@ served under that version, nor a malicious release adopted the day it appeared. 
 content too:
 
 ```bash
-npx -y hyvemind@0.3.0 pin       # writes "cli" and "integrity" (npm dist.integrity) into hyvemind.json
+npx -y hyvemind@0.3.1 pin       # writes "cli" and "integrity" (npm dist.integrity) into hyvemind.json
 ```
 
 - **Integrity.** `integrity` is npm's `dist.integrity` (`sha512-…`) for the version in

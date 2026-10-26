@@ -30,6 +30,16 @@
     and warns about `a | b` menus whose verbatim echo fails (or passes).
   - All 58 bundled scenarios now carry `good` and `bad` examples: 0 unlinted, 0 partial.
 
+## 0.3.1 — 2026-10-26
+
+Fixes found while adopting 0.3.0 in a repo with its own gate:
+
+- `externalGate` now **replaces** a preset's gates. In 0.3.0, any preset that
+  defined gates (for example `openwop`) made `externalGate` invalid unless the project
+  also set `"gates": []`. Gates the project lists itself still conflict with it.
+- `pin --allow-fresh` records `coolingOffWaived: "<version>"`, and `doctor` honours
+  it for that version only. Re-pinning a version past its cooling-off drops the waiver.
+
 ## 0.3.0 — 2026-10-26
 
 - Evals round 2 (`docs/evals/2026-10-26-claude-r2.md`): the 12 changed skills re-measured. `write-spec` and `mine-skills` rules sharpened from the failing runs (now earning); `evidence-rules` scenario `docs-are-not-the-code` fixed (it dictated the wrong answer).

@@ -26,8 +26,8 @@ failed, on exactly this code*. It works with Claude Code, Codex, OpenCode, or an
 else that reads `AGENTS.md` and skill folders. It has no runtime dependencies.
 
 ```bash
-npx -y hyvemind@0.3.0 init     # detects the project, installs skills + an AGENTS.md section
-npx -y hyvemind@0.3.0 gate     # runs your gates; the verdict is bound to this exact tree
+npx -y hyvemind@0.3.1 init     # detects the project, installs skills + an AGENTS.md section
+npx -y hyvemind@0.3.1 gate     # runs your gates; the verdict is bound to this exact tree
 ```
 
 ## What it checks
@@ -159,6 +159,7 @@ merging to it.
 
 - [Reference](docs/reference.md): every command, the config file, presets, upgrading.
 - [Design](docs/design.md): where this sits among other agent tools, and what's next.
+- [Landscape](docs/landscape-2026-10.md): how hyvemind compares with the open-source agent tools, and what to adopt next.
 - [Evals](docs/evals/): raw reports.
 
 Apache-2.0
