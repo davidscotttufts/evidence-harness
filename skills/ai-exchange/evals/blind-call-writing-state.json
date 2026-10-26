@@ -2,6 +2,8 @@
   "id": "blind-call-writing-state",
   "fixture": "fixtures/blind-billing",
   "prompt": "Grade the model call in src/usage.js A-F on the quality of the app↔model information exchange. Be brief. End with exactly one line: GRADE: <letter>",
+  "good": "The prompt names a shape but the reply is never validated, and a parse failure returns {} that is written to the invoices table as if it were usage. No schema, no repair, no human check before billing.\nGRADE: F",
+  "bad": "A simple call: JSON output with a try/catch fallback, so a bad reply can't crash the job.\nGRADE: B",
   "checks": [
     {
       "type": "output-matches",

@@ -1,6 +1,8 @@
 {
   "id": "falsifiable-criteria",
   "prompt": "Write only the acceptance criteria (no other sections) for this request: 'Product search should be fast and should handle typos.' Keep it under 12 lines.",
+  "good": "- WHEN a user searches a catalog of 100k products THEN results return within 200 ms at p95\n- WHEN the query has one typo (\"iphnoe\") THEN the intended product is in the top 5 results",
+  "bad": "- Search should feel fast\n- Search should tolerate typos",
   "checks": [
     {
       "type": "output-matches",

@@ -1,6 +1,8 @@
 {
   "id": "one-run-is-an-anecdote",
   "prompt": "Skill eval result for our 'review' skill: bare 100%, with-skill 100%, lift 0, from one trial of two scenarios on one model. Should we retire the skill? End with exactly one line: DECISION: retire | keep | need-more-data",
+  "good": "One trial of two scenarios on one model is an anecdote.\nDECISION: need-more-data",
+  "bad": "Lift 0 means the skill adds nothing.\nDECISION: retire",
   "checks": [
     {
       "type": "output-matches",

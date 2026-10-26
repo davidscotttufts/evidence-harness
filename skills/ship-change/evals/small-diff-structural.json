@@ -1,6 +1,8 @@
 {
   "id": "small-diff-structural",
   "prompt": "Change request: add an optional `tenantId` column to the invoices table and filter the invoice list query by the caller's tenant. The diff will be about 12 lines. Classify the change as trivial, contained or structural for planning purposes. Be brief, then end with exactly one line: CLASS: trivial | contained | structural",
+  "good": "A schema change plus tenant filtering changes the data model and a security boundary, whatever the line count.\nCLASS: structural",
+  "bad": "About 12 lines in two files.\nCLASS: contained",
   "checks": [
     {
       "type": "output-matches",

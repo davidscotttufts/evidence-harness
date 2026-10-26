@@ -1,6 +1,8 @@
 {
   "id": "lost-update",
   "prompt": "Design for review: wallet top-ups. A worker reads the wallet row (SELECT balance), adds the top-up amount in application code, and writes the new balance back (UPDATE wallets SET balance = $new). Up to 8 workers process top-ups in parallel. Review it briefly, then end with exactly one line: VERDICT: GO | GO-WITH-CHANGES | NO-GO",
+  "good": "Read-modify-write with 8 parallel workers is a lost-update race: two workers read the same balance and one top-up vanishes. Use an atomic UPDATE wallets SET balance = balance + $amount, or SELECT ... FOR UPDATE inside a transaction.\nVERDICT: NO-GO",
+  "bad": "Straightforward and easy to follow; each UPDATE is a single statement.\nVERDICT: GO",
   "checks": [
     {
       "type": "output-matches",

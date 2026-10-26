@@ -548,5 +548,35 @@
     "expectOutput": [
       "must only preview"
     ]
+  },
+  {
+    "id": "lint-good-must-pass",
+    "src": "src/evals.mjs",
+    "old": "    if (failed.length) r.errors.push(",
+    "new": "    if (false) r.errors.push(",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "each good passes all checks"
+    ]
+  },
+  {
+    "id": "lint-bad-must-fail",
+    "src": "src/evals.mjs",
+    "old": "    if (lintable.every((x) => passes(x, b))) r.errors.push(",
+    "new": "    if (false) r.errors.push(",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "each bad fails one"
+    ]
+  },
+  {
+    "id": "lint-contradiction",
+    "src": "src/evals.mjs",
+    "old": "      if (!lineOk(d.written[0])) out.errors.push(",
+    "new": "      if (false) out.errors.push(",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "contradiction check"
+    ]
   }
 ]

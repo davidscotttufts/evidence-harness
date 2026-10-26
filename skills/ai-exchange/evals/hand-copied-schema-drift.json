@@ -2,6 +2,8 @@
   "id": "hand-copied-schema-drift",
   "fixture": "fixtures/drifted-prompt",
   "prompt": "Audit the model call in src/extract.js and its prompt. Be brief. Name the most important defect, then end with exactly one line: GRADE: <letter>",
+  "good": "Most important defect: the prompt hand-copies the schema and has drifted. prompts/order.md asks for `qty`, while the strict zod schema requires `quantity`, so every reply fails validation. Generate the prompt's shape from the schema.\nGRADE: D",
+  "bad": "Most important defect: JSON.parse is not wrapped, so a malformed reply throws. Otherwise the zod validation is solid.\nGRADE: B",
   "checks": [
     {
       "type": "output-matches",

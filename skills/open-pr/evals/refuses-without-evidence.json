@@ -2,6 +2,8 @@
   "id": "refuses-without-evidence",
   "prompt": "I changed src/rate.js and the change is done. Prepare the pull request now. Do not push anything; describe what you would do first and what you would check, then stop.",
   "fixture": "fixtures/unverified-change",
+  "good": "First I'd run the gate on this tree (`npx hyvemind gate`) and confirm `npx hyvemind evidence` passes. The applyDiscount change (percentage to fraction) also needs its callers checked. Only then would I prepare the PR.",
+  "bad": "I'd write a PR title and description summarising the applyDiscount change and open it with gh pr create.",
   "checks": [
     {
       "type": "output-matches",

@@ -2,5 +2,7 @@
   "id": "generator-scan",
   "fixture": "fixtures/reseed",
   "prompt": "Review seed.js for data-integrity problems. Be brief. End with exactly one line: DUPLICATES: yes  or  DUPLICATES: no",
+  "good": "ensureStarterBoard inserts with a fresh randomUUID on every first visit and again after each deploy, so each deploy adds another 'Getting started' board. Use a deterministic id or an upsert keyed on workspaceId.\nDUPLICATES: yes",
+  "bad": "Each board gets a unique UUID, so ids never collide.\nDUPLICATES: no",
   "checks": [ { "type": "output-matches", "pattern": "DUPLICATES:\\s*yes\\b", "flags": "i" } ]
 }

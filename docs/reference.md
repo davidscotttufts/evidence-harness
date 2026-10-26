@@ -347,6 +347,37 @@ measured rewrite, `plan` (+0.50) clearly earn their place. The other ten are sat
 these scenarios*, which is a prompt to write harder scenarios and to check a second
 model, not to retire anything yet.
 
+#### Scenario lint
+
+A scenario can carry example outputs: `good` (an answer that should pass) and `bad`
+(a plausible wrong answer, typically the one the prompt's trap invites). Each is a
+string or a list of strings. `hyvemind eval --lint` checks them with no model calls,
+and so does `npm test` for every bundled scenario:
+
+- every `good` must pass all of the scenario's checks;
+- every `bad` must fail at least one;
+- a scenario without either is counted as **unlinted**. That is reported, not an error.
+
+`output-*` checks are linted from the string. `file-exists` and `command` checks read
+the workspace the agent changed, which a string can't stand in for, so a scenario that
+has them is linted on its output checks only and marked **partial** with that reason.
+
+**Contradiction check.** The lint reads the lines the prompt tells the model to print,
+for example "end with exactly one line: `GRADE: <letter>`" or "exactly two lines:
+`PUSH: ask | go` and `PR: ask | go`". It then scores each line against the checks that
+name its label (plus every `output-excludes` / `output-not-matches` check):
+
+- A line dictated word for word that fails those checks is an **error**: obeying the
+  prompt would fail the scenario.
+- A menu (`a | b`, or `LABEL: a  or  LABEL: b`) where no offered answer passes is an
+  **error**.
+- Templates (`<…>`) are not scored.
+- A `LABEL: a | b` menu that fails when echoed verbatim is a **warning** (`menu-echo`).
+  Round 2's `docs-are-not-the-code` prompt said `GRADE: A | unverified`, and the model
+  printed exactly that in every run of both arms. `LABEL: <a or b>` is unambiguous.
+- The reverse, a verbatim echo that *passes*, is also a **warning**
+  (`menu-echo-passes`): the checks can't tell copying the menu from answering.
+
 #### Running evals
 
 **Cost preview and consent.** Before any agent starts, `eval` prints the plan to stderr:
@@ -437,7 +468,7 @@ Each core guarantee has a self-probe showing that its test goes red when the gua
 is broken. The guarantees covered: tree-bound evidence, partial runs never counting,
 local edits being kept, probes restoring the file, eval lift, eval verdicts
 (saturated, earning vs low n, per-scenario harmful/no-signal flags, the lift
-interval, old reports re-rendered), and chain splitting in the miner.
+interval, old reports re-rendered, the eval safety rails, scenario lint), and chain splitting in the miner.
 
 ## Releasing
 
