@@ -36,5 +36,8 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/davidscotttufts/hyvemind.git"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
   }
 }

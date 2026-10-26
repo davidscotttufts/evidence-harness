@@ -115,6 +115,15 @@
           "items": {
             "type": "string"
           }
+        },
+        "format": {
+          "enum": [
+            "output",
+            "vitest",
+            "node"
+          ],
+          "default": "output",
+          "description": "How to read case-level results; needed for a probe's expectRed"
         }
       }
     },

@@ -76,3 +76,13 @@ test('doctor warns when an external gate is paired with skills that add a second
   assert.match(out, /✓ gate — external: make verify/);
   assert.match(out, /! competing skills — open-pr use hyvemind gate\/evidence\/train/);
 });
+
+test('mine reads transcripts only with consent', () => {
+  const dir = repo();
+  const r = run(dir, 'mine', '--root', dir);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /Re-run with --yes to consent/);
+  const ok = run(dir, 'mine', '--root', dir, '--yes', '--json');
+  assert.equal(ok.status, 0);
+  assert.equal(JSON.parse(ok.stdout).sessions, 0);
+});

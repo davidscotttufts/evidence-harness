@@ -7,6 +7,7 @@
 //     "new": "<replacement>",
 //     "test": "<what to substitute for {test} in probe.command>",
 //     "lane": "<key of probe.lanes; default 'default'>",       // optional
+//     "expectRed": ["<substring of a FAILING case's name>"],      // optional; needs probe.format
 //     "expectOutput": ["<substring the failing run must print>"], // optional
 //     "env": { "NAME": "value" } }                              // optional
 //
@@ -15,7 +16,8 @@
 // error (could not apply, run timed out, or matched a probe.errorPatterns entry —
 // red for the wrong reason is not a witness).
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { git, isClean } from './git.mjs';
 import { leaseShell } from './broker.mjs';
@@ -30,10 +32,42 @@ export function cleanEnv(extra = {}) {
   return env;
 }
 
-export function verdictFor({ exitCode, timedOut, output }, probe, cfg) {
+// Case-level results, so a witness is a FAILING case, not a name that appears
+// somewhere in the output (a passing case's name would otherwise count).
+//   vitest: --reporter=json --outputFile=<file>  → assertionResults[].status === 'failed'
+//   node:   --test-reporter=tap                  → "not ok N - <title>" lines
+//   output: no structure; expectRed is not available, only expectOutput
+export function formatArgs(format, reportFile) {
+  if (format === 'vitest') return ` --reporter=json --outputFile=${shq(reportFile)}`;
+  if (format === 'node') return ' --test-reporter=tap';
+  return '';
+}
+
+export function failingCases(format, { output, reportFile }) {
+  if (format === 'vitest') {
+    let r;
+    try { r = JSON.parse(readFileSync(reportFile, 'utf8')); } catch { return null; }
+    return r.testResults.flatMap((t) => [
+      ...t.assertionResults.filter((a) => a.status === 'failed').map((a) => a.fullName ?? a.title),
+      ...(t.status === 'failed' && t.assertionResults.length === 0 ? [`(suite) ${t.name}`] : []),
+    ]);
+  }
+  if (format === 'node') {
+    const fails = [...output.matchAll(/^\s*not ok \d+ - (.+?)\s*$/gm)].map((m) => m[1]);
+    // A top-level file entry fails when any of its cases fails; keep only case lines when there are any.
+    return fails;
+  }
+  return null;
+}
+
+export function verdictFor({ exitCode, timedOut, output, failing = null }, probe, cfg) {
   if (timedOut) return 'error';
   if (exitCode === 0) return 'vacuous';
   if (cfg.probe.errorPatterns.some((p) => new RegExp(p).test(output))) return 'error';
+  if (probe.expectRed?.length) {
+    if (!failing) return 'error'; // asked for case-level proof the runner did not give
+    if (!probe.expectRed.every((s) => failing.some((f) => f.includes(s)))) return 'other-red';
+  }
   if (probe.expectOutput?.length && !probe.expectOutput.every((s) => output.includes(s))) return 'other-red';
   return 'witnessed';
 }
@@ -54,7 +88,9 @@ export function runProbe(root, cfg, p) {
   const text = readFileSync(abs, 'utf8');
   const n = text.split(p.old).length - 1;
   if (n !== 1) return { id: p.id, verdict: 'error', error: `old text matched ${n} times (must be exactly 1)` };
-  const cmd = leaseShell(cfg, 'probe', p.id, cfg.probe.command.replaceAll('{test}', shq(p.test)));
+  const format = cfg.probe.format ?? 'output';
+  const reportFile = join(mkdtempSync(join(tmpdir(), 'hyve-probe-')), 'report.json');
+  const cmd = leaseShell(cfg, 'probe', p.id, cfg.probe.command.replaceAll('{test}', shq(p.test)) + formatArgs(format, reportFile));
   try {
     writeFileSync(abs, text.replace(p.old, () => p.new));
     const r = spawnSync(cmd, {
@@ -68,8 +104,9 @@ export function runProbe(root, cfg, p) {
     });
     const output = `${r.stdout ?? ''}\n${r.stderr ?? ''}`;
     const timedOut = r.error?.code === 'ETIMEDOUT' || r.signal === 'SIGKILL';
-    const verdict = verdictFor({ exitCode: r.status, timedOut, output }, p, cfg);
-    return { id: p.id, verdict, exitCode: r.status, ...(timedOut ? { error: 'timed out' } : {}), tail: output.trim().slice(-600) };
+    const failing = failingCases(format, { output, reportFile });
+    const verdict = verdictFor({ exitCode: r.status, timedOut, output, failing }, p, cfg);
+    return { id: p.id, verdict, exitCode: r.status, ...(failing ? { failing: failing.slice(0, 20) } : {}), ...(timedOut ? { error: 'timed out' } : {}), ...(verdict === 'error' && p.expectRed?.length && !failing ? { error: `expectRed needs probe.format vitest or node (got ${format})` } : {}), tail: output.trim().slice(-600) };
   } finally {
     restore(root, p.src, abs, text);
   }
