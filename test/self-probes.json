@@ -678,5 +678,25 @@
     "expectOutput": [
       "saves the full gate output"
     ]
+  },
+  {
+    "id": "probe-lock-refuses",
+    "src": "src/probe.mjs",
+    "old": "    if (alive && pid !== process.pid) throw new Error(`another probe (pid ${pid}) is running in this worktree; wait for it, or use --isolate`);",
+    "new": "",
+    "test": "test/probe.test.mjs",
+    "expectOutput": [
+      "probe lock refuses"
+    ]
+  },
+  {
+    "id": "probe-isolate-uses-copy",
+    "src": "src/probe.mjs",
+    "old": "  const where = tree ? tree.dir : root;",
+    "new": "  const where = root;",
+    "test": "test/probe.test.mjs",
+    "expectOutput": [
+      "never touches the live tree"
+    ]
   }
 ]

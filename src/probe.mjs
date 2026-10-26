@@ -16,7 +16,7 @@
 // error (could not apply, run timed out, or matched a probe.errorPatterns entry —
 // red for the wrong reason is not a witness).
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { git, isClean } from './git.mjs';
@@ -112,9 +112,51 @@ export function runProbe(root, cfg, p) {
   }
 }
 
-export function runProbes(root, cfg, probes) {
-  const results = [];
-  for (const p of probes) results.push(runProbe(root, cfg, p));
-  const dirty = git(root, ['status', '--porcelain', '--', ...new Set(probes.map((p) => p.src))]).out;
-  return { results, srcStatus: dirty || 'clean' };
+// A probe edits files in the working tree. Two probes in one tree, or a pull or
+// checkout during one, could capture a sabotaged file. A per-worktree lock refuses a
+// second probe; a lock whose process is gone is reclaimed.
+export function probeLockPath(root) {
+  const p = git(root, ['rev-parse', '--git-path', 'hyve-probe.lock']).out;
+  return p.startsWith('/') ? p : join(root, p);
+}
+
+export function acquireProbeLock(root) {
+  const lock = probeLockPath(root);
+  if (existsSync(lock)) {
+    const pid = Number(readFileSync(lock, 'utf8').trim());
+    let alive = false;
+    try { process.kill(pid, 0); alive = true; } catch { /* gone */ }
+    if (alive && pid !== process.pid) throw new Error(`another probe (pid ${pid}) is running in this worktree; wait for it, or use --isolate`);
+  }
+  writeFileSync(lock, String(process.pid));
+  return () => rmSync(lock, { force: true });
+}
+
+// --isolate: probe a throwaway worktree of HEAD instead of the live one, after the
+// project's setup (train.setup, e.g. "npm ci"). The live tree is never touched.
+export function isolatedTree(root, cfg) {
+  const dir = mkdtempSync(join(tmpdir(), 'hyve-probe-wt-'));
+  const add = git(root, ['worktree', 'add', '-q', '--detach', dir, 'HEAD']);
+  if (add.status !== 0) throw new Error(`git worktree add failed: ${add.err}`);
+  const setup = cfg.probe.setup ?? cfg.train?.setup;
+  if (setup) {
+    const s = spawnSync(setup, { cwd: dir, shell: true, encoding: 'utf8', env: cleanEnv() });
+    if (s.status !== 0) { git(root, ['worktree', 'remove', '--force', dir]); throw new Error(`probe setup failed: ${setup}`); }
+  }
+  return { dir, dispose: () => git(root, ['worktree', 'remove', '--force', dir]) };
+}
+
+export function runProbes(root, cfg, probes, { isolate = false } = {}) {
+  const tree = isolate ? isolatedTree(root, cfg) : null;
+  const where = tree ? tree.dir : root;
+  const release = acquireProbeLock(where);
+  try {
+    const results = [];
+    for (const p of probes) results.push(runProbe(where, cfg, p));
+    const dirty = git(where, ['status', '--porcelain', '--', ...new Set(probes.map((p) => p.src))]).out;
+    return { results, srcStatus: dirty || 'clean', ...(tree ? { isolated: tree.dir } : {}) };
+  } finally {
+    release();
+    tree?.dispose();
+  }
 }
