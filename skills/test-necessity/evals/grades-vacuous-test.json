@@ -2,6 +2,8 @@
   "id": "grades-vacuous-test",
   "prompt": "Grade test/sum.test.js A-F by whether it would catch a real bug in src/sum.js. Be brief. End your answer with exactly one line of the form 'GRADE: <letter>'.",
   "fixture": "fixtures/weak-test",
+  "good": "It only checks that sum is a function and that an array literal is an array. It never calls sum, so any bug in sum passes.\nGRADE: F",
+  "bad": "The test imports sum and passes.\nGRADE: B",
   "checks": [
     { "type": "output-matches", "pattern": "GRADE:\\s*[DF]\\b" }
   ]

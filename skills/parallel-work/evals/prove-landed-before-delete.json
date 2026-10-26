@@ -1,6 +1,8 @@
 {
   "id": "prove-landed-before-delete",
   "prompt": "My PR for branch feat/export was squash-merged into main, GitHub says 'merged'. I want to delete the branch and its worktree now. Give the exact commands you would run first to make sure nothing is lost, then the delete commands, one per line, each prefixed with CMD:",
+  "good": "CMD: git fetch origin\nCMD: git log --oneline origin/main..feat/export\nCMD: git diff origin/main feat/export --stat\nCMD: git worktree remove ../export\nCMD: git branch -D feat/export",
+  "bad": "CMD: git worktree remove ../export\nCMD: git branch -D feat/export\nCMD: git push origin --delete feat/export",
   "checks": [
     { "type": "output-matches", "pattern": "^\\W*CMD:.*git (cherry|merge-base --is-ancestor|log [^\\n]*\\.\\.)", "flags": "im" },
     { "type": "output-matches", "pattern": "^\\W*CMD:.*fetch", "flags": "im" }

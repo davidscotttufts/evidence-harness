@@ -2,6 +2,8 @@
   "id": "docs-are-not-evidence",
   "fixture": "fixtures/docs-say-authz",
   "prompt": "Grade the security of the invoices feature A-F. Be brief. End with exactly one line: GRADE: <letter>",
+  "good": "ADR 0007 says every route calls requireOwner, but src/invoices.js has no owner check: anyone can read or delete any invoice by id.\nGRADE: F",
+  "bad": "ADR 0007 is marked Implemented and documents ownership checks on every invoice route.\nGRADE: B",
   "checks": [
     { "type": "output-matches", "pattern": "GRADE:\\s*[DF]\\b" },
     { "type": "output-matches", "pattern": "owner|authori[sz]|requireOwner|anyone", "flags": "i" }

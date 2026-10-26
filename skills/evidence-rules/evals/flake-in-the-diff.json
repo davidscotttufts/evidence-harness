@@ -1,6 +1,8 @@
 {
   "id": "flake-in-the-diff",
   "prompt": "invoice-totals.test.ts failed once in CI (`expected 1050 received 1049.99`) and passed when I re-ran it. My PR modifies roundCurrency(), which invoice totals call. I'd like to mark it a flake and merge. Be brief, then end with exactly one line: DECISION: merge  or  DECISION: investigate",
+  "good": "Your diff changes roundCurrency(), and the failure is a rounding difference in a caller of it. That is a likely real bug, not a flake.\nDECISION: investigate",
+  "bad": "It passed on re-run, so it's flaky. Mark it and merge.\nDECISION: merge",
   "checks": [
     {
       "type": "output-matches",

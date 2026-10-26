@@ -15,7 +15,8 @@
 //                 { "type": "output-matches", "pattern": "…", "flags": "i" },
 //                 { "type": "output-not-matches", "pattern": "…" },
 //                 { "type": "file-exists", "path": "…" },
-//                 { "type": "command", "run": "…" } ] }   // exit 0 = pass, run in the workspace
+//                 { "type": "command", "run": "…" } ],   // exit 0 = pass, run in the workspace
+//     "good": "<an output that should pass>", "bad": "<a plausible wrong output>" }  // optional; string or list; see lintScenario
 import { spawn, spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -343,6 +344,100 @@ export async function runEvals(root, cfg, { skills, agent, model, trials, keep =
   const file = join(dir, `report-${runId}.json`);
   writeFileSync(file, JSON.stringify(report, null, 2) + '\n');
   return { report, file };
+}
+
+// ── Scenario lint ─────────────────────────────────────────────────────────────
+// A scenario is a claim about which outputs are right. `good` / `bad` (a string or a
+// list of strings) are example outputs that make the claim testable without a model:
+// every good must pass every check, every bad must fail at least one. A scenario
+// whose checks reject its own right answer measures nothing (round 2's
+// docs-are-not-the-code failed every run in both arms for exactly that reason).
+const OUTPUT_CHECKS = new Set(['output-includes', 'output-excludes', 'output-matches', 'output-not-matches']);
+const examples = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
+
+// Lines the prompt tells the model to print, e.g. "end with exactly one line: GRADE: <letter>"
+// or "exactly two lines: PUSH: ask | go  and  PR: ask | go". Grouped by label, with
+// the alternatives a menu offers ("a | b", "LABEL: a  or  LABEL: b").
+export function dictatedLines(prompt) {
+  const groups = new Map();
+  const intro = /exactly (?:one|two|three|\d+) lines?(?: of the form)?\s*:?\s*|(?:output|print|write) (?:this|the following) (?:line )?verbatim\s*:\s*/gi;
+  for (const m of prompt.matchAll(intro)) {
+    const seg = prompt.slice(m.index + m[0].length).split('\n')[0];
+    const parts = [...seg.matchAll(/\b([A-Z][A-Z0-9-]*):[ \t]*/g)];
+    for (let i = 0; i < parts.length; i++) {
+      const label = parts[i][1];
+      let v = seg.slice(parts[i].index + parts[i][0].length, i + 1 < parts.length ? parts[i + 1].index : undefined);
+      v = v.split(/,\s*then\b|\s{2,}(?:and|or)\s{2,}/)[0].replace(/['"`]?\.?\s*$/, '').replace(/^['"`]/, '').trim();
+      if (!groups.has(label)) groups.set(label, { label, values: [] });
+      groups.get(label).values.push(v);
+    }
+  }
+  return [...groups.values()].map((g) => {
+    const alts = g.values.flatMap((v) => v.split(/\s*\|\s*/)).filter(Boolean);
+    return { label: g.label, written: g.values.map((v) => `${g.label}: ${v}`), alternatives: alts, template: alts.some((a) => /<[^>]+>/.test(a)) };
+  });
+}
+
+// A check "is about" a dictated line when it names the line's label ("GRADE:").
+const mentions = (c, label) => String(c.pattern ?? c.text ?? '').toLowerCase().includes(`${label.toLowerCase()}:`);
+const passes = (c, out) => score([c], out, null)[0].pass;
+
+export function contradictions(sc) {
+  const out = { errors: [], warnings: [] };
+  const checks = (sc.checks ?? []).filter((c) => OUTPUT_CHECKS.has(c.type));
+  for (const d of dictatedLines(sc.prompt ?? '')) {
+    if (d.template) continue;
+    const positive = checks.filter((c) => (c.type === 'output-matches' || c.type === 'output-includes') && mentions(c, d.label));
+    const negative = checks.filter((c) => c.type === 'output-excludes' || c.type === 'output-not-matches');
+    const lineOk = (line) => positive.every((c) => passes(c, line)) && negative.every((c) => passes(c, line));
+    if (d.alternatives.length === 1) {
+      // A line the prompt dictates word for word: obeying the prompt must not fail the scenario.
+      if (!lineOk(d.written[0])) out.errors.push(`the prompt dictates "${d.written[0]}", which fails its own checks`);
+      continue;
+    }
+    if (!d.alternatives.some((a) => lineOk(`${d.label}: ${a}`))) out.errors.push(`no answer the prompt offers for ${d.label}: (${d.alternatives.join(' | ')}) passes the checks`);
+    // Models sometimes echo a menu as written ("GRADE: A | unverified" in round 2).
+    else if (d.written.length === 1 && !lineOk(d.written[0])) out.warnings.push(`menu-echo: "${d.written[0]}" printed verbatim fails the checks; "${d.label}: <${d.alternatives.join(' or ')}>" is unambiguous`);
+    // The dual: an echo that PASSES gives credit for copying the menu, not for answering.
+    else if (d.written.length === 1 && positive.length) out.warnings.push(`menu-echo-passes: "${d.written[0]}" printed verbatim passes the checks, so they can't tell an echo from an answer`);
+  }
+  return out;
+}
+
+export function lintScenario(sc) {
+  const r = { id: sc.id, file: sc.file, errors: [], warnings: [], partial: null, linted: false };
+  const good = examples(sc.good), bad = examples(sc.bad);
+  for (const [k, xs] of [['good', good], ['bad', bad]]) if (xs.some((x) => typeof x !== 'string')) r.errors.push(`${k} must be a string or a list of strings`);
+  const c = contradictions(sc);
+  r.errors.push(...c.errors);
+  r.warnings.push(...c.warnings);
+  if (!good.length && !bad.length) return r;
+  r.linted = true;
+  const lintable = (sc.checks ?? []).filter((x) => OUTPUT_CHECKS.has(x.type));
+  const skipped = [...new Set((sc.checks ?? []).filter((x) => !OUTPUT_CHECKS.has(x.type)).map((x) => x.type))];
+  // file-exists and command checks read the workspace the agent changed: a string can't stand in for that.
+  if (skipped.length) r.partial = `${skipped.join(', ')} check(s) need the agent's workspace, not an output string; only output checks were linted`;
+  if (!good.length) r.errors.push('bad without good: add a right answer too');
+  if (!bad.length) r.errors.push('good without bad: add a plausible wrong answer too');
+  good.forEach((g, i) => {
+    const failed = lintable.filter((x) => !passes(x, g));
+    if (failed.length) r.errors.push(`good${good.length > 1 ? `[${i}]` : ''} fails ${failed.map((x) => `${x.type} ${JSON.stringify(x.pattern ?? x.text)}`).join(', ')}`);
+  });
+  bad.forEach((b, i) => {
+    if (lintable.every((x) => passes(x, b))) r.errors.push(`bad${bad.length > 1 ? `[${i}]` : ''} passes every ${skipped.length ? 'output ' : ''}check: the scenario cannot tell it from a right answer`);
+  });
+  return r;
+}
+
+export function lintScenarios(root, cfg, skills) {
+  const rows = skills.flatMap((skill) => loadScenarios(root, cfg, skill).map((sc) => ({ skill, ...lintScenario(sc) })));
+  return {
+    rows,
+    counts: {
+      scenarios: rows.length, linted: rows.filter((r) => r.linted).length, unlinted: rows.filter((r) => !r.linted).length,
+      partial: rows.filter((r) => r.partial).length, errors: rows.filter((r) => r.errors.length).length, warnings: rows.filter((r) => r.warnings.length).length,
+    },
+  };
 }
 
 const ACTION = {

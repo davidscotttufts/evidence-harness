@@ -2,6 +2,8 @@
   "id": "keeps-a-strong-test",
   "fixture": "fixtures/strong-test",
   "prompt": "Grade test/discount.test.js A-F by whether it would catch a real bug in src/discount.js. We are pruning low-value tests. Be brief. End with exactly one line: GRADE: <letter>",
+  "good": "It pins the rule: fractional rates, rounding to cents (19.99 at 15% is 16.99), both ends of the range, and RangeError outside it. Keep it.\nGRADE: A",
+  "bad": "We're pruning, and this is a small unit test of a one-line function.\nGRADE: D",
   "checks": [
     {
       "type": "output-matches",

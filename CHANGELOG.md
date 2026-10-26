@@ -22,6 +22,13 @@
     keeps passes too. The inline tail is now 2,000 characters.
   - `skill:scenario` and `--scenario <id>` run single scenarios.
   - Reports are stamped `version+sha[-dirty]` when run from a git checkout.
+- **Scenario lint** (#17). Scenarios can carry `good` and `bad` example outputs.
+  - `hyvemind eval --lint` and `npm test` assert that each `good` passes every check
+    and each `bad` fails at least one. Scenarios without examples count as unlinted.
+    Workspace checks (`file-exists`, `command`) make a scenario's lint partial.
+  - A contradiction check flags prompts that dictate a line their own checks reject,
+    and warns about `a | b` menus whose verbatim echo fails (or passes).
+  - All 58 bundled scenarios now carry `good` and `bad` examples: 0 unlinted, 0 partial.
 
 ## 0.3.1 — 2026-10-26
 

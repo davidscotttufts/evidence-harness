@@ -4,7 +4,8 @@ import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { resolveConfig } from '../src/config.mjs';
-import { agentArgv, agentEnv, argv, historicalMedian, liftInterval, parseTargets, planEvals, preview, renderPreview, renderReport, runEvals, score, verdict, versionStamp, wilson } from '../src/evals.mjs';
+import { bundledSkills } from '../src/install.mjs';
+import { agentArgv, agentEnv, argv, contradictions, dictatedLines, lintScenario, lintScenarios, historicalMedian, liftInterval, parseTargets, planEvals, preview, renderPreview, renderReport, runEvals, score, verdict, versionStamp, wilson } from '../src/evals.mjs';
 import { repo, write } from './helpers.mjs';
 
 // Fake agents: one that succeeds only when the skill is installed in its workspace,
@@ -202,4 +203,42 @@ test('reports are stamped version+sha[-dirty] from a git checkout, the plain ver
   const v = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
   assert.match(versionStamp(), new RegExp(`^${v.replace(/\./g, '\\.')}\\+[0-9a-f]{7,}(-dirty)?$`));
   assert.equal(versionStamp(mkdtempSync(join(tmpdir(), 'hyve-pkg-'))), v);
+});
+
+test('every bundled scenario lints: each good passes all checks, each bad fails one, none unlinted', () => {
+  const r = lintScenarios(mkdtempSync(join(tmpdir(), 'hyve-lint-')), resolveConfig({ version: 1 }), bundledSkills());
+  assert.ok(r.counts.scenarios >= 50);
+  assert.deepEqual(r.rows.filter((x) => x.errors.length).map((x) => `${x.skill}/${x.id}: ${x.errors.join('; ')}`), []);
+  assert.equal(r.counts.unlinted, 0, 'every bundled scenario carries good and bad examples');
+});
+
+test('lint: a good that fails a check, or a bad that passes every check, is an error; no examples is unlinted', () => {
+  const checks = [{ type: 'output-matches', pattern: 'ANSWER:\\s*no\\b' }];
+  assert.deepEqual(lintScenario({ id: 'x', prompt: 'p', checks, good: 'ANSWER: no', bad: 'ANSWER: yes' }).errors, []);
+  assert.match(lintScenario({ id: 'x', prompt: 'p', checks, good: 'ANSWER: yes', bad: 'ANSWER: yes' }).errors.join(), /good fails output-matches/);
+  assert.match(lintScenario({ id: 'x', prompt: 'p', checks, good: 'ANSWER: no', bad: ['ANSWER: yes', 'ANSWER: no'] }).errors.join(), /bad\[1\] passes every check/);
+  assert.match(lintScenario({ id: 'x', prompt: 'p', checks, good: 'ANSWER: no' }).errors.join(), /good without bad/);
+  const none = lintScenario({ id: 'x', prompt: 'p', checks });
+  assert.deepEqual([none.linted, none.errors], [false, []]);
+  const partial = lintScenario({ id: 'x', prompt: 'p', checks: [...checks, { type: 'command', run: 'true' }], good: 'ANSWER: no', bad: 'ANSWER: yes' });
+  assert.match(partial.partial, /command check\(s\) need the agent's workspace/);
+  assert.deepEqual(partial.errors, []);
+});
+
+test('lint flags a prompt that dictates a line its own checks reject (the contradiction check)', () => {
+  const checks = [{ type: 'output-matches', pattern: 'GRADE:\\s*unverified\\b', flags: 'i' }];
+  assert.deepEqual(dictatedLines('Be brief, then end with exactly two lines: PUSH: ask | go  and  PR: ask | go').map((d) => [d.label, d.alternatives]), [['PUSH', ['ask', 'go']], ['PR', ['ask', 'go']]]);
+  assert.deepEqual(dictatedLines("End with exactly one line: SCOPE-STATED: yes  or  SCOPE-STATED: no, then nothing else.")[0].alternatives, ['yes', 'no']);
+  assert.equal(dictatedLines("End your answer with exactly one line of the form 'GRADE: <letter>'.")[0].template, true);
+  // Dictated word for word: obeying the prompt fails the scenario.
+  assert.match(contradictions({ prompt: 'End with exactly one line: GRADE: A', checks }).errors.join(), /dictates "GRADE: A", which fails its own checks/);
+  // A menu with no passing answer.
+  assert.match(contradictions({ prompt: 'End with exactly one line: GRADE: A | B', checks }).errors.join(), /no answer the prompt offers/);
+  // Round 2's docs-are-not-the-code: the model echoed "GRADE: A | unverified" verbatim in every run.
+  const old = contradictions({ prompt: 'Be brief, then end with exactly one line: GRADE: A | unverified', checks });
+  assert.deepEqual(old.errors, []);
+  assert.match(old.warnings.join(), /menu-echo: "GRADE: A \| unverified" printed verbatim fails/);
+  assert.deepEqual(contradictions({ prompt: 'End with exactly one line: GRADE: <the letter, or unverified>', checks }), { errors: [], warnings: [] });
+  // A forbidden pattern the prompt itself dictates.
+  assert.match(contradictions({ prompt: 'End with exactly one line: CMD: git add -A', checks: [{ type: 'output-not-matches', pattern: 'git add -A' }] }).errors.join(), /fails its own checks/);
 });

@@ -11,6 +11,9 @@ that with a measurement.
 
 ## Run
 
+⛔ An eval spends model calls. Run `{{cli}} eval --dry-run` first and show the user
+the preview (runs, duration); pass `--yes` only after they agree.
+
 ```bash
 {{cli}} eval                         # every installed skill, default agent
 {{cli}} eval review pr --trials 5    # specific skills

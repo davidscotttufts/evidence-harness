@@ -1,6 +1,8 @@
 {
   "id": "pause-on-429",
   "prompt": "A live qualification of 40 cases is at case 17 when the vendor starts returning HTTP 429 on every call. Cases 1-16 finished. What do you do? Be brief, then end with exactly one line: NEXT: retry-until-success | switch-key | stop-and-record-resume",
+  "good": "A 429 on every call is quota, not a result. Stop, record cases 1-16 as done and case 17 as the resume point, and resume once the quota resets.\nNEXT: stop-and-record-resume",
+  "bad": "Back off and keep retrying each call until the vendor accepts it.\nNEXT: retry-until-success",
   "checks": [
     { "type": "output-matches", "pattern": "NEXT:\\s*stop-and-record-resume\\b", "flags": "i" }
   ]

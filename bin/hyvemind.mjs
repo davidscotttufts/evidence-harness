@@ -9,7 +9,7 @@ import { CONFIG_FILE, pkgVersion, readConfig, resolveConfig, writeConfig } from 
 import { detect } from '../src/detect.mjs';
 import { doctor } from '../src/doctor.mjs';
 import { affected, failingFilesFromVitest, observe, readTrustLedger, trust } from '../src/affected.mjs';
-import { historicalMedian, parseTargets, planEvals, preview, renderPreview, renderReport, runEvals } from '../src/evals.mjs';
+import { historicalMedian, lintScenarios, parseTargets, planEvals, preview, renderPreview, renderReport, runEvals } from '../src/evals.mjs';
 import { runGates } from '../src/gate.mjs';
 import { git } from '../src/git.mjs';
 import { bundledSkills, installAgentsMd, installSkills, selectedSkills } from '../src/install.mjs';
@@ -67,6 +67,7 @@ Usage: hyvemind <command> [options]
             --clean-profile   add the agent's cleanArgs/cleanEnv to both arms
             --report          also write the markdown decision table (.hyve/evals/REPORT.md, or --out <file>)
             --render <report.json>  render an existing report without running anything
+            --lint            check scenarios against their good/bad examples (no model calls)
   mine      Mine Claude Code transcripts for skill usage and chains
             --filter <substr>  --all  --root <dir>  --json  --yes (consent; asked otherwise)
 
@@ -82,7 +83,7 @@ const { values: o, positionals } = parseArgs({
     filter: { type: 'string' }, all: { type: 'boolean' }, root: { type: 'string' }, json: { type: 'boolean' },
     post: { type: 'boolean' }, yes: { type: 'boolean' }, wait: { type: 'string' }, observe: { type: 'boolean' }, status: { type: 'boolean' }, base: { type: 'string' }, run: { type: 'boolean' }, 'no-merge': { type: 'boolean' },
     'no-bisect': { type: 'boolean' }, local: { type: 'boolean' }, spec: { type: 'string' }, 'no-review': { type: 'boolean' },
-    branch: { type: 'string' }, concurrency: { type: 'string' }, md: { type: 'string' }, report: { type: 'boolean' }, out: { type: 'string' }, render: { type: 'string' },
+    branch: { type: 'string' }, concurrency: { type: 'string' }, md: { type: 'string' }, report: { type: 'boolean' }, out: { type: 'string' }, render: { type: 'string' }, lint: { type: 'boolean' },
     'allow-fresh': { type: 'boolean' }, scenario: { type: 'string', multiple: true }, 'clean-profile': { type: 'boolean' }, help: { type: 'boolean', short: 'h' }, version: { type: 'boolean', short: 'v' },
   },
 });
@@ -222,6 +223,18 @@ async function main() {
       const cfg = readConfig(root);
       if (o.render) {
         process.stdout.write(renderReport(JSON.parse(readFileSync(resolve(o.render), 'utf8')), cfg.evals));
+        return;
+      }
+      if (o.lint) {
+        // No model calls: checks each scenario against its own good/bad examples and prompt.
+        const r = lintScenarios(root, cfg, rest.length ? [...new Set(rest.map((x) => x.split(':')[0]))] : selectedSkills(cfg));
+        if (o.json) { console.log(JSON.stringify(r, null, 2)); if (r.counts.errors) process.exitCode = 1; return; }
+        for (const x of r.rows) for (const e of x.errors) console.log(`✗ ${x.skill} · ${x.id}: ${e}`);
+        for (const x of r.rows.filter((y) => y.partial)) console.log(`~ ${x.skill} · ${x.id}: partial: ${x.partial}`);
+        for (const x of r.rows) for (const w of x.warnings) console.log(`! ${x.skill} · ${x.id}: ${w}`);
+        const c = r.counts;
+        console.log(`lint: ${c.scenarios} scenarios · ${c.linted} linted · ${c.unlinted} unlinted (no good/bad) · ${c.partial} partial · ${c.errors} with errors · ${c.warnings} with warnings`);
+        if (c.errors) process.exitCode = 1;
         return;
       }
       const targets = parseTargets(rest.length ? rest : selectedSkills(cfg), o.scenario ?? []);

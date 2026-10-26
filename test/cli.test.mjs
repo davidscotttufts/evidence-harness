@@ -66,6 +66,7 @@ test('v0.2 commands: affected --json, evidence --post refusal, eval --render, tr
 
   // eval: preview first; never starts unattended without --yes.
   writeFileSync(join(dir, 'hyvemind.json'), JSON.stringify({ ...JSON.parse(readFileSync(join(dir, 'hyvemind.json'), 'utf8')), evals: { agent: 'boom', agents: { boom: { command: ['node', '-e', 'require("fs").writeFileSync("/dev/null","");process.exit(9)', '{prompt}'] } } } }));
+  mkdirSync(join(dir, '.hyve/scenarios/open-pr'), { recursive: true });
   const dry = run(dir, 'eval', 'open-pr', '--dry-run');
   assert.equal(dry.status, 0, `eval --dry-run must only preview: ${dry.stderr}`);
   assert.match(dry.stderr, /eval plan: 1 skill\(s\) · \d+ scenario\(s\) · 3 trial\(s\) × 2 arms = \d+ agent runs \(boom\)/);
@@ -75,6 +76,12 @@ test('v0.2 commands: affected --json, evidence --post refusal, eval --render, tr
   assert.match(noYes.stderr, /eval plan: .* = 6 agent runs/);
   assert.match(noYes.stderr, /re-run with --yes/);
   assert.match(run(dir, 'eval', 'open-pr', '--scenario', 'nope', '--dry-run').stderr, /open-pr: no scenario nope/);
+  writeFileSync(join(dir, '.hyve/scenarios/open-pr/mine.json'), JSON.stringify({ id: 'mine', prompt: 'p', checks: [{ type: 'output-includes', text: 'ok' }], good: 'nope', bad: 'ok' }), { flag: 'w' });
+  const lint = run(dir, 'eval', 'open-pr', '--lint');
+  assert.equal(lint.status, 1, 'a scenario whose good fails is a lint error');
+  assert.match(lint.stdout, /✗ open-pr · mine: good fails output-includes "ok"/);
+  assert.match(lint.stdout, /bad passes every check/);
+  assert.match(lint.stdout, /lint: \d+ scenarios · \d+ linted · 0 unlinted/);
 
   assert.match(run(dir, 'train').stderr, /usage: hyvemind train/);
   assert.match(run(dir, 'run').stderr, /usage: hyvemind run/);

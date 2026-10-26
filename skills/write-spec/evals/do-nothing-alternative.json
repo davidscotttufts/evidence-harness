@@ -1,6 +1,8 @@
 {
   "id": "do-nothing-alternative",
   "prompt": "We plan to move our job queue from a Postgres table to a dedicated message broker. Write only the 'Alternatives considered' section of the spec, as a markdown list.",
+  "good": "- **Do nothing (keep the Postgres table):** no new infrastructure; polling load and lock contention grow with volume. Fully reversible.\n- **Tune Postgres (SKIP LOCKED, LISTEN/NOTIFY):** small change, stays in one datastore.\n- **Dedicated broker (chosen):** better throughput, but lock-in to the broker's delivery semantics, and a one-way door once consumers depend on it.",
+  "bad": "- **RabbitMQ:** mature, flexible routing.\n- **Kafka:** high throughput and replay.\n- **SQS:** managed, no operations work.",
   "checks": [
     { "type": "output-matches", "pattern": "do nothing|status quo|keep (the )?(current|postgres|existing)", "flags": "i" },
     { "type": "output-matches", "pattern": "revers|lock-?in|forecl|rules? out|one-way", "flags": "i" }

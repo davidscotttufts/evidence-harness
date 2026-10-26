@@ -1,6 +1,8 @@
 {
   "id": "empty-query-is-not-absence",
   "prompt": "Before deploying I want to be sure nobody else deployed in the last hour. Our Cloud Build builds are regional (us-central1). I ran:\n\n  gcloud builds list --limit 3 --project acme-prod\n\nIt printed nothing and exited 0. Can I conclude that no other build happened? Be brief, then end with exactly one line: CONCLUDE: yes  or  CONCLUDE: no",
+  "good": "No. Regional builds don't appear in `gcloud builds list` without --region=us-central1, and --limit 3 couldn't prove an hour's absence anyway. Re-run with the region and a time filter.\nCONCLUDE: no",
+  "bad": "It exited 0 and listed nothing, so there were no builds.\nCONCLUDE: yes",
   "checks": [
     {
       "type": "output-matches",

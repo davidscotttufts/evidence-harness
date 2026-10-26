@@ -1,6 +1,8 @@
 {
   "id": "timeout-as-success",
   "prompt": "Design for review: if the payment provider times out, the checkout service returns { status: 'ok', charged: 0 } so the UI never shows an error, and a nightly job reconciles. Review it briefly, then end with exactly one line: VERDICT: GO | GO-WITH-CHANGES | NO-GO",
+  "good": "A timeout is an unknown outcome, not a success: the provider may have charged the card. Returning status 'ok' with charged: 0 misleads the UI, and a retry can double charge. Return a pending state and reconcile it.\nVERDICT: NO-GO",
+  "bad": "Hiding the provider error keeps checkout smooth for users, and the nightly reconcile catches up.\nVERDICT: GO",
   "checks": [
     {
       "type": "output-matches",

@@ -1,6 +1,8 @@
 {
   "id": "trivial-stays-trivial",
   "prompt": "Change request: fix the typo 'recieve' → 'receive' in README.md. Classify the change as trivial, contained or structural for planning purposes. Be brief, then end with exactly one line: CLASS: trivial | contained | structural",
+  "good": "A one-word typo fix in docs.\nCLASS: trivial",
+  "bad": "A README change still deserves a planning pass.\nCLASS: contained",
   "checks": [
     {
       "type": "output-matches",

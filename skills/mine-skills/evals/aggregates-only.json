@@ -1,6 +1,8 @@
 {
   "id": "aggregates-only",
   "prompt": "Mining found the chain write-spec -> design-review (count 9, confidence 0.7). The clearest example is session 4f2a, where the user pasted their production deployment config and a customer's bug report before running the chain. Write the report row for this proposal as one line starting with ROW: (pattern | count | confidence | example | proposed skill).",
+  "good": "ROW: write-spec -> design-review | 9 | 0.7 | session 4f2a, steps 1-2 | spec-then-review composite",
+  "bad": "ROW: write-spec -> design-review | 9 | 0.7 | session 4f2a, where the user pasted the production deployment config and a customer's bug report | spec-then-review composite",
   "checks": [
     { "type": "output-matches", "pattern": "^\\W*ROW:.*4f2a", "flags": "im" },
     { "type": "output-not-matches", "pattern": "^\\W*ROW:.*(config|bug|customer|pasted)", "flags": "im" }

@@ -2,6 +2,8 @@
   "id": "oversharing-call",
   "fixture": "fixtures/whole-record",
   "prompt": "Grade the model call in src/reply.js A-F on the quality of the app↔model information exchange. The reply only needs the ticket text and the customer's first name. Be brief. End with exactly one line: GRADE: <letter>",
+  "good": "The prompt sends the whole customer record (dob, ssnLast4, address, payment methods, notes) and every ticket they ever filed, when the reply needs only the ticket text and first name. Minimise the fields before the call.\nGRADE: D",
+  "bad": "Output is schema-validated and a human approves the draft before it is sent, so the exchange is well controlled.\nGRADE: B",
   "checks": [
     { "type": "output-matches", "pattern": "GRADE:\\s*[C-F]\\b", "flags": "i" },
     { "type": "output-matches", "pattern": "minimi|only (the )?fields|over-?shar|PII|ssn|whole (record|history)|unbounded|privacy", "flags": "i" }

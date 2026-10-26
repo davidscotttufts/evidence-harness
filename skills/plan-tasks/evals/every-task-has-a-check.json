@@ -1,6 +1,8 @@
 {
   "id": "every-task-has-a-check",
   "prompt": "Spec: add a `/health` endpoint that returns {status:'ok', version} from package.json, plus a CLI flag `--health` that prints the same JSON. Write the implementation plan as tasks in this exact format (no prose before or after):\n\nT1 — <title>\n  Depends on: <ids or none>\n  Files: <paths>\n  Exit check: <command>",
+  "good": "T1 — Health payload helper\n  Depends on: none\n  Files: src/health.js, test/health.test.js\n  Exit check: `node --test test/health.test.js`\nT2 — GET /health endpoint\n  Depends on: T1\n  Files: src/server.js, test/server.test.js\n  Exit check: `node --test test/server.test.js`\nT3 — --health CLI flag\n  Depends on: T1\n  Files: bin/cli.js, test/cli.test.js\n  Exit check: `node --test test/cli.test.js`",
+  "bad": "T1 — Health payload helper\n  Depends on: none\n  Files: src/health.js\n  Exit check: helper returns status and version\nT2 — GET /health endpoint\n  Depends on: T1\n  Files: src/server.js\n  Exit check: endpoint responds\nT3 — --health CLI flag\n  Depends on: T1\n  Files: bin/cli.js\n  Exit check: flag prints the JSON",
   "checks": [
     {
       "type": "output-matches",
