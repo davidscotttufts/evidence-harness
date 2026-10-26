@@ -237,9 +237,9 @@
     "test": "test/install.test.mjs",
     "expectOutput": [
       "skills.defer rejects"
-      ]
-    },
-    {
+    ]
+  },
+  {
     "id": "census-conditional",
     "src": "src/census.mjs",
     "old": "if (ts.isIfStatement(p) || ts.isConditionalExpression(p) || ts.isCatchClause(p)) return true;",
