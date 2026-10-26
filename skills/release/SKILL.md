@@ -6,8 +6,7 @@ description: "Cut a release: SemVer from the commits since the last tag (a data/
 # Release
 
 A release is the one step you can't take back: a published version is cached,
-mirrored and installed within minutes. Every rule here came from a release that
-had to be yanked.
+mirrored and installed within minutes. Check before; prove after.
 
 ## 1. Decide the version from the commits
 
@@ -20,14 +19,15 @@ Classify every commit, and state the count ("31 commits since v1.4.2"):
 | a data or schema migration, or a new feature | minor |
 | fixes only | patch |
 
-Before 1.0.0, shift one place down (breaking → minor), and say so.
+Before 1.0.0, a breaking change may be a minor; say so. A migration is never a patch.
 
 ## 2. Bump in lockstep
 
 Find **every** file that carries the version: package manifests in every workspace,
 lockfiles, plugin/pack manifests, `version` constants, docs install snippets.
 Search for the old version string; don't rely on a list. After the bump, the same
-search must find the old version only in the changelog.
+search must find the old version only in the changelog (and unrelated dependency
+entries).
 
 Write the changelog entry from the commits, not from memory.
 

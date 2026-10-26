@@ -10,7 +10,8 @@ it, hand the review to a fresh agent or session with only the spec and the diff.
 
 ## 1. Gate first
 
-Run `{{cli}} gate` (or the project's external gate). If it is not green, that is the first and blocking finding.
+Run `{{cli}} gate` (or the project's external gate). If it is not green, that is
+the first and blocking finding.
 Report the failing gate's output and stop. Don't review code that won't merge.
 
 ## 2. Mechanical scan of the diff
