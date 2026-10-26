@@ -20,7 +20,7 @@ export function detect(root) {
     const gates = order.filter((s) => scripts[s]).map((s) => ({ name: s, run: `npm run ${s}` }));
     const overrides = gates.length ? { gates } : {};
     if (existsSync(join(root, 'node_modules/vitest')) || /vitest/.test(scripts.test ?? '')) {
-      overrides.probe = { command: 'npx vitest run {test}' };
+      overrides.probe = { command: 'npx vitest run {test}', format: 'vitest' };
     }
     return { preset: 'node', reason: `package.json with scripts: ${gates.map((g) => g.name).join(', ') || 'none'}`, overrides };
   }

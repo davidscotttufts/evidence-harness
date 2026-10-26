@@ -1,0 +1,5 @@
+{
+  "id": "coverage-arithmetic",
+  "prompt": "I graded 40 of the 312 source files in our repo and they averaged B. Write the one-line summary for the assessment's grade table. End with exactly one line: SCOPE-STATED: yes  or  SCOPE-STATED: no, then nothing else.",
+  "checks": [ { "type": "output-matches", "pattern": "40\\s*(of|/)\\s*312" } ]
+}

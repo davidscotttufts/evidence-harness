@@ -106,3 +106,47 @@ export function affected(root, cfg, { base = null, changed = null } = {}) {
 }
 
 export const relativeTo = (root, cwd, f) => relative(cwd, join(root, f));
+
+// ── Earned trust ─────────────────────────────────────────────────────────────
+// A static guess must earn the right to be relied on, the way Tracegate does. Each
+// observation runs the FULL suite and checks that every failing test file was in the
+// selection. Trust is earned after `minObservations` over `minDays` with zero misses;
+// any miss resets it. Until then `affected` is advisory ("shadow").
+import { mkdirSync as mkdirS, writeFileSync as writeS } from 'node:fs';
+
+export const TRUST_DEFAULTS = { minObservations: 20, minDays: 7 };
+const ledgerPath = (root) => join(root, '.hyve', 'affected-ledger.json');
+
+export function readTrustLedger(root) {
+  const f = ledgerPath(root);
+  return existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : { observations: [] };
+}
+
+export function trust(ledger, opt = {}) {
+  const { minObservations, minDays } = { ...TRUST_DEFAULTS, ...opt };
+  const obs = ledger.observations;
+  const lastMiss = obs.map((o, i) => (o.misses.length ? i : -1)).filter((i) => i >= 0).pop();
+  const since = lastMiss === undefined ? obs : obs.slice(lastMiss + 1);
+  const days = since.length ? (Date.parse(since.at(-1).at) - Date.parse(since[0].at)) / 86_400_000 : 0;
+  const earned = since.length >= minObservations && days >= minDays;
+  return {
+    mode: earned ? 'trusted' : 'shadow',
+    clean: since.length, needed: minObservations, days: +days.toFixed(1), minDays,
+    lastMiss: lastMiss === undefined ? null : obs[lastMiss],
+  };
+}
+
+// Record one observation: `selection` from affected(), `failingFiles` from a full run.
+export function observe(root, selection, failingFiles, now = new Date().toISOString()) {
+  const ledger = readTrustLedger(root);
+  const misses = selection.all ? [] : failingFiles.filter((f) => !selection.tests.includes(f));
+  ledger.observations.push({ at: now, all: selection.all, selected: selection.tests.length, failing: failingFiles.length, misses });
+  mkdirS(join(root, '.hyve'), { recursive: true });
+  writeS(ledgerPath(root), JSON.stringify(ledger, null, 1) + '\n');
+  return { misses, ledger };
+}
+
+// Failing test FILES from a Vitest JSON report (paths made repo-relative).
+export function failingFilesFromVitest(root, report) {
+  return report.testResults.filter((t) => t.status === 'failed').map((t) => relative(root, t.name));
+}
