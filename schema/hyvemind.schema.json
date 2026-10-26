@@ -16,6 +16,20 @@
       "type": "string",
       "description": "Command the installed skills use to run hyvemind. Default: npx -y hyvemind@<installed version>"
     },
+    "integrity": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^sha(256|384|512)-[A-Za-z0-9+/]+=*$",
+      "description": "npm dist.integrity of the version in cli (written by hyvemind pin); doctor checks the registry still serves it"
+    },
+    "coolingOffDays": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 14,
+      "description": "hyvemind pin refuses a release younger than this many days unless --allow-fresh"
+    },
     "preset": {
       "enum": [
         "generic",

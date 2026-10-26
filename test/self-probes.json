@@ -270,6 +270,26 @@
     ]
   },
   {
+    "id": "pin-cooling-off",
+    "src": "src/integrity.mjs",
+    "old": "if (age !== null && age < cfg.coolingOffDays && !allowFresh) {",
+    "new": "if (false) {",
+    "test": "test/integrity.test.mjs",
+    "expectOutput": [
+      "cooling-off"
+    ]
+  },
+  {
+    "id": "integrity-mismatch-fails",
+    "src": "src/integrity.mjs",
+    "old": "add(info.integrity === cfg.integrity ? true : false,",
+    "new": "add(true,",
+    "test": "test/integrity.test.mjs",
+    "expectOutput": [
+      "other bytes fails"
+    ]
+  },
+  {
     "id": "probe-case-level",
     "src": "src/probe.mjs",
     "old": "    if (!probe.expectRed.every((s) => failing.some((f) => f.includes(s)))) return 'other-red';",

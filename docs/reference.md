@@ -24,6 +24,31 @@ npx hyvemind init                                        # writes "cli": "npx hy
 Commit `hyvemind.json`, the installed skills, `AGENTS.md` and `.hyve/manifest.json`.
 Evidence and eval reports under `.hyve/` are git-ignored automatically.
 
+### Pinning the CLI (supply chain)
+
+An exact version stops `npx` resolving a look-alike package, but not different bytes
+served under that version, nor a malicious release adopted the day it appeared. Pin the
+content too:
+
+```bash
+npx -y hyvemind@0.3.0 pin       # writes "cli" and "integrity" (npm dist.integrity) into hyvemind.json
+```
+
+- **Integrity.** `integrity` is npm's `dist.integrity` (`sha512-…`) for the version in
+  `cli`. `doctor` compares it with `npm view hyvemind@<version> dist.integrity` and fails
+  if the registry serves something else. Offline, it warns that the pin could not be
+  verified. With no `integrity`, `doctor` does not use the network.
+- **Cooling-off.** `pin` refuses a release younger than `coolingOffDays` (default 14),
+  because most malicious releases are caught and unpublished within days.
+  `--allow-fresh` overrides this for a release you have reviewed. `doctor` reports
+  the publish date against the same rule.
+- **Or let a lockfile hold the hash.** Where the project has a `package.json`, install
+  hyvemind as a devDependency instead (above). The lockfile records its integrity, and
+  `"cli": "npx hyvemind"` (what `init` writes when it finds the local install; the
+  `{{cli}}` token in every skill renders from it) makes skills call
+  `node_modules/.bin/hyvemind` without ever downloading. `integrity` is then not
+  needed.
+
 ### Presets
 
 `init` picks a preset based on what the repo already has. Use `--preset` to override.
@@ -146,6 +171,7 @@ hyvemind still ties the verdict to the exact tree.
 
 ```
 hyvemind init | update | doctor | list
+hyvemind pin [--allow-fresh] [--dry-run]  # record npm's dist.integrity for the version in "cli"
 hyvemind gate [--only a,b] [--keep-going] [--quiet]
 hyvemind evidence [--post [--dry-run]]  # exit 0 only if the current tree has a full green gate
 hyvemind affected [--base ref] [--json] [--run]
