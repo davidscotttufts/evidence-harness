@@ -159,6 +159,7 @@ merging to it.
 
 - [Reference](docs/reference.md): every command, the config file, presets, upgrading.
 - [Design](docs/design.md): where this sits among other agent tools, and what's next.
+- [Landscape](docs/landscape-2026-10.md): how hyvemind compares with the open-source agent tools, and what to adopt next.
 - [Evals](docs/evals/): raw reports.
 
 Apache-2.0
