@@ -5,9 +5,12 @@ description: "Senior code review of the current branch: runs the full hyvemind g
 
 # Review the change
 
+**The author never grades their own change.** If you or an agent you directed wrote
+it, hand the review to a fresh agent or session with only the spec and the diff.
+
 ## 1. Gate first
 
-Run `{{cli}} gate`. If it is not green, that is the first and blocking finding.
+Run `{{cli}} gate` (or the project's external gate). If it is not green, that is the first and blocking finding.
 Report the failing gate's output and stop. Don't review code that won't merge.
 
 ## 2. Mechanical scan of the diff
@@ -34,11 +37,18 @@ Read the whole change, including the tests. Look for:
 
 Don't report style preferences a formatter or linter would catch.
 
-## 4. Report
+## 4. Refute pass
+
+Before reporting, try to **disprove** each finding (is the path reachable? does a
+guard elsewhere already handle it?) and each "looks fine" (what input would break
+it?). Drop findings that don't survive; reopen areas whose "fine" doesn't.
+
+## 5. Report
 
 ```
 VERDICT: GO | NO-GO
 Gate: green · tree <hash> (from `{{cli}} evidence`)
+Coverage: <audited> audited + <out-of-scope> out of scope + <generated/dead> = <total> files in the diff
 
 [BLOCKER] <file>:<line> — <one-line defect>
   Scenario: <inputs/state> → <wrong outcome>
@@ -48,6 +58,7 @@ Gate: green · tree <hash> (from `{{cli}} evidence`)
 ```
 
 Every finding needs a scenario you could turn into a failing test. If you can't
-write one, drop the finding.
+write one, drop the finding. If the coverage sum doesn't equal the total, a file
+was silently skipped: review it.
 
 ⛔ Any BLOCKER means NO-GO: go back to implementation, then review again.

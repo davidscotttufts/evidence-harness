@@ -37,8 +37,12 @@ false. When a rule and a shortcut conflict, the rule wins.
 
 - **Measure the value now; don't trust what is written.** Versions, counts, limits and
   config drift. Re-read them before you act, and write the reading down with its date.
-- **A citation is a claim, not evidence.** Docs, ADRs, comments and earlier
-  summaries (including your own) can be stale. Check the mechanism before you copy it.
+- **Grade the code, not the documents.** A grade or claim taken from an ADR,
+  manifest, README, tracker, comment or earlier summary (including your own) is
+  downgraded until you have checked it against the code.
+- **Grade what will ship.** `git fetch` first. If the local checkout is behind,
+  read `origin/<base>` (`git show origin/<base>:<path>` or a fresh worktree), not the
+  stale files on disk.
 - **Enumeration is not coverage.** Listing what you looked at does not show you looked
   at everything. State the denominator: "graded 40 of 312 files".
 

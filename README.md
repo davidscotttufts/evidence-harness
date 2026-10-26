@@ -129,7 +129,7 @@ hyvemind still ties the verdict to the exact tree.
 | `write-spec` | requirements | A spec grounded in the existing code; WHEN/THEN acceptance criteria; a numbered decision record for structural changes |
 | `design-review` | design | Architecture review in which every finding names a concrete failure scenario; ends GO / NO-GO |
 | `plan-tasks` | planning | Dependency-ordered tasks, each sized for one fresh-context session and each with its own exit check |
-| `review-change` | review | Runs the full gate first, scans for banned patterns, then reviews the change for defects |
+| `review-change` | review | Independent of the author: runs the full gate first, scans for banned patterns, reviews for defects, refutes its own findings, and accounts for every file |
 | `cleanup` | maintenance | Removes dead code only with proof (no static references and no dynamic path); protected categories kept; reports what looked dead but was saved |
 | `test-necessity` | test | Grades tests A–F with sabotage probes; fixes B/C up to A, deletes D/F with evidence |
 | `open-pr` | release | Opens a PR only when the current tree has green evidence; pushes the branch freely, asks before the PR or any comment |

@@ -35,6 +35,11 @@
   the spec is `Accepted`. `design-review` adds a generator scan: find the code that
   generates the problem, not just its instances. `ship-change` merges through the
   project's own process when an external gate/status is configured.
+- **`evidence-rules`**: grade the code, not the documents (a claim from an ADR,
+  manifest, README or tracker is downgraded until checked); grade `origin/<base>`
+  when the checkout is behind.
+- **`review-change`**: the author never grades their own change; a refute pass on
+  every finding and every "looks fine"; coverage arithmetic in the report.
 
 ## 0.2.0 — 2026-10-26
 
