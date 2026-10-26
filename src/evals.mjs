@@ -18,8 +18,8 @@
 //                 { "type": "command", "run": "…" } ],   // exit 0 = pass, run in the workspace
 //     "good": "<an output that should pass>", "bad": "<a plausible wrong output>" }  // optional; string or list; see lintScenario
 import { spawn, spawnSync } from 'node:child_process';
-import { accessSync, constants as fsConstants, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { accessSync, closeSync, constants as fsConstants, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, openSync, readdirSync, readFileSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { delimiter, dirname, join, resolve } from 'node:path';
 import { PKG_ROOT, STATE_DIR, pkgVersion } from './config.mjs';
 import { renderSkill } from './install.mjs';
@@ -205,6 +205,68 @@ export function agentArgv(agentCfg, vars, clean = false) {
   return [exe, ...cleanArgs, ...rest];
 }
 
+// A clean home for a CLI whose user instructions live in its config dir with no flag
+// to skip them (codex reads $CODEX_HOME/AGENTS.md). Per run: a 0700 temp dir (outside
+// the repo) holding only links to the `keep` files (the login allowlist), and the env
+// var pointed at it. The login is never read, copied, logged or put in a report: it is
+// only linked and, at most, moved back.
+// Write-back: if the agent replaced a link with a file (a token refresh written by
+// rename), the new file goes back to the real home ONLY if the real file is exactly as
+// it was when this run started (same mtime and size) and no other writer holds the lock;
+// otherwise someone else refreshed it more recently and theirs wins. Atomic: one rename.
+// The dir is removed when the run ends, on a timeout kill, and on SIGINT/SIGTERM.
+const liveHomes = new Set();
+const onSignal = (sig) => {
+  for (const h of [...liveHomes]) h.finish();
+  process.removeListener('SIGINT', onSignal);
+  process.removeListener('SIGTERM', onSignal);
+  process.kill(process.pid, sig);
+};
+const stamp = (p) => { try { const st = statSync(p); return `${st.mtimeMs}:${st.size}`; } catch { return null; } };
+
+export function cleanHome(spec, from = process.env) {
+  const real = resolve((from[spec.env] ?? spec.from).replace(/^~(?=\/|$)/, homedir()));
+  const dir = mkdtempSync(join(tmpdir(), 'hyve-home-'));
+  const before = new Map();
+  for (const f of spec.keep) {
+    if (!existsSync(join(real, f))) continue;
+    before.set(f, stamp(join(real, f)));
+    symlinkSync(join(real, f), join(dir, f));
+  }
+  const writeBack = (f) => {
+    const p = join(dir, f);
+    if (!existsSync(p) || lstatSync(p).isSymbolicLink()) return 'unchanged';
+    const target = join(real, f);
+    const lock = join(real, `.${f}.hyvemind.lock`);
+    let fd;
+    try { fd = openSync(lock, 'wx', 0o600); } catch { return 'skipped: another writer holds the lock'; }
+    try {
+      if (stamp(target) !== before.get(f)) return 'skipped: the real file changed during the run';
+      // A move, never a copy: no second copy of the login exists at any point. rename is
+      // atomic; across volumes (EXDEV) it is skipped and the refreshed file is dropped.
+      try { renameSync(p, target); } catch (e) { return `skipped: ${e.code === 'EXDEV' ? 'temp dir is on another volume' : e.code}`; }
+      return 'written back';
+    } finally {
+      closeSync(fd);
+      rmSync(lock, { force: true });
+    }
+  };
+  const home = {
+    env: { [spec.env]: dir },
+    finish() {
+      if (!liveHomes.has(home)) return {};
+      liveHomes.delete(home);
+      if (!liveHomes.size) { process.removeListener('SIGINT', onSignal); process.removeListener('SIGTERM', onSignal); }
+      const result = {};
+      try { for (const f of spec.keep) result[f] = writeBack(f); } finally { rmSync(dir, { recursive: true, force: true }); }
+      return result;
+    },
+  };
+  if (!liveHomes.size) { process.on('SIGINT', onSignal); process.on('SIGTERM', onSignal); }
+  liveHomes.add(home);
+  return home;
+}
+
 function runAgent(cmd, args, cwd, timeoutSec, env) {
   return new Promise((done) => {
     const started = Date.now();
@@ -271,17 +333,22 @@ export function historicalMedian(root, agent = null) {
 }
 
 // What a run will cost, so nobody spends a few hundred model calls by accident.
-export function preview(plan, cfg, { concurrency = 1, agent, why = null, history = null } = {}) {
+export function preview(plan, cfg, { concurrency = 1, agent, why = null, history = null, cleanProfile = false } = {}) {
   const c = Math.max(1, concurrency);
   const waves = Math.ceil(plan.jobs.length / c);
   const scenarios = [...plan.bySkill.values()].reduce((n, s) => n + s.scenarios.length, 0);
   const trials = [...new Set(plan.jobs.map((j) => j.n))].sort((a, b) => a - b);
   return {
-    agent: agent ?? cfg.evals.agent, ...(why ? { why } : {}), skills: plan.bySkill.size, scenarios, trials, arms: 2, runs: plan.jobs.length, concurrency: c,
+    agent: agent ?? cfg.evals.agent, ...(why ? { why } : {}), ...(cleanProfile ? { clean: cleanNote(cfg.evals.agents[agent ?? cfg.evals.agent]) } : {}), skills: plan.bySkill.size, scenarios, trials, arms: 2, runs: plan.jobs.length, concurrency: c,
     upperBoundSec: waves * cfg.evals.timeoutSec,
     estimateSec: history ? Math.round(waves * history.sec) : null, history,
   };
 }
+
+// What --clean-profile does for an agent, said in the preview before anything runs.
+export const cleanNote = (a = {}) => (a.cleanHome
+  ? `clean profile: a temp ${a.cleanHome.env} with only ${a.cleanHome.keep.join(', ')} linked from ${a.cleanHome.from} (login only; no user instructions, config or memory)`
+  : `clean profile: ${[...(a.cleanArgs ?? []), ...Object.keys(a.cleanEnv ?? {})].join(' ') || 'nothing configured'}`);
 
 const dur = (sec) => (sec >= 3600 ? `${(sec / 3600).toFixed(1)} h` : sec >= 60 ? `${Math.round(sec / 60)} min` : `${Math.round(sec)} s`);
 
@@ -291,12 +358,14 @@ export function renderPreview(p) {
     return [
       `eval matrix: ${p.agents.length} agent(s) = ${p.runs} agent runs in total · concurrency ${p.concurrency} per agent, agents one after another`,
       ...p.agents.map((a) => `  ${a.agent}: ${a.skills} skill(s) · ${a.scenarios} scenario(s) · ${a.trials.join('/') || 0} trial(s) × ${a.arms} arms = ${a.runs} runs · ${a.estimateSec != null ? `about ${dur(a.estimateSec)}, ` : ''}at most ${dur(a.upperBoundSec)}`),
+      ...p.agents.filter((a) => a.clean).map((a) => `  ${a.agent} ${a.clean}`),
       ...p.skipped.map((x) => `  skipped ${x.agent}: ${x.reason}`),
       `duration: ${p.estimateSec != null ? `about ${dur(p.estimateSec)}; ` : ''}at most ${dur(p.upperBoundSec)} (every run hitting timeoutSec)`,
     ].join('\n');
   }
   return [
     `eval plan: ${p.skills} skill(s) · ${p.scenarios} scenario(s) · ${p.trials.join('/') || 0} trial(s) × ${p.arms} arms = ${p.runs} agent runs (${p.agent}${p.why ? `, ${p.why}` : ''}) · concurrency ${p.concurrency}`,
+    ...(p.clean ? [p.clean] : []),
     `duration: ${p.estimateSec != null ? `about ${dur(p.estimateSec)} (median ${p.history.sec.toFixed(0)} s/run over ${p.history.runs} runs in ${p.history.from}); ` : ''}at most ${dur(p.upperBoundSec)} (every run hitting timeoutSec)`,
   ].join('\n');
 }
@@ -386,7 +455,13 @@ async function runAgentJobs(root, cfg, { agentName, plan, model, keep, cleanProf
       const dir = workspace(j.sc, cfg, j.skill, j.arm);
       try {
         const [cmd, ...args] = leaseArgv(cfg, 'eval', `${j.skill}/${j.sc.id}`, agentArgv(agentCfg, { prompt: j.sc.prompt, workdir: dir, model }, cleanProfile));
-        const r = await runAgent(cmd, args, dir, cfg.evals.timeoutSec, agentEnv(agentCfg, j.arm, process.env, cleanProfile));
+        const home = cleanProfile && agentCfg.cleanHome ? cleanHome(agentCfg.cleanHome) : null;
+        let r;
+        try {
+          r = await runAgent(cmd, args, dir, cfg.evals.timeoutSec, { ...agentEnv(agentCfg, j.arm, process.env, cleanProfile), ...home?.env });
+        } finally {
+          home?.finish();
+        }
         const checks = r.error ? [{ type: 'agent-run', pass: false, error: r.error }] : score(j.sc.checks, r.output, dir);
         const pass = checks.every((c) => c.pass);
         let output;
@@ -482,8 +557,8 @@ export function checkMatrix(cfg, agents, { model = null, cleanProfile = false } 
 // A fresh copy of a plan's per-skill run lists, so each agent fills its own.
 const freshPlan = (plan) => ({ jobs: plan.jobs, bySkill: new Map([...plan.bySkill].map(([k, v]) => [k, { ...v, runs: [] }])) });
 
-export function matrixPreview(plan, cfg, { agents, skipped = [], concurrency = 1, history = () => null } = {}) {
-  const per = agents.map((a) => preview(plan, cfg, { concurrency, agent: a, history: history(a) }));
+export function matrixPreview(plan, cfg, { agents, skipped = [], concurrency = 1, history = () => null, cleanProfile = false } = {}) {
+  const per = agents.map((a) => preview(plan, cfg, { concurrency, agent: a, history: history(a), cleanProfile }));
   return {
     matrix: true, agents: per, skipped, runs: per.reduce((n, p) => n + p.runs, 0), concurrency: Math.max(1, concurrency),
     // Agents run one after another, so durations add up.
