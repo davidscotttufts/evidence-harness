@@ -1,14 +1,15 @@
 ---
 name: open-pr
-description: "Open a pull request only when the current working tree has green gate evidence: verifies with {{cli}} evidence, writes the title and body from the actual diff (what, why, how verified, risk), uses Conventional Commits and sign-off, and asks the user before pushing. Use whenever a change is ready to propose."
+description: "Open a pull request only when the current working tree has green gate evidence: verifies with {{cli}} evidence, writes the title and body from the actual diff (what, why, how verified, risk), uses Conventional Commits and sign-off. Pushes the branch freely; asks the user before opening the PR or posting anything others see. Use whenever a change is ready to propose."
 ---
 
 # Open a PR
 
 ## 1. Preconditions (all mechanical)
 
-1. `{{cli}} evidence` exits 0. If it doesn't, run `{{cli}} gate`. Don't push
-   without green evidence for **this** tree.
+1. Green evidence for **this** tree. If `hyvemind.json` names an external gate,
+   its `done` rule decides; otherwise `{{cli}} evidence` exits 0 (if not, run
+   `{{cli}} gate`).
 2. `git status` is clean. Uncommitted work means the evidence doesn't describe what you
    are about to push.
 3. You are on a feature branch, not the default branch. Check with
@@ -18,9 +19,10 @@ description: "Open a pull request only when the current working tree has green g
 
 ## 2. Make the evidence visible
 
-After committing and gating, run `{{cli}} evidence --post`. It publishes the verdict as
-a `hyvemind/gate` commit status on HEAD, so reviewers see on the PR that this exact
-commit was gated. It refuses when the tree has uncommitted changes, so commit first.
+If `hyvemind.json` names an external gate or status, that status is the proof: let the
+project's CI post it and never post a competing one. Otherwise, after committing and
+gating, run `{{cli}} evidence --post`: it sets a `hyvemind/gate` status on HEAD, and
+refuses an uncommitted tree, so commit first.
 
 ## 3. Commit hygiene
 
@@ -50,8 +52,11 @@ commit was gated. It refuses when the tree has uncommitted changes, so commit fi
 Describe only what the diff does. Leave out anything that was planned but not built,
 and say which checks were skipped.
 
-## 5. Gate
+## 5. Push, then gate
 
-⛔ Pushing and opening a PR are visible to others. Show the user the title, body and
-target branch, and wait for an explicit yes. Then `git push -u origin <branch>` and
-`gh pr create`.
+- Pushing your feature branch to the project's own remote preserves work: do it
+  without asking (`git push -u origin <branch>`). Never push to the default branch,
+  an upstream remote, or a branch you didn't create.
+- ⛔ Opening the PR and posting any comment are visible to others. Show the user the
+  title, body and target branch, and wait for an explicit yes before `gh pr create`
+  or any `gh pr comment`/review.

@@ -12,6 +12,11 @@
   warns when an installed skill would add a competing one.
 - **`broker`**: an optional tracegate-ci lease for gates, train gates, probes and
   eval agent runs.
+- **`mine-skills`**: mining is local (reads `~/.claude/projects`, no network). It asks
+  before each run and reports aggregates only, never transcript content.
+- **`open-pr`**: pushing your own branch needs no approval; opening the PR or posting a
+  comment does. With an external gate/status configured, that status is the proof and
+  hyvemind posts no competing one.
 
 ## 0.2.0 — 2026-10-26
 

@@ -1,6 +1,6 @@
 ---
 name: mine-skills
-description: "Mine Claude Code session transcripts for how skills are actually used: frequency, and the chains run by hand again and again (A → B → C). Proposes composite skills for repeated chains and new skills for repeated manual work, each backed by counts and confidence. Read-only unless asked to scaffold."
+description: "Mine Claude Code session transcripts for how skills are actually used: frequency, and the chains run by hand again and again (A → B → C). Proposes composite skills for repeated chains and new skills for repeated manual work, each backed by counts and confidence. Local and read-only; asks before each run and reports aggregates only, never transcript content."
 ---
 
 # Skill miner
@@ -8,7 +8,16 @@ description: "Mine Claude Code session transcripts for how skills are actually u
 Proposals come from your history, not from guesses. Each one cites how many times the
 pattern actually happened.
 
-## 1. Mine (read-only)
+## 1. Mine (local, read-only, asked first)
+
+Transcripts hold whole sessions, including anything ever pasted into them: keys,
+customer data, private code. `{{cli}} mine` reads the JSONL files under
+`~/.claude/projects` on this machine and makes no network calls.
+
+- ⛔ Ask the user before **each** run, naming the scope (this project or `--all`).
+- Report aggregates only: skill names, counts, chains, session ids. Never quote,
+  summarise or paste transcript content, in the report or in chat. To understand a
+  manual step, describe its shape ("edits the changelog, then tags"), not its text.
 
 ```bash
 {{cli}} mine                 # sessions of this project (and its worktrees)
@@ -32,8 +41,8 @@ sequences. Installed bee skills are counted under their unprefixed names.
 
 ## 3. Report
 
-A table per proposal: the pattern, count, confidence, example sessions, and the proposed
-skill name and steps. Write it to `SKILL_MINING_REPORT.md`, or to the user if they
+A table per proposal: the pattern, count, confidence, example session ids, and the
+proposed skill name and steps. Write it to `SKILL_MINING_REPORT.md`, or to the user if they
 prefer.
 
 ## 4. Scaffold (only when asked)

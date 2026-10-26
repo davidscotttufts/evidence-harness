@@ -131,11 +131,11 @@ hyvemind still ties the verdict to the exact tree.
 | `plan-tasks` | planning | Dependency-ordered tasks, each sized for one fresh-context session and each with its own exit check |
 | `review-change` | review | Runs the full gate first, scans for banned patterns, then reviews the change for defects |
 | `test-necessity` | test | Grades tests A–F with sabotage probes; fixes B/C up to A, deletes D/F with evidence |
-| `open-pr` | release | Opens a PR only when the current tree has green evidence, and asks before pushing |
+| `open-pr` | release | Opens a PR only when the current tree has green evidence; pushes the branch freely, asks before the PR or any comment |
 | `evidence-rules` | always | The hive constitution: what counts as evidence (a status code doesn't, an empty result is suspect, change one variable at a time…) |
 | `parallel-work` | always | Git hygiene for many sessions or agents in one repo: separate worktrees, never stash a shared tree |
 | `skill-eval` | meta | Scaffold economics: how much each skill lifts the model compared with the model bare |
-| `mine-skills` | meta | Mines Claude Code transcripts for repeated skill chains and proposes combined skills |
+| `mine-skills` | meta | Mines Claude Code transcripts (locally, after asking) for repeated skill chains and proposes combined skills; reports aggregates only |
 | `ai-exchange` | review (AI) | Grades every place the app talks to an LLM: runtime schemas from the source of truth, state read before writing, validated output with one bounded repair, gated apply |
 | `live-ai-check` | test (AI) | Runs the app's AI flows against real vendors on a local stack, with key names only. Classifies results honestly: pass, app-bug, contract-gap, vendor-refusal, quota |
 

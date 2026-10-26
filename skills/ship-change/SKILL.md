@@ -48,8 +48,8 @@ a wire format is **Structural**, however small the diff.
    - **Exit check per task:** the task's own check passes. Never move on with a red task.
 5. **Review** with `{{skill:review-change}}`. It starts with `{{cli}} gate` (full).
    ⛔ Stop on any blocker, go back to step 4, then review again.
-6. **PR** with `{{skill:open-pr}}`. ⛔ The user approves before anything outward-facing
-   (push, PR, comment).
+6. **PR** with `{{skill:open-pr}}`. Pushing your branch needs no approval. ⛔ The user
+   approves the PR and any comment before they are posted.
 7. **Merge.** Several approved PRs can go through one gate with
    `{{cli}} train <pr> <pr>…`. It merges on green only if the base did not move,
    verifies that the base's tree is the tree it gated, and bisects a red train to
