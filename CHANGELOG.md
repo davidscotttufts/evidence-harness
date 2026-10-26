@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0 — unreleased
+
+- **Sandboxed `run`** (`--sandbox podman|docker`, `run.sandbox`). Exit checks and
+  setup run in a container: no network for checks, dropped capabilities, memory and
+  CPU limits, and only allowlisted environment variables. While sandboxed, the agent
+  gets read and edit tools only, so nothing it writes runs on the host. `doctor`
+  checks the runtime.
+
 ## Unreleased
 
 - **Honest eval verdicts** (#17). New `saturated` verdict when both arms pass every

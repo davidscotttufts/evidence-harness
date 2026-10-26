@@ -18,6 +18,7 @@ import { basename, join, resolve } from 'node:path';
 import { STATE_DIR } from './config.mjs';
 import { argv } from './evals.mjs';
 import { git } from './git.mjs';
+import { runInSandbox, SANDBOXED_ROLES, sandboxConfig } from './sandbox.mjs';
 
 export function parsePlan(text) {
   const tasks = [];
@@ -95,7 +96,20 @@ export function reviewPrompt(task, spec, diff) {
 
 export function runPlan(root, cfg, planFile, opts = {}) {
   const log = opts.log ?? (() => {});
-  const runCfg = { agent: ['claude', '-p', '--permission-mode', 'acceptEdits', '{prompt}'], reviewer: ['claude', '-p', '{prompt}'], maxAttempts: 2, timeoutSec: 1800, ...(cfg.run ?? {}) };
+  const sb = sandboxConfig(cfg, opts.sandbox);
+  // Sandboxed: roles default to read/edit-only tools, so the agent cannot execute
+  // anything on the host; code runs only inside the container, via the exit check.
+  const roles = sb ? { agent: SANDBOXED_ROLES.implementer, reviewer: SANDBOXED_ROLES.reviewer } : { agent: ['claude', '-p', '--permission-mode', 'acceptEdits', '{prompt}'], reviewer: ['claude', '-p', '{prompt}'] };
+  const runCfg = { ...roles, maxAttempts: 2, timeoutSec: 1800, ...(cfg.run ?? {}) };
+  delete runCfg.sandbox;
+  const check = (command) => {
+    if (!sb) return sh(command, dir, runCfg.timeoutSec);
+    if (sb.setup) {
+      const s = runInSandbox(sb, dir, sb.setup, runCfg.timeoutSec, { network: sb.setupNetwork });
+      if (s.code !== 0) return { code: s.code, out: `sandbox setup \`${sb.setup}\` failed:\n${s.out}` };
+    }
+    return runInSandbox(sb, dir, command, runCfg.timeoutSec, { network: false });
+  };
   const tasks = order(parsePlan(readFileSync(resolve(root, planFile), 'utf8')));
   const spec = opts.spec ? readFileSync(resolve(root, opts.spec), 'utf8') : null;
   const name = basename(planFile).replace(/\.[^.]+$/, '').replace(/[^a-z0-9-]+/gi, '-').toLowerCase();
@@ -111,7 +125,8 @@ export function runPlan(root, cfg, planFile, opts = {}) {
     if (r.status !== 0) throw new Error(`git ${add.join(' ')}: ${r.err}`);
   }
   const done = new Set(git(dir, ['log', '--format=%s']).out.split('\n').map((s) => s.match(/^(T\d+):/)?.[1]).filter(Boolean));
-  const report = { plan: planFile, branch, dir, startedAt: new Date().toISOString(), tasks: [] };
+  const report = { plan: planFile, branch, dir, startedAt: new Date().toISOString(), tasks: [],
+    ...(sb ? { sandbox: { runtime: sb.runtime, image: sb.image, checkNetwork: 'none', setup: sb.setup, agentShell: Boolean(cfg.run?.agent) ? 'as configured in run.agent' : 'none (read/edit tools only)' } } : {}) };
 
   for (const task of tasks) {
     if (only && !only.has(task.id)) continue;
@@ -125,12 +140,12 @@ export function runPlan(root, cfg, planFile, opts = {}) {
     for (let a = 1; a <= runCfg.maxAttempts; a++) {
       log(`${task.id} — ${task.title} · attempt ${a}/${runCfg.maxAttempts}`);
       const agent = agentRun(runCfg.agent, implementPrompt(task, spec, failure), dir, runCfg.timeoutSec);
-      const check = sh(task.check, dir, runCfg.timeoutSec);
-      entry.attempts.push({ agentExit: agent.code, ...(agent.error ? { agentError: agent.error } : {}), checkExit: check.code });
-      if (check.code === 0) break;
+      const result = check(task.check);
+      entry.attempts.push({ agentExit: agent.code, ...(agent.error ? { agentError: agent.error } : {}), checkExit: result.code });
+      if (result.code === 0) break;
       // Always non-empty: a check that fails silently (grep -q, test -f) still tells
       // the next attempt THAT it failed and with which command.
-      failure = `\`${task.check}\` exited ${check.code}${check.out ? `:\n${check.out}` : ' with no output'}`;
+      failure = `\`${task.check}\` exited ${result.code}${result.out ? `:\n${result.out}` : ' with no output'}`;
       git(dir, ['checkout', '-q', '--', '.']); // a failed attempt leaves nothing behind
       git(dir, ['clean', '-q', '-fd']);
     }
