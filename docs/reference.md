@@ -182,7 +182,7 @@ hyvemind train <pr…> [--no-merge] [--no-bisect] [--local] [--base branch]
 hyvemind run plan.md [--spec spec.md] [--only T1,T2] [--no-review]
 hyvemind probe probes.json             # sabotage probes
 hyvemind eval [skill[:scenario]…] [--scenario id]… [--agent claude|codex|opencode] [--model id] [--trials n] [--concurrency n]
-              [--matrix | --agent a,b,c] [--dry-run] [--yes] [--keep] [--clean-profile] [--report] [--render report.json]
+              [--matrix | --agent a,b,c] [--wait min] [--dry-run] [--yes] [--keep] [--clean-profile] [--report] [--render report.json]
 hyvemind mine [--all] [--json]         # Claude Code transcript mining
 ```
 
@@ -437,6 +437,15 @@ Only names go in config. Values come from your environment. No auth variable is
 passed by default, so an agent that logs in through its own credential store (Claude
 Code's login, for example) needs nothing here. A broker (`broker`) that needs its own
 variables gets them the same way.
+
+**Load.** An agent run that times out on a starved machine reads like a skill
+failure. So, as the gate does, `eval` samples the machine (other test suites, load
+average) before every job and records the busiest sample on the report as
+`contention`: `contended`, `samples`, `contendedSamples`, `load1`, `cores` and
+`competitors`. When any job started contended, the CLI and the markdown report say so,
+and its failures should be re-run rather than read. `--wait <min>` makes each job wait
+for the machine to quiet down first, up to `min` minutes for the whole run. With a
+`broker` configured, the broker queues the work and nothing is sampled.
 
 **Matrix (`--matrix`, or `--agent a,b,c`).** Runs the selected scenarios once per
 agent. `--matrix` uses every agent in `evals.agents` whose command binary is

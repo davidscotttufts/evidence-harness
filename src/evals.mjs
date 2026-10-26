@@ -24,6 +24,7 @@ import { delimiter, dirname, join, resolve } from 'node:path';
 import { PKG_ROOT, STATE_DIR, pkgVersion } from './config.mjs';
 import { renderSkill } from './install.mjs';
 import { leaseArgv } from './broker.mjs';
+import { sample as sampleLoad } from './contention.mjs';
 
 export function loadScenarios(root, cfg, skill) {
   const own = join(root, cfg.evals.scenariosDir ?? '.hyve/scenarios', skill);
@@ -317,7 +318,7 @@ const safe = (s) => String(s).replace(/[^\w.-]+/g, '_');
 // its own scratch workspace, so concurrent runs never see each other's files.
 // Output of every FAILED run is kept under .hyve/evals/<run-id>/ (passes too with keep),
 // so a failure can be diagnosed without rerunning on a guess.
-export async function runEvals(root, cfg, { skills, agent, model, trials, keep = false, cleanProfile = false, concurrency = 1, plan = null, log = () => {} }) {
+export async function runEvals(root, cfg, { skills, agent, model, trials, keep = false, cleanProfile = false, concurrency = 1, plan = null, wait = 0, sampler, pollMs, log = () => {} }) {
   const agentName = agent ?? cfg.evals.agent;
   const agentCfg = cfg.evals.agents[agentName];
   if (!agentCfg) throw new Error(`no evals.agents.${agentName} in config`);
@@ -327,8 +328,40 @@ export async function runEvals(root, cfg, { skills, agent, model, trials, keep =
   const report = { tool: 'hyvemind', version: versionStamp(), startedAt, runId, agent: agentName, model: model ?? null,
     cleanProfile: Boolean(cleanProfile), concurrency: Math.max(1, concurrency),
     thresholds: { liftThreshold: cfg.evals.liftThreshold, minRuns: cfg.evals.minRuns }, skills: [] };
-  report.skills = await runAgentJobs(root, cfg, { agentName, plan: plan ?? planEvals(root, cfg, { skills, trials }), model, keep, cleanProfile, concurrency, outDir: [runId], thresholds: report.thresholds, log });
+  const load = loadWatch(root, cfg, { wait, sampler, pollMs, log });
+  report.skills = await runAgentJobs(root, cfg, { agentName, plan: plan ?? planEvals(root, cfg, { skills, trials }), model, keep, cleanProfile, concurrency, outDir: [runId], thresholds: report.thresholds, load, log });
+  if (load) report.contention = load.summary();
   return { report, file: writeReport(root, report) };
+}
+
+// Load watch, as the gate does: an agent run that times out on a starved machine reads
+// like a skill failure. Sampled before every job; with `wait` (minutes), a job waits for
+// the machine to quiet down first (the budget is shared by the whole run). The report
+// records the busiest sample, so a contended run's failures are read as "re-run when
+// quiet". With a broker configured, the broker queues the work instead: no sampling.
+function loadWatch(root, cfg, { wait = 0, sampler = sampleLoad, pollMs = 15_000, log = () => {} } = {}) {
+  if (cfg.broker) return null;
+  const until = Date.now() + Number(wait || 0) * 60_000;
+  let samples = 0, contendedSamples = 0, worst = null;
+  const take = () => {
+    const s = sampler(root);
+    samples++;
+    if (s.contended) contendedSamples++;
+    if (!worst || (s.contended && !worst.contended) || (s.contended === worst.contended && s.load1 > worst.load1)) worst = s;
+    return s;
+  };
+  return {
+    async before() {
+      let s = take();
+      while (s.contended && Date.now() < until) {
+        log(`  waiting: load ${s.load1} on ${s.cores} cores; ${s.competitors.map((c) => c.dir).join(', ') || 'no other suite'}`);
+        await new Promise((r) => setTimeout(r, pollMs));
+        s = take();
+      }
+      return s;
+    },
+    summary: () => ({ ...worst, contended: contendedSamples > 0, samples, contendedSamples }),
+  };
 }
 
 function writeReport(root, report) {
@@ -342,13 +375,14 @@ function writeReport(root, report) {
 
 // One agent's share of a run: its own jobs, its own runs, its own skill rows. A matrix
 // calls this once per agent with a fresh copy of the plan, so nothing is pooled.
-async function runAgentJobs(root, cfg, { agentName, plan, model, keep, cleanProfile, concurrency, outDir, thresholds, label = '', log }) {
+async function runAgentJobs(root, cfg, { agentName, plan, model, keep, cleanProfile, concurrency, outDir, thresholds, label = '', load = null, log }) {
   const agentCfg = cfg.evals.agents[agentName];
   const { jobs, bySkill } = plan;
   let next = 0, finished = 0;
   const worker = async () => {
     while (next < jobs.length) {
       const j = jobs[next++];
+      if (load) await load.before();
       const dir = workspace(j.sc, cfg, j.skill, j.arm);
       try {
         const [cmd, ...args] = leaseArgv(cfg, 'eval', `${j.skill}/${j.sc.id}`, agentArgv(agentCfg, { prompt: j.sc.prompt, workdir: dir, model }, cleanProfile));
@@ -430,7 +464,7 @@ export function matrixPreview(plan, cfg, { agents, skipped = [], concurrency = 1
   };
 }
 
-export async function runMatrix(root, cfg, { agents, skipped = [], skills, model = null, trials, keep = false, cleanProfile = false, concurrency = 1, plan = null, log = () => {} }) {
+export async function runMatrix(root, cfg, { agents, skipped = [], skills, model = null, trials, keep = false, cleanProfile = false, concurrency = 1, plan = null, wait = 0, sampler, pollMs, log = () => {} }) {
   checkMatrix(cfg, agents, { model, cleanProfile });
   const startedAt = new Date().toISOString();
   const runId = startedAt.replace(/[:.]/g, '-');
@@ -438,11 +472,13 @@ export async function runMatrix(root, cfg, { agents, skipped = [], skills, model
   const report = { tool: 'hyvemind', version: versionStamp(), startedAt, runId, matrix: true, model: null,
     cleanProfile: Boolean(cleanProfile), concurrency: Math.max(1, concurrency), thresholds, agents: [], skipped };
   const base = plan ?? planEvals(root, cfg, { skills, trials });
+  const load = loadWatch(root, cfg, { wait, sampler, pollMs, log });
   for (const agentName of agents) {
-    const skillRows = await runAgentJobs(root, cfg, { agentName, plan: freshPlan(base), model: null, keep, cleanProfile, concurrency, outDir: [runId, safe(agentName)], thresholds, label: `${agentName} `, log });
+    const skillRows = await runAgentJobs(root, cfg, { agentName, plan: freshPlan(base), model: null, keep, cleanProfile, concurrency, outDir: [runId, safe(agentName)], thresholds, label: `${agentName} `, load, log });
     report.agents.push({ agent: agentName, skills: skillRows });
   }
   report.disagreements = disagreements(report.agents, thresholds);
+  if (load) report.contention = load.summary();
   return { report, file: writeReport(root, report) };
 }
 
@@ -572,6 +608,13 @@ const ACTION = {
 
 // Markdown summary of an eval report: the decision table people act on. Verdicts and
 // intervals are recomputed from the runs, so an old report renders with today's rules.
+// A contended run's failures say more about the machine than about the skill.
+const contendedNote = (report) => {
+  const c = report.contention;
+  if (!c?.contended) return [];
+  return [`> **Contended run.** ${c.contendedSamples} of ${c.samples} jobs started on a busy machine (worst: load ${c.load1} on ${c.cores} cores). Failures and timeouts here are not evidence about a skill; re-run when quiet (\`--wait <min>\`).`, ''];
+};
+
 export function renderReport(report, fallback = {}, { linkBase = '' } = {}) {
   if (Array.isArray(report.agents)) return renderMatrix(report, fallback, { linkBase });
   const th = report.thresholds ?? fallback;
@@ -586,6 +629,7 @@ export function renderReport(report, fallback = {}, { linkBase = '' } = {}) {
     `Agent **${report.agent}**${report.model ? ` · model \`${report.model}\`` : ''} · hyvemind ${report.version} · ${report.startedAt}`,
     '',
   ];
+  lines.push(...contendedNote(report));
   if (flagged.length) {
     lines.push('## Look at these first', '');
     for (const r of flagged) {
@@ -640,6 +684,7 @@ function renderMatrix(report, fallback = {}, { linkBase = '' } = {}) {
     `Agents ${names.map((n) => `**${n}**`).join(', ')} · hyvemind ${report.version} · ${report.startedAt}`,
     '',
   ];
+  lines.push(...contendedNote(report));
   if (report.skipped?.length) lines.push(`Skipped: ${report.skipped.map((x) => `${x.agent} (${x.reason})`).join(', ')}.`, '');
   const dis = disagreements(report.agents, th);
   lines.push('## Disagreements', '');
