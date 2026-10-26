@@ -202,7 +202,7 @@ export function installAgentsMd(root, cfg, { dryRun = false } = {}) {
 // tell the project's own edits from stale copies.
 export function ensureStateIgnored(root) {
   const f = join(root, STATE_DIR, '.gitignore');
-  const want = 'evidence/\nevals/\nmine/\n';
+  const want = 'evidence/\nevals/\nmine/\ntrain/\nruns/\naffected-ledger.json\n';
   if (!existsSync(f)) { mkdirSync(join(root, STATE_DIR), { recursive: true }); writeFileSync(f, want); return; }
   const have = readFileSync(f, 'utf8');
   for (const line of want.trim().split('\n')) if (!have.split('\n').includes(line)) appendFileSync(f, `${line}\n`);

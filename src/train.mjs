@@ -100,7 +100,9 @@ export async function runTrain(root, cfg, ids, opts = {}) {
   const log = opts.log ?? (() => {});
   const dir = opts.dir ?? trainDirFor(root, cfg);
   const release = acquireLock(root);
-  const result = { merged: [], red: [], conflicts: [], gated: [], refused: [], gates: 0 };
+  const logDir = join(root, '.hyve', 'train');
+  mkdirSync(logDir, { recursive: true });
+  const result = { merged: [], red: [], conflicts: [], gated: [], refused: [], gates: 0, logFile: join(logDir, `train-${new Date().toISOString().replace(/[:.]/g, '-')}.log`) };
   try {
     if (!existsSync(dir)) {
       mkdirSync(dirname(dir), { recursive: true });
@@ -132,7 +134,9 @@ export async function runTrain(root, cfg, ids, opts = {}) {
         if (s.status !== 0) throw new Error(`train.setup failed: ${cfg.train.setup}`);
       }
       result.gates++;
-      const { record } = await runGates(dir, cfg, { quiet: opts.quiet, kind: 'train' });
+      // Summary by default: the full gate output goes to a log file; --verbose streams it.
+      const { record } = await runGates(dir, cfg, { quiet: !opts.verbose, kind: 'train', logFile: result.logFile });
+      for (const g of record.gates) log(`    ${g.skipped ? '–' : g.pass ? '✓' : '✗'} ${g.name}${g.skipped ? ' (skipped)' : ` ${(g.durationMs / 1000).toFixed(1)}s`}`);
       return record;
     };
 
