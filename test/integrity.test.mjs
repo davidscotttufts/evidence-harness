@@ -125,3 +125,17 @@ test('hyvemind pin from the CLI, with npm faked on PATH', () => {
   assert.match(forced.stdout, new RegExp(`pinned hyvemind@${V.replace(/\./g, '\\.')} sha512-`));
   assert.equal(JSON.parse(readFileSync(join(dir, 'hyvemind.json'), 'utf8')).integrity, SHA);
 });
+
+test('--allow-fresh records a waiver for exactly that version; doctor honours it; re-pinning a mature version drops it', () => {
+  const dir = project();
+  const npm = fakeNpm(dir, 'ok', { published: daysAgo(3) });
+  const r = pin(dir, cfgOf(dir), { npm, now: NOW, allowFresh: true });
+  assert.equal(r.waived, V);
+  assert.equal(cfgOf(dir).coolingOffWaived, V);
+  const c = byName(checkIntegrity(dir, cfgOf(dir), { npm, now: NOW }), 'cli cooling-off');
+  assert.equal(c.ok, true);
+  assert.match(c.detail, /WAIVED for this version/);
+  const mature = fakeNpm(dir, 'ok', { published: daysAgo(30) });
+  pin(dir, cfgOf(dir), { npm: mature, now: NOW });
+  assert.equal(cfgOf(dir).coolingOffWaived, undefined, 'a waiver never outlives the fresh version it covered');
+});

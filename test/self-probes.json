@@ -418,5 +418,25 @@
     "expectOutput": [
       "warns only on the real gaps"
     ]
+  },
+  {
+    "id": "external-gate-replaces-preset-gates",
+    "src": "src/config.mjs",
+    "old": "  if (raw?.externalGate !== undefined && raw?.gates === undefined) cfg.gates = [];\n",
+    "new": "",
+    "test": "test/config.test.mjs",
+    "expectOutput": [
+      "replaces a preset"
+    ]
+  },
+  {
+    "id": "pin-records-waiver",
+    "src": "src/integrity.mjs",
+    "old": "  if (fresh && allowFresh) next.coolingOffWaived = v; else delete next.coolingOffWaived;",
+    "new": "",
+    "test": "test/integrity.test.mjs",
+    "expectOutput": [
+      "records a waiver"
+    ]
   }
 ]
