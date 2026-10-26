@@ -67,8 +67,9 @@ export function checkIntegrity(root, cfg, { npm = 'npm', now = Date.now() } = {}
       : `the registry serves hyvemind@${v} as ${String(info.integrity).slice(0, 20)}…, not the pinned ${cfg.integrity.slice(0, 20)}…; do not run it until you know why`);
   if (info.published) {
     const age = ageDays(info.published, now);
-    add(age >= cfg.coolingOffDays ? true : 'warn', 'cli cooling-off',
-      `hyvemind@${v} published ${info.published.toISOString().slice(0, 10)} (${age} day(s) ago; cooling-off ${cfg.coolingOffDays})`);
+    const waived = cfg.coolingOffWaived === v;
+    add(age >= cfg.coolingOffDays || waived ? true : 'warn', 'cli cooling-off',
+      `hyvemind@${v} published ${info.published.toISOString().slice(0, 10)} (${age} day(s) ago; cooling-off ${cfg.coolingOffDays}${waived && age < cfg.coolingOffDays ? "; WAIVED for this version" : ""})`);
   }
   return checks;
 }
@@ -90,7 +91,10 @@ export function pin(root, cfg, { npm = 'npm', now = Date.now(), allowFresh = fal
   const raw = JSON.parse(readFileSync(file, 'utf8'));
   // Write cli too: the integrity belongs to one version, and an implicit default cli
   // would move to a new version on upgrade while the old hash stayed behind.
+  const fresh = age !== null && age < cfg.coolingOffDays;
+  // A waiver covers exactly the version pinned; upgrading drops it.
   const next = { ...raw, cli: cfg.cli, integrity: info.integrity };
+  if (fresh && allowFresh) next.coolingOffWaived = v; else delete next.coolingOffWaived;
   if (!dryRun) writeConfig(root, next);
-  return { pinned: !dryRun, dryRun, version: v, age, integrity: info.integrity, fresh: age !== null && age < cfg.coolingOffDays };
+  return { pinned: !dryRun, dryRun, version: v, age, integrity: info.integrity, fresh, ...(fresh && allowFresh ? { waived: v } : {}) };
 }

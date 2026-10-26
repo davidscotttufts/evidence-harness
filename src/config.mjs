@@ -89,6 +89,7 @@ export function validate(cfg) {
   // ── cli integrity ──
   need(cfg.integrity === null || (typeof cfg.integrity === 'string' && /^sha(256|384|512)-[A-Za-z0-9+/]+=*$/.test(cfg.integrity)), 'integrity must be an npm dist.integrity string, e.g. "sha512-…"');
   need(Number.isInteger(cfg.coolingOffDays) && cfg.coolingOffDays >= 0, 'coolingOffDays must be a whole number of days ≥ 0');
+  need(cfg.coolingOffWaived === undefined || typeof cfg.coolingOffWaived === 'string', 'coolingOffWaived must be the version the waiver covers, e.g. "0.3.0"');
   // ── end cli integrity ──
   need(typeof cfg.skills?.prefix === 'string' && /^[a-z0-9-]*$/.test(cfg.skills.prefix), 'skills.prefix must be lowercase letters, digits or "-"');
   need(Array.isArray(cfg.skills?.targets) && cfg.skills.targets.length > 0, 'skills.targets must be a non-empty array');
@@ -128,6 +129,9 @@ export function validate(cfg) {
 export function resolveConfig(raw) {
   const preset = raw?.preset ?? DEFAULTS.preset;
   const cfg = merge(merge(DEFAULTS, loadPreset(preset)), raw ?? {});
+  // externalGate REPLACES the preset's gates: a project with its own gate has one
+  // definition of done. Only gates the project itself lists can conflict with it.
+  if (raw?.externalGate !== undefined && raw?.gates === undefined) cfg.gates = [];
   // An exact registry version can never resolve to someone else's package.
   cfg.cli ??= `npx -y hyvemind@${pkgVersion()}`;
   const errs = validate(cfg);
