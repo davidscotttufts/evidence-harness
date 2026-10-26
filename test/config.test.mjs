@@ -44,3 +44,9 @@ test('detect: openwop family, node scripts, python, generic', () => {
   assert.equal(detect(repo({ 'pyproject.toml': '' })).preset, 'python');
   assert.equal(detect(repo()).preset, 'generic');
 });
+
+test('externalGate replaces a preset\'s gates; only gates the project lists itself conflict', () => {
+  const cfg = resolveConfig({ version: 1, preset: 'openwop', externalGate: { run: 'make verify', done: 'make verify passes' } });
+  assert.deepEqual(cfg.gates, [], 'the openwop preset gate (npm run ci) is replaced');
+  assert.throws(() => resolveConfig({ version: 1, preset: 'openwop', externalGate: { run: 'x', done: 'y' }, gates: [{ name: 'a', run: 'b' }] }), /mutually exclusive/);
+});

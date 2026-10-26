@@ -422,6 +422,10 @@
           "description": "Commit-status context posted by the project's own gate (e.g. the one externalGate.done names). When set, a success status of this context on a clean HEAD is the proof, and evidence --post posts no hyvemind/gate."
         }
       }
+    },
+    "coolingOffWaived": {
+      "type": "string",
+      "description": "Written by `pin --allow-fresh`: the one version whose cooling-off period was waived"
     }
   }
 }
