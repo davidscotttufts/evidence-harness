@@ -64,6 +64,18 @@ test('v0.2 commands: affected --json, evidence --post refusal, eval --render, tr
   writeFileSync(join(dir, 'r.json'), JSON.stringify(report));
   assert.match(run(dir, 'eval', '--render', 'r.json').stdout, /\| pr \| 1 \| 3 \| 0% \[0–56%\] \| 100% \[44–100%\] \| \+1 \[\+0\.21, \+1\] \| — \| \*\*earning\*\* \|/);
 
+  // eval: preview first; never starts unattended without --yes.
+  writeFileSync(join(dir, 'hyvemind.json'), JSON.stringify({ ...JSON.parse(readFileSync(join(dir, 'hyvemind.json'), 'utf8')), evals: { agent: 'boom', agents: { boom: { command: ['node', '-e', 'require("fs").writeFileSync("/dev/null","");process.exit(9)', '{prompt}'] } } } }));
+  const dry = run(dir, 'eval', 'open-pr', '--dry-run');
+  assert.equal(dry.status, 0, `eval --dry-run must only preview: ${dry.stderr}`);
+  assert.match(dry.stderr, /eval plan: 1 skill\(s\) · \d+ scenario\(s\) · 3 trial\(s\) × 2 arms = \d+ agent runs \(boom\)/);
+  assert.ok(!existsSync(join(dir, '.hyve/evals')), 'a dry run runs nothing');
+  const noYes = run(dir, 'eval', 'open-pr:commands-before-pr');
+  assert.equal(noYes.status, 1, 'a non-TTY eval without --yes must refuse to start');
+  assert.match(noYes.stderr, /eval plan: .* = 6 agent runs/);
+  assert.match(noYes.stderr, /re-run with --yes/);
+  assert.match(run(dir, 'eval', 'open-pr', '--scenario', 'nope', '--dry-run').stderr, /open-pr: no scenario nope/);
+
   assert.match(run(dir, 'train').stderr, /usage: hyvemind train/);
   assert.match(run(dir, 'run').stderr, /usage: hyvemind run/);
 });

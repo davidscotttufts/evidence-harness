@@ -1,8 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { resolveConfig } from '../src/config.mjs';
-import { argv, liftInterval, renderReport, runEvals, score, verdict, wilson } from '../src/evals.mjs';
+import { agentArgv, agentEnv, argv, historicalMedian, liftInterval, parseTargets, planEvals, preview, renderPreview, renderReport, runEvals, score, verdict, versionStamp, wilson } from '../src/evals.mjs';
 import { repo, write } from './helpers.mjs';
 
 // Fake agents: one that succeeds only when the skill is installed in its workspace,
@@ -116,4 +118,88 @@ test('verdict thresholds, argv placeholders, and check types', () => {
     { type: 'output-not-matches', pattern: 'stash' }, { type: 'output-not-matches', pattern: '^a$' },
   ], 'a', dir);
   assert.deepEqual(s.map((x) => x.pass), [true, true, true, true, true, false, true, false]);
+});
+
+test('agents get an allowlisted env, never the whole process.env; per-agent env names opt in', () => {
+  const from = { PATH: '/bin', HOME: '/h', LC_ALL: 'C', LANG: 'en', GITHUB_TOKEN: 'ghp_x', AWS_SECRET_ACCESS_KEY: 's', MY_AGENT_AUTH: 'k' };
+  assert.deepEqual(agentEnv({}, 'bare', from), { PATH: '/bin', HOME: '/h', LC_ALL: 'C', LANG: 'en', HYVE_EVAL_ARM: 'bare' });
+  assert.deepEqual(agentEnv({ env: ['MY_AGENT_AUTH'] }, 'skill', from).MY_AGENT_AUTH, 'k');
+  assert.equal(agentEnv({ env: ['MY_AGENT_AUTH'] }, 'skill', from).GITHUB_TOKEN, undefined);
+  assert.equal(agentEnv({ cleanEnv: { X: '1' } }, 'bare', from, true).X, '1');
+  assert.equal(agentEnv({ cleanEnv: { X: '1' } }, 'bare', from, false).X, undefined);
+  const claude = resolveConfig({ version: 1 }).evals.agents.claude;
+  assert.equal(claude.env, undefined, 'no vendor secret is passed through by default');
+  assert.deepEqual(agentArgv(claude, { prompt: 'p' }, true).slice(0, 4), ['claude', '--setting-sources', 'project,local', '--strict-mcp-config']);
+  assert.deepEqual(agentArgv(claude, { prompt: 'p' }, false).slice(0, 3), ['claude', '-p', 'p']);
+});
+
+test('a run never leaks a secret from the parent env to the agent, in either arm', async () => {
+  process.env.HYVE_TEST_SECRET = 'leak-me';
+  try {
+    const dir = project('open-pr');
+    const LEAK = `console.log(process.env.HYVE_TEST_SECRET||!process.env.HYVE_EVAL_ARM?'ANSWER: wrong':'ANSWER: right')`;
+    const { report } = await runEvals(dir, cfg(LEAK, false), { skills: ['open-pr'], trials: 1 });
+    assert.deepEqual(report.skills[0].runs.map((r) => r.pass), [true, true]);
+  } finally { delete process.env.HYVE_TEST_SECRET; }
+});
+
+test('--clean-profile puts cleanArgs and cleanEnv in BOTH arms, and refuses an agent without cleanArgs', async () => {
+  const dir = project('open-pr');
+  const CLEAN = `console.log(process.execArgv.includes('--no-warnings')&&process.env.HYVE_CLEAN==='1'?'ANSWER: right':'ANSWER: wrong')`;
+  const c = resolveConfig({ version: 1, skills: { include: ['open-pr'] }, evals: { agent: 'fake', includeBundled: false, agents: { fake: { command: ['node', '-e', CLEAN, '{prompt}'], cleanArgs: ['--no-warnings'], cleanEnv: { HYVE_CLEAN: '1' } } } } });
+  const on = await runEvals(dir, c, { skills: ['open-pr'], trials: 1, cleanProfile: true });
+  assert.deepEqual(on.report.skills[0].runs.map((r) => `${r.arm}:${r.pass}`), ['bare:true', 'skill:true']);
+  assert.equal(on.report.cleanProfile, true);
+  assert.match(renderReport(on.report), /Ran with --clean-profile/);
+  const off = await runEvals(dir, c, { skills: ['open-pr'], trials: 1 });
+  assert.deepEqual(off.report.skills[0].runs.map((r) => r.pass), [false, false]);
+  await assert.rejects(runEvals(dir, cfg(ALWAYS, false), { skills: ['open-pr'], trials: 1, cleanProfile: true }), /has no cleanArgs/);
+});
+
+test('failed runs keep their full output under .hyve/evals/<run-id>/; passes only with keep; tail is 2,000 chars', async () => {
+  const dir = project('open-pr');
+  const LOUD = `const fs=require('fs');console.log('x'.repeat(5000));console.log(fs.existsSync('.claude/skills/open-pr/SKILL.md')?'ANSWER: right':'ANSWER: wrong')`;
+  const { report } = await runEvals(dir, cfg(LOUD, false), { skills: ['open-pr'], trials: 1 });
+  const [bare, skill] = report.skills[0].runs;
+  assert.equal(bare.output, join('.hyve', 'evals', report.runId, 'open-pr', 'one', 'bare-1.txt'));
+  assert.ok(readFileSync(join(dir, bare.output), 'utf8').length > 5000, 'the full output, not a tail');
+  assert.equal(bare.tail.length, 2000);
+  assert.equal(skill.output, undefined, 'a pass keeps nothing by default');
+  assert.match(renderReport(report, {}, { linkBase: '..' }), new RegExp(`open-pr · one · bare trial 1: \\[output\\]\\(\\.\\./\\.hyve/evals/${report.runId}/open-pr/one/bare-1\\.txt\\)`));
+  const kept = await runEvals(dir, cfg(LOUD, false), { skills: ['open-pr'], trials: 1, keep: true });
+  assert.ok(existsSync(join(dir, kept.report.skills[0].runs[1].output)), '--keep keeps passes too');
+});
+
+test('skill:scenario and --scenario select single scenarios; a filter that matches nothing is an error', () => {
+  assert.deepEqual(parseTargets(['write-spec:a', 'write-spec:b', 'grade']), [{ skill: 'write-spec', ids: ['a', 'b'] }, { skill: 'grade', ids: null }]);
+  assert.deepEqual(parseTargets(['grade'], ['x']), [{ skill: 'grade', ids: ['x'] }]);
+  const dir = repo();
+  write(dir, { '.hyve/scenarios/open-pr/one.json': SCENARIO, '.hyve/scenarios/open-pr/two.json': SCENARIO.replace('"one"', '"two"') });
+  const c = cfg(ALWAYS, false);
+  const plan = planEvals(dir, c, { skills: parseTargets(['open-pr:two']), trials: 2 });
+  assert.deepEqual([...new Set(plan.jobs.map((j) => j.sc.id))], ['two']);
+  assert.equal(plan.jobs.length, 4);
+  assert.throws(() => planEvals(dir, c, { skills: parseTargets(['open-pr:nope']) }), /no scenario nope \(have: one, two\)/);
+});
+
+test('cost preview: runs × arms × trials, concurrency, a timeout upper bound and a historical median', () => {
+  const dir = repo();
+  write(dir, { '.hyve/scenarios/open-pr/one.json': SCENARIO });
+  const c = cfg(ALWAYS, false);
+  const plan = planEvals(dir, c, { skills: ['open-pr'], trials: 3 });
+  assert.equal(historicalMedian(dir), null);
+  const p = preview(plan, c, { concurrency: 4 });
+  assert.deepEqual([p.skills, p.scenarios, p.trials, p.arms, p.runs, p.concurrency, p.upperBoundSec, p.estimateSec], [1, 1, [3], 2, 6, 4, 2 * 600, null]);
+  assert.match(renderPreview(p), /1 skill\(s\) · 1 scenario\(s\) · 3 trial\(s\) × 2 arms = 6 agent runs \(fake\) · concurrency 4/);
+  assert.match(renderPreview(p), /at most 20 min/);
+  write(dir, { '.hyve/evals/report-a.json': JSON.stringify({ skills: [{ runs: [{ ms: 1000 }, { ms: 30000 }, { ms: 90000 }] }] }) });
+  const h = historicalMedian(dir);
+  assert.equal(h.sec, 30);
+  assert.equal(preview(plan, c, { concurrency: 4, history: h }).estimateSec, 60);
+});
+
+test('reports are stamped version+sha[-dirty] from a git checkout, the plain version from a package', () => {
+  const v = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
+  assert.match(versionStamp(), new RegExp(`^${v.replace(/\./g, '\\.')}\\+[0-9a-f]{7,}(-dirty)?$`));
+  assert.equal(versionStamp(mkdtempSync(join(tmpdir(), 'hyve-pkg-'))), v);
 });

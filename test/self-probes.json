@@ -480,6 +480,76 @@
     ]
   },
   {
+    "id": "eval-env-allowlist",
+    "src": "src/evals.mjs",
+    "old": "for (const [k, v] of Object.entries(from)) if (names.has(k) || k.startsWith('LC_')) env[k] = v;",
+    "new": "for (const [k, v] of Object.entries(from)) env[k] = v;",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "never the whole process.env"
+    ]
+  },
+  {
+    "id": "eval-clean-both-arms",
+    "src": "src/evals.mjs",
+    "old": "return clean ? [exe, ...agentCfg.cleanArgs, ...rest] : [exe, ...rest];",
+    "new": "return [exe, ...rest];",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "BOTH arms"
+    ]
+  },
+  {
+    "id": "eval-keep-failures",
+    "src": "src/evals.mjs",
+    "old": "if (!pass || keep) {",
+    "new": "if (keep) {",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "keep their full output"
+    ]
+  },
+  {
+    "id": "eval-scenario-filter",
+    "src": "src/evals.mjs",
+    "old": "      scenarios = scenarios.filter((sc) => t.ids.includes(sc.id));\n",
+    "new": "",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "select single scenarios"
+    ]
+  },
+  {
+    "id": "eval-version-stamp",
+    "src": "src/evals.mjs",
+    "old": "  return `${v}+${sha.stdout.trim()}${dirty ? '-dirty' : ''}`;",
+    "new": "  return v;",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "version+sha"
+    ]
+  },
+  {
+    "id": "eval-needs-yes",
+    "src": "bin/hyvemind.mjs",
+    "old": "        if (!process.stdin.isTTY) throw new Error('eval spends model calls; re-run with --yes to start (or --dry-run to only preview)');\n",
+    "new": "",
+    "test": "test/cli.test.mjs",
+    "expectOutput": [
+      "must refuse to start"
+    ]
+  },
+  {
+    "id": "eval-dry-run-runs-nothing",
+    "src": "bin/hyvemind.mjs",
+    "old": "      if (o['dry-run']) return;\n",
+    "new": "",
+    "test": "test/cli.test.mjs",
+    "expectOutput": [
+      "must only preview"
+    ]
+  },
+  {
     "id": "external-gate-replaces-preset-gates",
     "src": "src/config.mjs",
     "old": "  if (raw?.externalGate !== undefined && raw?.gates === undefined) cfg.gates = [];\n",

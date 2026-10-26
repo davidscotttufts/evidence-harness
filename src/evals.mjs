@@ -54,7 +54,7 @@ export function score(checks, output, workdir) {
       case 'output-matches': pass = new RegExp(c.pattern, c.flags ?? '').test(output); break;
       case 'output-not-matches': pass = !new RegExp(c.pattern, c.flags ?? '').test(output); break;
       case 'file-exists': pass = existsSync(join(workdir, c.path)); break;
-      case 'command': pass = spawnSync(c.run, { cwd: workdir, shell: true, timeout: 120000 }).status === 0; break;
+      case 'command': pass = spawnSync(c.run, { cwd: workdir, shell: true, timeout: 120000, env: agentEnv() }).status === 0; break;
       default: throw new Error(`unknown check type ${c.type}`);
     }
     return { type: c.type, pass };
@@ -78,7 +78,7 @@ function workspace(scenario, cfg, skill, arm) {
   // leave a change uncommitted so the agent reviews a real diff). Runs in both arms, after the skill is installed, so the skill's own files are
   // part of the base and never show up in the diff the agent sees.
   if (scenario.setup) {
-    const r = spawnSync(scenario.setup, { cwd: dir, shell: true, encoding: 'utf8', env: { ...process.env, GIT_AUTHOR_NAME: 'eval', GIT_AUTHOR_EMAIL: 'eval@example.com', GIT_COMMITTER_NAME: 'eval', GIT_COMMITTER_EMAIL: 'eval@example.com' } });
+    const r = spawnSync(scenario.setup, { cwd: dir, shell: true, encoding: 'utf8', env: { ...agentEnv(), GIT_AUTHOR_NAME: 'eval', GIT_AUTHOR_EMAIL: 'eval@example.com', GIT_COMMITTER_NAME: 'eval', GIT_COMMITTER_EMAIL: 'eval@example.com' } });
     if (r.status !== 0) throw new Error(`scenario ${scenario.id} setup failed: ${(r.stderr || r.stdout).trim().slice(0, 300)}`);
   }
   return dir;
@@ -174,48 +174,156 @@ export function summarize(s, { liftThreshold = 0.2, minRuns = 3 } = {}) {
   };
 }
 
-function runAgent(cmd, args, cwd, timeoutSec, arm) {
+// What an agent process may see. Never the whole process.env: a shell's env carries
+// tokens for every service the user works with, and the eval needs none of them. An
+// agent's own auth var (if it uses one) is opted in per agent with evals.agents.<name>.env.
+export const ENV_ALLOW = ['PATH', 'HOME', 'LANG', 'TERM', 'TMPDIR', 'SHELL', 'USER'];
+
+export function agentEnv(agentCfg = {}, arm, from = process.env, clean = false) {
+  const names = new Set([...ENV_ALLOW, ...(agentCfg.env ?? [])]);
+  const env = {};
+  for (const [k, v] of Object.entries(from)) if (names.has(k) || k.startsWith('LC_')) env[k] = v;
+  // cleanEnv holds fixed values (e.g. a "disable memory" switch), never secrets.
+  if (clean) Object.assign(env, agentCfg.cleanEnv ?? {});
+  if (arm) env.HYVE_EVAL_ARM = arm;
+  return env;
+}
+
+// Clean-profile args go right after the executable and into BOTH arms, so the only
+// difference between the arms stays the installed skill.
+export function agentArgv(agentCfg, vars, clean = false) {
+  const [exe, ...rest] = argv(agentCfg.command, vars);
+  return clean ? [exe, ...agentCfg.cleanArgs, ...rest] : [exe, ...rest];
+}
+
+function runAgent(cmd, args, cwd, timeoutSec, env) {
   return new Promise((done) => {
-    const child = spawn(cmd, args, { cwd, env: { ...process.env, HYVE_EVAL_ARM: arm }, stdio: ['ignore', 'pipe', 'pipe'] });
+    const started = Date.now();
+    const child = spawn(cmd, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '';
     const keep = (d) => { if (out.length < 8 * 1024 * 1024) out += d.toString(); };
     child.stdout.on('data', keep);
     child.stderr.on('data', keep);
     const timer = setTimeout(() => child.kill('SIGKILL'), timeoutSec * 1000);
-    child.on('error', (e) => { clearTimeout(timer); done({ output: out, error: e.message }); });
-    child.on('close', (code, signal) => { clearTimeout(timer); done({ output: out, ...(signal === 'SIGKILL' ? { error: 'timed out' } : {}), code }); });
+    const ms = () => Date.now() - started;
+    child.on('error', (e) => { clearTimeout(timer); done({ output: out, error: e.message, ms: ms() }); });
+    child.on('close', (code, signal) => { clearTimeout(timer); done({ output: out, ...(signal === 'SIGKILL' ? { error: 'timed out' } : {}), code, ms: ms() }); });
   });
 }
 
+// "skill" or "skill:scenario" targets, plus --scenario ids that apply to every skill.
+// A filter that matches nothing is an error: a typo would otherwise run zero jobs and
+// report "no scenarios" as if the skill had none.
+export function parseTargets(args, scenarioIds = []) {
+  const map = new Map();
+  for (const a of args) {
+    const [skill, id] = a.split(':');
+    if (!map.has(skill)) map.set(skill, new Set());
+    if (id) map.get(skill).add(id);
+  }
+  for (const set of map.values()) for (const id of scenarioIds) set.add(id);
+  return [...map].map(([skill, ids]) => ({ skill, ids: ids.size ? [...ids] : null }));
+}
+
+// The job list, before anything runs: the cost preview and the run use the same plan.
+export function planEvals(root, cfg, { skills, trials }) {
+  const jobs = [];
+  const bySkill = new Map();
+  for (const t of skills.map((x) => (typeof x === 'string' ? { skill: x, ids: null } : x))) {
+    let scenarios = loadScenarios(root, cfg, t.skill);
+    if (t.ids) {
+      const missing = t.ids.filter((id) => !scenarios.some((sc) => sc.id === id));
+      if (missing.length && missing.length === t.ids.length) throw new Error(`${t.skill}: no scenario ${missing.join(', ')} (have: ${scenarios.map((x) => x.id).join(', ') || 'none'})`);
+      scenarios = scenarios.filter((sc) => t.ids.includes(sc.id));
+    }
+    bySkill.set(t.skill, { scenarios, runs: [], selected: t.ids });
+    for (const sc of scenarios) {
+      const n = trials ?? sc.trials ?? cfg.evals.trials;
+      for (let i = 0; i < n; i++) for (const arm of ['bare', 'skill']) jobs.push({ skill: t.skill, sc, trial: i + 1, n, arm });
+    }
+  }
+  return { jobs, bySkill };
+}
+
+// Median seconds per agent run from the newest prior report that recorded durations.
+export function historicalMedian(root) {
+  const dir = join(root, STATE_DIR, 'evals');
+  if (!existsSync(dir)) return null;
+  for (const f of readdirSync(dir).filter((x) => /^report-.*\.json$/.test(x)).sort().reverse()) {
+    let r;
+    try { r = JSON.parse(readFileSync(join(dir, f), 'utf8')); } catch { continue; }
+    const ms = (r.skills ?? []).flatMap((s) => (s.runs ?? []).map((x) => x.ms)).filter((x) => typeof x === 'number').sort((a, b) => a - b);
+    if (ms.length) return { sec: ms[Math.floor(ms.length / 2)] / 1000, from: f, runs: ms.length };
+  }
+  return null;
+}
+
+// What a run will cost, so nobody spends a few hundred model calls by accident.
+export function preview(plan, cfg, { concurrency = 1, agent, history = null } = {}) {
+  const c = Math.max(1, concurrency);
+  const waves = Math.ceil(plan.jobs.length / c);
+  const scenarios = [...plan.bySkill.values()].reduce((n, s) => n + s.scenarios.length, 0);
+  const trials = [...new Set(plan.jobs.map((j) => j.n))].sort((a, b) => a - b);
+  return {
+    agent: agent ?? cfg.evals.agent, skills: plan.bySkill.size, scenarios, trials, arms: 2, runs: plan.jobs.length, concurrency: c,
+    upperBoundSec: waves * cfg.evals.timeoutSec,
+    estimateSec: history ? Math.round(waves * history.sec) : null, history,
+  };
+}
+
+export function renderPreview(p) {
+  const dur = (sec) => (sec >= 3600 ? `${(sec / 3600).toFixed(1)} h` : sec >= 60 ? `${Math.round(sec / 60)} min` : `${Math.round(sec)} s`);
+  return [
+    `eval plan: ${p.skills} skill(s) · ${p.scenarios} scenario(s) · ${p.trials.join('/') || 0} trial(s) × ${p.arms} arms = ${p.runs} agent runs (${p.agent}) · concurrency ${p.concurrency}`,
+    `duration: ${p.estimateSec != null ? `about ${dur(p.estimateSec)} (median ${p.history.sec.toFixed(0)} s/run over ${p.history.runs} runs in ${p.history.from}); ` : ''}at most ${dur(p.upperBoundSec)} (every run hitting timeoutSec)`,
+  ].join('\n');
+}
+
+// "0.3.0+abc1234[-dirty]" when hyvemind runs from a git checkout, so a report says which
+// code produced it; the plain version from an installed package (no .git of its own).
+export function versionStamp(pkgRoot = PKG_ROOT) {
+  const v = pkgVersion();
+  if (!existsSync(join(pkgRoot, '.git'))) return v;
+  const sha = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: pkgRoot, encoding: 'utf8' });
+  if (sha.status !== 0) return v;
+  const dirty = spawnSync('git', ['status', '--porcelain'], { cwd: pkgRoot, encoding: 'utf8' }).stdout.trim() !== '';
+  return `${v}+${sha.stdout.trim()}${dirty ? '-dirty' : ''}`;
+}
+
+const safe = (s) => String(s).replace(/[^\w.-]+/g, '_');
+
 // Runs every (scenario × trial × arm) job, up to `concurrency` at once. Each job gets
 // its own scratch workspace, so concurrent runs never see each other's files.
-export async function runEvals(root, cfg, { skills, agent, model, trials, keep = false, concurrency = 1, log = () => {} }) {
+// Output of every FAILED run is kept under .hyve/evals/<run-id>/ (passes too with keep),
+// so a failure can be diagnosed without rerunning on a guess.
+export async function runEvals(root, cfg, { skills, agent, model, trials, keep = false, cleanProfile = false, concurrency = 1, plan = null, log = () => {} }) {
   const agentName = agent ?? cfg.evals.agent;
   const agentCfg = cfg.evals.agents[agentName];
   if (!agentCfg) throw new Error(`no evals.agents.${agentName} in config`);
-  const report = { tool: 'hyvemind', version: pkgVersion(), startedAt: new Date().toISOString(), agent: agentName, model: model ?? null,
+  if (cleanProfile && !agentCfg.cleanArgs?.length) throw new Error(`--clean-profile: evals.agents.${agentName} has no cleanArgs (see docs/reference.md, Evals)`);
+  const startedAt = new Date().toISOString();
+  const runId = startedAt.replace(/[:.]/g, '-');
+  const report = { tool: 'hyvemind', version: versionStamp(), startedAt, runId, agent: agentName, model: model ?? null,
+    cleanProfile: Boolean(cleanProfile), concurrency: Math.max(1, concurrency),
     thresholds: { liftThreshold: cfg.evals.liftThreshold, minRuns: cfg.evals.minRuns }, skills: [] };
-  const jobs = [];
-  const bySkill = new Map();
-  for (const skill of skills) {
-    const scenarios = loadScenarios(root, cfg, skill);
-    bySkill.set(skill, { scenarios, runs: [] });
-    for (const sc of scenarios) {
-      const n = trials ?? sc.trials ?? cfg.evals.trials;
-      for (let t = 0; t < n; t++) for (const arm of ['bare', 'skill']) jobs.push({ skill, sc, trial: t + 1, n, arm });
-    }
-  }
+  const { jobs, bySkill } = plan ?? planEvals(root, cfg, { skills, trials });
   let next = 0, finished = 0;
   const worker = async () => {
     while (next < jobs.length) {
       const j = jobs[next++];
       const dir = workspace(j.sc, cfg, j.skill, j.arm);
       try {
-        const [cmd, ...args] = leaseArgv(cfg, 'eval', `${j.skill}/${j.sc.id}`, argv(agentCfg.command, { prompt: j.sc.prompt, workdir: dir, model }));
-        const r = await runAgent(cmd, args, dir, cfg.evals.timeoutSec, j.arm);
+        const [cmd, ...args] = leaseArgv(cfg, 'eval', `${j.skill}/${j.sc.id}`, agentArgv(agentCfg, { prompt: j.sc.prompt, workdir: dir, model }, cleanProfile));
+        const r = await runAgent(cmd, args, dir, cfg.evals.timeoutSec, agentEnv(agentCfg, j.arm, process.env, cleanProfile));
         const checks = r.error ? [{ type: 'agent-run', pass: false, error: r.error }] : score(j.sc.checks, r.output, dir);
         const pass = checks.every((c) => c.pass);
-        bySkill.get(j.skill).runs.push({ scenario: j.sc.id, trial: j.trial, arm: j.arm, pass, checks, ...(pass ? {} : { tail: r.output.trim().slice(-400) }) });
+        let output;
+        if (!pass || keep) {
+          output = join(STATE_DIR, 'evals', runId, safe(j.skill), safe(j.sc.id), `${j.arm}-${j.trial}.txt`);
+          mkdirSync(dirname(join(root, output)), { recursive: true });
+          writeFileSync(join(root, output), r.output);
+        }
+        bySkill.get(j.skill).runs.push({ scenario: j.sc.id, trial: j.trial, arm: j.arm, pass, ms: r.ms, checks, ...(output ? { output } : {}), ...(pass ? {} : { tail: r.output.trim().slice(-2000) }) });
         log(`  [${++finished}/${jobs.length}] ${j.skill} · ${j.sc.id} · trial ${j.trial}/${j.n} · ${j.arm}: ${pass ? 'pass' : 'FAIL'}`);
       } finally {
         if (!keep) rmSync(dir, { recursive: true, force: true });
@@ -224,16 +332,15 @@ export async function runEvals(root, cfg, { skills, agent, model, trials, keep =
   };
   await Promise.all(Array.from({ length: Math.max(1, concurrency) }, worker));
 
-  for (const skill of skills) {
-    const { scenarios, runs } = bySkill.get(skill);
+  for (const [skill, { scenarios, runs, selected }] of bySkill) {
     if (!scenarios.length) { report.skills.push({ skill, scenarios: 0, note: 'no scenarios' }); continue; }
     runs.sort((a, b) => a.scenario.localeCompare(b.scenario) || a.trial - b.trial || a.arm.localeCompare(b.arm));
-    report.skills.push(summarize({ skill, scenarios: scenarios.length, size: skillSize(skill, cfg), runs }, report.thresholds));
+    report.skills.push(summarize({ skill, scenarios: scenarios.length, ...(selected ? { selected } : {}), size: skillSize(skill, cfg), runs }, report.thresholds));
   }
   report.finishedAt = new Date().toISOString();
   const dir = join(root, STATE_DIR, 'evals');
   mkdirSync(dir, { recursive: true });
-  const file = join(dir, `report-${report.startedAt.replace(/[:.]/g, '-')}.json`);
+  const file = join(dir, `report-${runId}.json`);
   writeFileSync(file, JSON.stringify(report, null, 2) + '\n');
   return { report, file };
 }
@@ -250,7 +357,7 @@ const ACTION = {
 
 // Markdown summary of an eval report: the decision table people act on. Verdicts and
 // intervals are recomputed from the runs, so an old report renders with today's rules.
-export function renderReport(report, fallback = {}) {
+export function renderReport(report, fallback = {}, { linkBase = '' } = {}) {
   const th = report.thresholds ?? fallback;
   const skills = report.skills.map((s) => (s.trials ? summarize(s, th) : s));
   const pct = (x) => `${Math.round(x * 100)}%`;
@@ -290,6 +397,13 @@ export function renderReport(report, fallback = {}) {
   for (const s of skills.filter((x) => x.trials)) {
     for (const r of s.byScenario) lines.push(`| ${s.skill} | ${r.id} | ${r.bare.pass}/${r.bare.runs} | ${r.skill.pass}/${r.skill.runs} | ${sgn(r.lift)} | ${r.flags.join(', ') || '—'} |`);
   }
-  lines.push('', 'Caveat: the bare arm can still see user-level skills and global instructions unless the eval ran from a clean profile.');
+  const failed = skills.filter((x) => x.trials).flatMap((s) => (s.runs ?? []).filter((r) => !r.pass && r.output).map((r) => ({ ...r, name: s.skill })));
+  if (failed.length) {
+    lines.push('', '## Failed runs', '');
+    for (const r of failed) lines.push(`- ${r.name} · ${r.scenario} · ${r.arm} trial ${r.trial}: [output](${(linkBase ? `${linkBase}/` : '') + r.output})`);
+  }
+  lines.push('', report.cleanProfile
+    ? 'Ran with --clean-profile: both arms got the agent\'s cleanArgs/cleanEnv. See docs/reference.md for what that does and does not exclude.'
+    : 'Caveat: the bare arm can still see user-level skills and global instructions unless the eval ran with --clean-profile.');
   return lines.join('\n') + '\n';
 }
