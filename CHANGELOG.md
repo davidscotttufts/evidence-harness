@@ -20,6 +20,12 @@
   match a case that **failed**. `expectOutput` substring matching can be fooled by a
   passing case's name; a test shows exactly that.
 - `mine` asks for consent (or `--yes`) before reading transcripts.
+- **New `grade` skill** with rubric files for code, data, UX, i18n and parity. It
+  restores the method of openwop-app's six grade-* skills: a resumed tracker, coverage
+  arithmetic, mechanical checks first, evidence from both sides, caps (an accessibility
+  blocker caps an area at D), an independent grader plus a refute pass, an S/M/L path
+  to A+, and a human verification checklist. The data rubric carries the six-class
+  generator scan.
 - Fixed: `ENOBUFS` from git on repos with tens of thousands of files.
 - README rewritten around the problem and real output; the reference moved to
   `docs/reference.md`.
