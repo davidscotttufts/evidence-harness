@@ -279,3 +279,26 @@ test('lint flags a prompt that dictates a line its own checks reject (the contra
   // A forbidden pattern the prompt itself dictates.
   assert.match(contradictions({ prompt: 'End with exactly one line: CMD: git add -A', checks: [{ type: 'output-not-matches', pattern: 'git add -A' }] }).errors.join(), /fails its own checks/);
 });
+
+test('eval samples load before every job, waits with --wait, and stamps contention on the report', async () => {
+  const dir = project('open-pr');
+  const quiet = { load1: 1, cores: 8, busy: false, competitors: [], contended: false };
+  const busy = { load1: 30, cores: 8, busy: true, competitors: [{ dir: '/other', pid: 1, command: 'vitest run' }], contended: true };
+  // Quiet machine: every job sampled, nothing contended, no note in the markdown.
+  let calls = 0;
+  const calm = await runEvals(dir, cfg(ALWAYS, false), { skills: ['open-pr'], trials: 2, sampler: () => (calls++, quiet) });
+  assert.equal(calls, 4, 'one sample per job (1 scenario × 2 trials × 2 arms)');
+  assert.deepEqual({ contended: calm.report.contention.contended, samples: calm.report.contention.samples }, { contended: false, samples: 4 });
+  assert.doesNotMatch(renderReport(calm.report), /Contended run/);
+  // Busy then quiet, with --wait: the first job waits until the machine clears, and the run still records it was contended.
+  const seq = [busy, busy, quiet];
+  const waited = await runEvals(dir, cfg(ALWAYS, false), { skills: ['open-pr'], trials: 1, wait: 1, pollMs: 1, sampler: () => seq.shift() ?? quiet });
+  assert.equal(seq.length, 0, 'it kept sampling until the machine was quiet');
+  assert.equal(waited.report.contention.contended, true);
+  assert.equal(waited.report.contention.samples, 4, '3 samples for the first job, 1 for the second');
+  assert.equal(waited.report.contention.load1, 30, 'the busiest sample is recorded');
+  assert.match(renderReport(waited.report), /Contended run\.\*\* 2 of 4 jobs/);
+  // A broker queues the work: no sampling at all.
+  const b = await runEvals(dir, { ...cfg(ALWAYS, false), broker: { command: 'true' } }, { skills: ['open-pr'], trials: 1, sampler: () => { throw new Error('sampled under a broker'); } });
+  assert.equal(b.report.contention, undefined);
+});

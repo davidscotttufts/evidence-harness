@@ -718,5 +718,45 @@
     "expectOutput": [
       "placeholder-echo-passes error"
     ]
+  },
+  {
+    "id": "eval-samples-every-job",
+    "src": "src/evals.mjs",
+    "old": "      if (load) await load.before();\n",
+    "new": "",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "stamps contention on the report"
+    ]
+  },
+  {
+    "id": "eval-wait-waits",
+    "src": "src/evals.mjs",
+    "old": "while (s.contended && Date.now() < until) {",
+    "new": "while (false) {",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "stamps contention on the report"
+    ]
+  },
+  {
+    "id": "eval-broker-skips-sampling",
+    "src": "src/evals.mjs",
+    "old": "  if (cfg.broker) return null;\n  const until",
+    "new": "  const until",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "stamps contention on the report"
+    ]
+  },
+  {
+    "id": "eval-contended-note",
+    "src": "src/evals.mjs",
+    "old": "  if (!c?.contended) return [];",
+    "new": "  return [];",
+    "test": "test/evals.test.mjs",
+    "expectOutput": [
+      "stamps contention on the report"
+    ]
   }
 ]

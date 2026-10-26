@@ -64,6 +64,8 @@ Usage: hyvemind <command> [options]
             --isolate     probe a throwaway worktree of HEAD (setup: probe.setup or train.setup)
   eval [skill[:scenario]…]  Bare model vs with-skill on each skill's scenarios
             --agent <name>  --model <id>  --trials <n>  --concurrency <n>
+            --wait <min>      before each job, wait (up to min in all) for other test suites and load
+                              to clear; the report records whether the run was contended
             --matrix          run once per agent in evals.agents whose binary is installed
                               (or --agent a,b,c); per-agent verdicts plus a disagreements list
             --scenario <id>   only this scenario (repeatable)
@@ -269,8 +271,8 @@ async function main() {
       }
       const log = (m) => process.stderr.write(`${m}\n`);
       const { report, file } = matrix
-        ? await runMatrix(root, cfg, { ...sel, plan, keep: o.keep, cleanProfile: o['clean-profile'], concurrency, log })
-        : await runEvals(root, cfg, { plan, agent: o.agent, model: o.model, keep: o.keep, cleanProfile: o['clean-profile'], concurrency, log });
+        ? await runMatrix(root, cfg, { ...sel, plan, keep: o.keep, cleanProfile: o['clean-profile'], concurrency, wait: Number(o.wait ?? 0), log })
+        : await runEvals(root, cfg, { plan, agent: o.agent, model: o.model, keep: o.keep, cleanProfile: o['clean-profile'], concurrency, wait: Number(o.wait ?? 0), log });
       const sections = report.agents ?? [{ agent: report.agent, skills: report.skills }];
       const pct = (x) => `${Math.round(x * 100)}%`.padEnd(6);
       for (const sec of sections) {
@@ -288,6 +290,10 @@ async function main() {
       for (const d of report.disagreements ?? []) console.log(`disagreement · ${d.skill}: ${d.verdicts.map((v) => `${v.agent} ${v.verdict}`).join(', ')}`);
       const kept = sections.flatMap((sec) => sec.skills).flatMap((s) => s.runs ?? []).filter((r) => r.output).length;
       if (kept) console.log(`outputs: ${kept} kept under ${join(root, '.hyve', 'evals', report.runId)}`);
+      if (report.contention?.contended) {
+        const c = report.contention;
+        console.log(`contended: ${c.contendedSamples} of ${c.samples} jobs started on a busy machine (worst: load ${c.load1} on ${c.cores} cores${c.competitors?.length ? `; other suites in ${c.competitors.map((x) => x.dir).join(', ')}` : ''}). A failure or timeout here is not evidence about the skill: re-run when quiet (--wait <min>).`);
+      }
       console.log(`report: ${file}`);
       if (o.report) {
         const md = o.out ? resolve(o.out) : join(root, '.hyve', 'evals', 'REPORT.md');
