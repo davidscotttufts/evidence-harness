@@ -279,6 +279,17 @@ your login, and mounting credentials into a container is what a sandbox should a
 `node:22-bookworm` (`run.sandbox.image`). OpenHands splits the work the same way: the
 agent loop runs on the host and its actions run in the sandbox.
 
+**Verified on real Podman** (6.1.4, macOS arm64 VM, 2026-10-26):
+- a passing check exits 0, and a failing one returns its own code;
+- checks have no network (an HTTPS fetch fails), and setup has it when allowed;
+- a host variable outside the allowlist is absent while `CI` gets through;
+- `/Users`, `~/.ssh`, `~/.codex` and `~/.claude` are absent;
+- files written in `/work` are owned by the host user, not root;
+- `chown` is refused.
+
+To re-run it against your runtime: `HYVE_SANDBOX_REAL=podman npm test` (or `docker`).
+Without that variable the real-runtime test is skipped.
+
 ### Affected tests
 
 `hyvemind affected` walks the JS/TS import graph backwards from changed files:
