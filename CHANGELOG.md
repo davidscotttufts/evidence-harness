@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0 — unreleased
+## 0.4.0 — 2026-10-27
 
 - **`probe` takes a per-worktree lock** (a second probe refuses; stale locks are
   reclaimed), and **`probe --isolate`** runs in a throwaway worktree of `HEAD`, so a
@@ -15,8 +15,6 @@
   to `.hyve/train/`; `--verbose` streams it. The census tests skip with "run npm ci"
   when TypeScript isn't installed. `.hyve/.gitignore` also covers `train/`, `runs/` and
   the `affected` ledger.
-
-## Unreleased
 
 - **Honest eval verdicts** (#17). New `saturated` verdict when both arms pass every
   run (previously `retire-candidate`). Reports carry per-scenario rows with pass counts,
@@ -58,20 +56,48 @@
   matrix, and `--dry-run` shows each agent's share. Reports keep per-agent sections.
   The markdown has a column group per agent and a **Disagreements** list of skills
   whose verdict differs between agents. `--render` reads single-agent and matrix
-  reports. `--model` is refused for a matrix. Codex/opencode clean-profile flags are
-  documented as unverified, and no defaults are set.
+  reports. `--model` is refused for a matrix.
 - **`{clean}` in agent commands.** With `--clean-profile`, a `{clean}` argument in
   `evals.agents.<name>.command` expands to that agent's `cleanArgs`; without it, to
   nothing. Commands without `{clean}` keep the old placement (right after the
   executable). This lets clean flags follow a subcommand. `codex` now defaults to
   `codex exec {clean} {prompt}` with `--ignore-user-config --ephemeral --ignore-rules`
-  (meanings from `codex exec --help`; their effect on bare-arm contamination is not
-  independently verified). `opencode` still has no `cleanArgs`: `--pure` only drops
-  plugins.
+  (meanings from `codex exec --help`). Those flags turned out NOT to isolate codex; see
+  `cleanHome` below. `opencode` still has no `cleanArgs`: `--pure` only drops plugins.
 - **Lint: `placeholder-echo-passes`.** A placeholder line (`LABEL: <a or b>`) printed
   verbatim must fail the checks that name its label. Otherwise the lint reports an
   error, because the scenario can't tell copying from answering. All 58 bundled
   scenarios stay lint-clean.
+
+- **Clean profiles, measured with a canary** (an instruction in the user's own config
+  that a clean run must not follow):
+  - **claude:** `--setting-sources project,local --strict-mcp-config` + auto-memory off
+    **does** drop `~/.claude/CLAUDE.md`. A plain run followed the canary; the clean run
+    did not.
+  - **codex:** `--ignore-user-config --ephemeral --ignore-rules` does **not** skip
+    `~/.codex/AGENTS.md`, and no `exec` flag does. New **`cleanHome`**
+    (`evals.agents.<name>.cleanHome`): each run gets a `0700` temp `CODEX_HOME` holding
+    only a **link** to `auth.json`. With it, the canary is not followed and the login is
+    untouched. A refreshed token is moved back (one rename, never copied) only if the
+    real file is unchanged since the run started and no other writer holds the lock. The
+    dir is removed on exit, timeout and SIGINT/SIGTERM. The preview says "login only".
+- **Agents run on their own login, not an API key.** Each built-in agent has an
+  `authCheck` (`claude auth status`, `codex login status`, `opencode auth list`), run
+  with the agent's env and a 15 s timeout; its output is never printed or stored.
+  `--matrix` skips a logged-out agent as `not logged in`, and a single-agent eval
+  refuses one before asking to start. A single-agent eval picks `--agent`, then the
+  project's `evals.agent`, then the host agent (inside Claude Code), then the default.
+  The preview names the agent and why.
+- **`eval` checks machine load** before every job, as `gate` does. `--wait <min>` waits
+  for quiet, and the report records `contention`; a contended run says "re-run when
+  quiet". With a `broker`, nothing is sampled.
+- **Census: `COMMENTED_ASSERT` and `UNUSED_LOCAL`.** An `expect(` / `assert(` call inside
+  a comment in a case body is flagged (it caps like a weak claim). A call quoted in
+  backticks counts as prose. A `const`/`let` the case never reads is a hint, with the
+  case's assertion count, and never a cap.
+- **The sandbox is verified on real Podman** (6.1.4): no network for checks, allowlisted
+  env, no host home or credentials, files owned by the user, `chown` refused.
+  `HYVE_SANDBOX_REAL=podman|docker npm test` re-runs it.
 
 ## 0.3.1 — 2026-10-26
 

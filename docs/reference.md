@@ -5,10 +5,10 @@ Every command, the config file and the presets. For what hyvemind is and why, se
 ## Install into a project
 
 ```bash
-npx -y hyvemind@0.3.1 init      # detects the project, writes hyvemind.json,
+npx -y hyvemind@0.4.0 init      # detects the project, writes hyvemind.json,
                                 # installs the skills and the AGENTS.md block
-npx -y hyvemind@0.3.1 doctor    # checks that everything is wired up
-npx -y hyvemind@0.3.1 gate      # runs your gates and records evidence
+npx -y hyvemind@0.4.0 doctor    # checks that everything is wired up
+npx -y hyvemind@0.4.0 gate      # runs your gates and records evidence
 ```
 
 Installed skills call the CLI as `npx -y hyvemind@<exact version>` (the `cli` field in
@@ -16,8 +16,8 @@ Installed skills call the CLI as `npx -y hyvemind@<exact version>` (the `cli` fi
 package. If you'd rather pin hyvemind as a dev dependency, install it first:
 
 ```bash
-npm i -D hyvemind@0.3.1                                  # from npm
-npm i -D github:davidscotttufts/hyvemind#v0.3.1          # or straight from GitHub
+npm i -D hyvemind@0.4.0                                  # from npm
+npm i -D github:davidscotttufts/hyvemind#v0.4.0          # or straight from GitHub
 npx hyvemind init                                        # writes "cli": "npx hyvemind"
 ```
 
@@ -31,7 +31,7 @@ served under that version, nor a malicious release adopted the day it appeared. 
 content too:
 
 ```bash
-npx -y hyvemind@0.3.1 pin       # writes "cli" and "integrity" (npm dist.integrity) into hyvemind.json
+npx -y hyvemind@0.4.0 pin       # writes "cli" and "integrity" (npm dist.integrity) into hyvemind.json
 ```
 
 - **Integrity.** `integrity` is npm's `dist.integrity` (`sha512-…`) for the version in
@@ -548,10 +548,11 @@ What is documented (Claude Code CLI reference, memory and authentication docs):
 - `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` turns off auto-memory.
 - Authentication does not depend on setting sources, so login keeps working.
 
-What is **not** documented, and so not guaranteed: that leaving out the `user` source
-also drops `~/.claude/skills`, `~/.claude/CLAUDE.md` and user plugins (the docs imply
-it but don't state it). Verify on your machine with a canary before citing a clean
-baseline. Put a uniquely named skill in `~/.claude/skills`, run one scenario with
+**Measured (2026-10-26):** with a canary in `~/.claude/CLAUDE.md` ("when asked to say
+hello, end with CANARY-7731"), a plain `claude -p` followed it and the clean profile did
+not. So leaving out the `user` source drops the user's `CLAUDE.md`. User skills and
+plugins were not measured. The docs imply they are dropped too. To check on your machine,
+put a uniquely named skill in `~/.claude/skills`, run one scenario with
 `--clean-profile --keep`, and check that neither arm's kept output mentions it.
 
 Rejected options:
