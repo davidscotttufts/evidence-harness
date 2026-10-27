@@ -26,8 +26,8 @@ failed, on exactly this code*. It works with Claude Code, Codex, OpenCode, or an
 else that reads `AGENTS.md` and skill folders. It has no runtime dependencies.
 
 ```bash
-npx -y hyvemind@0.3.1 init     # detects the project, installs skills + an AGENTS.md section
-npx -y hyvemind@0.3.1 gate     # runs your gates; the verdict is bound to this exact tree
+npx -y hyvemind@0.4.0 init     # detects the project, installs skills + an AGENTS.md section
+npx -y hyvemind@0.4.0 gate     # runs your gates; the verdict is bound to this exact tree
 ```
 
 ## What it checks
